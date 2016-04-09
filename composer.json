@@ -1,0 +1,29 @@
+{
+  "name": "phact-cmf/phact",
+  "homepage": "https://github.com/phact-cmf/phact",
+  "version": "0.1",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Phact\\Application\\": "src/Phact/Application",
+      "Phact\\Main\\": "src/Phact/Main",
+      "Phact\\Exceptions\\": "src/Phact/Exceptions",
+      "Phact\\Helpers\\": "src/Phact/Helpers"
+    }
+  },
+  "require": {
+    "php": ">=5.4"
+  },
+  "authors": [
+    {
+      "name": "Anton Okulov",
+      "email": "qantus@mail.ru",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "qantus@mail.ru",
+    "issues": "https://github.com/phact-cmf/phact?state=open"
+  }
+}
