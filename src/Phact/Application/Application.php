@@ -15,6 +15,7 @@
 namespace Phact\Application;
 
 use Phact\Exceptions\InvalidConfigException;
+use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
 use Phact\Main\ComponentsLibrary;
@@ -22,8 +23,11 @@ use Phact\Main\ComponentsLibrary;
 class Application
 {
     use ComponentsLibrary;
-    
+
     public $name = 'Phact Application';
+
+    protected $_modules;
+    protected $_modulesConfig;
 
     public function __construct($config = [])
     {
@@ -41,6 +45,28 @@ class Application
         foreach ($paths as $name => $path) {
             Paths::add($name, $path);
         }
+    }
+
+    public function setModules($config = [])
+    {
+        $this->_modulesConfig = $config;
+    }
+
+    public function getModule($name)
+    {
+        if (!isset($this->_modules[$name])) {
+            if (isset($this->_modulesConfig[$name])) {
+                $config = $this->_modulesConfig[$name];
+                if (!isset($config['class'])) {
+                    $config['class'] = '\\Modules\\' . ucfirst($name) . '\\' . ucfirst($name) . 'Module';
+                }
+                $this->_modules[$name] = Configurator::create($config);
+            } else {
+                throw new UnknownPropertyException("Module with name" . $name . " not found");
+            }
+        }
+
+        return $this->_modules[$name];
     }
 
     public function setUpPaths()

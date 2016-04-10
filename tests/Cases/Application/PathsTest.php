@@ -21,19 +21,19 @@ class PathsTest extends TestCase
 {
     public function testPaths()
     {
-        $testPath =  implode(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', 'sandbox', 'app', 'Modules']);
-        Paths::add('Modules',$testPath);
+        $testPath =  implode(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', 'sandbox', 'app', 'modules']);
+        Paths::add('modules',$testPath);
 
         $this->assertEquals(
-            Paths::get('Modules'),
+            Paths::get('modules'),
             $testPath
         );
         $this->assertEquals(
-            Paths::get('Modules.Test'),
+            Paths::get('modules.Test'),
             implode(DIRECTORY_SEPARATOR, [$testPath, 'Test'])
         );
         $this->assertEquals(
-            Paths::get('Modules.Test.Models'),
+            Paths::get('modules.Test.Models'),
             implode(DIRECTORY_SEPARATOR, [$testPath, 'Test', 'Models'])
         );
         $this->assertNull(Paths::get('NotExistingPath'));

@@ -9,5 +9,8 @@
         <testsuite name="Application">
             <directory>./tests/Cases/Application</directory>
         </testsuite>
+        <testsuite name="Orm">
+            <directory>./tests/Cases/Orm</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

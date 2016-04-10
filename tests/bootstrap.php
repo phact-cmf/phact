@@ -11,4 +11,5 @@ $_SERVER['SCRIPT_FILENAME'] = __FILE__;
 // require composer autoloader if available
 $composerAutoload = __DIR__ . '/../vendor/autoload.php';
 require_once($composerAutoload);
-require_once(__DIR__ . '/TestCase.php');
+require_once(__DIR__ . '/Templates/TestCase.php');
+require_once(__DIR__ . '/Templates/AppTest.php');

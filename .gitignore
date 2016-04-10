@@ -2,3 +2,4 @@ phpunit.phar
 composer.lock
 vendor
 .idea
+tests/db_local.php
