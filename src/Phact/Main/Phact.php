@@ -26,6 +26,9 @@ class Phact
         static::$_app = Configurator::create($application, $configuration);
     }
 
+    /**
+     * @return \Phact\Application\Application
+     */
     public static function app()
     {
         return static::$_app;

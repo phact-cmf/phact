@@ -37,7 +37,7 @@ trait ComponentsLibrary
             if (isset($this->_componentsConfig[$name])) {
                 $this->_components[$name] = Configurator::create($this->_componentsConfig[$name]);
             } else {
-                throw new UnknownPropertyException("Component with name" . $name . " not found");
+                throw new UnknownPropertyException("Component with name " . $name . " not found");
             }
         }
 

@@ -23,12 +23,12 @@ class AppTest extends TestCase
 {
     public function getAppPath()
     {
-        return implode(DIRECTORY_SEPARATOR, [__DIR__, 'sandbox', 'app']);
+        return implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'sandbox', 'app']);
     }
 
     public function getModules()
     {
-        $path = implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'modules']);
+        $path = implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'Modules']);
         $list = glob($path . DIRECTORY_SEPARATOR . '*');
         return $list;
     }

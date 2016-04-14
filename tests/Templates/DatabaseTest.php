@@ -14,12 +14,30 @@
 
 namespace Phact\Tests;
 
+use Phact\Orm\ConnectionManager;
+
 class DatabaseTest extends AppTest
 {
     protected function getComponents()
     {
         return [
-            'db'
+            'db' => [
+                'class' => ConnectionManager::class,
+                'connections' => $this->getConnections()
+            ]
         ];
+    }
+    
+    public function getConnections()
+    {
+        $dir = implode(DIRECTORY_SEPARATOR,[__DIR__, '..', 'config']);
+        $local = implode(DIRECTORY_SEPARATOR,[$dir, 'connections_local.php']);
+        $public = implode(DIRECTORY_SEPARATOR,[$dir, 'connections.php']);
+        if (is_file($local)) {
+            return require($local);
+        } elseif (is_file($public)) {
+            return require($public);
+        }
+        return [];
     }
 }

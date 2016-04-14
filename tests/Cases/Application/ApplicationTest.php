@@ -70,6 +70,6 @@ class ApplicationTest extends TestCase
         $app = Configurator::create(Application::class, $config);
         $this->assertEquals(Paths::get('base'), $this->getAppPath());
         $this->assertEquals(Paths::get('runtime'), implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'runtime']));
-        $this->assertEquals(Paths::get('modules'), implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'modules']));
+        $this->assertEquals(Paths::get('Modules'), implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'Modules']));
     }
 }

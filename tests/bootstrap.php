@@ -13,3 +13,9 @@ $composerAutoload = __DIR__ . '/../vendor/autoload.php';
 require_once($composerAutoload);
 require_once(__DIR__ . '/Templates/TestCase.php');
 require_once(__DIR__ . '/Templates/AppTest.php');
+require_once(__DIR__ . '/Templates/DatabaseTest.php');
+
+$models = glob(__DIR__ . '/sandbox/app/Modules/Test/Models/*.php');
+foreach ($models as $model) {
+    require_once($model);
+}

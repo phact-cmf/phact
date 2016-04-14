@@ -19,7 +19,15 @@ use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
 use Phact\Main\ComponentsLibrary;
+use Phact\Orm\ConnectionManager;
 
+/**
+ * Class Application
+ *
+ * @property \Phact\Orm\ConnectionManager $db Database connection.
+ *
+ * @package Phact\Application
+ */
 class Application
 {
     use ComponentsLibrary;
@@ -85,10 +93,10 @@ class Application
             throw new InvalidConfigException('Runtime path must be a valid and writable directory. Please, set up correct runtime path in "paths" section of configuration.');
         }
 
-        $modulesPath = Paths::get('modules');
+        $modulesPath = Paths::get('Modules');
         if (!$modulesPath) {
-            $modulesPath = Paths::get('base.modules');
-            Paths::add('modules', $modulesPath);
+            $modulesPath = Paths::get('base.Modules');
+            Paths::add('Modules', $modulesPath);
         }
         if (!is_dir($modulesPath)) {
             throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');

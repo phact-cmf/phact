@@ -9,15 +9,12 @@
  * @version 1.0
  * @company HashStudio
  * @site http://hashstudio.ru
- * @date 10/04/16 10:14
+ * @date 13/04/16 08:11
  */
 
-namespace Phact\Tests;
+namespace Phact\Orm\Fields;
 
-class ModelTest extends AppTest
+
+class CharField extends Field
 {
-    public function testSimple()
-    {
-        $this->assertTrue(true);
-    }
 }

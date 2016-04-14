@@ -9,7 +9,8 @@
       "Phact\\Application\\": "src/Phact/Application",
       "Phact\\Main\\": "src/Phact/Main",
       "Phact\\Exceptions\\": "src/Phact/Exceptions",
-      "Phact\\Helpers\\": "src/Phact/Helpers"
+      "Phact\\Helpers\\": "src/Phact/Helpers",
+      "Phact\\Orm\\": "src/Phact/Orm"
     }
   },
   "require": {
