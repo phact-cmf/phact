@@ -34,11 +34,30 @@ class Field
     /**
      * @var \Phact\Orm\Model
      */
-    public $model;
+    protected $_model;
 
     protected $_name;
 
     protected $_attribute;
+
+    public $null = false;
+
+    public $blank = false;
+
+    public function getBlankValue()
+    {
+        return '';
+    }
+
+    public function setModel($model)
+    {
+        $this->_model = $model;
+    }
+
+    public function getModel()
+    {
+        return $this->_model;
+    }
 
     public function setName($name)
     {
@@ -63,11 +82,29 @@ class Field
         return $this->name;
     }
 
+    /**
+     * Calls only in internal methods of Model
+     * such as:
+     *
+     * _beforeInsert()
+     * _afterInsert()
+     * _beforeUpdate()
+     * _afterUpdate()
+     * _beforeDelete()
+     * _afterDelete()
+     *
+     * @param $value
+     */
     public function setAttribute($value)
     {
         $this->_attribute = $value;
     }
 
+    /**
+     * Get raw attribute name
+     *
+     * @return mixed
+     */
     public function getAttribute()
     {
         return $this->_attribute;
@@ -78,15 +115,46 @@ class Field
         $this->_attribute = null;
     }
 
+    /**
+     * Get attribute prepared for model attributes
+     *
+     * @param null $aliasConfig
+     * @return mixed
+     */
     public function getValue($aliasConfig = null)
     {
         return $this->_attribute;
     }
 
+    /**
+     * Calls when Model::setAttribute() method called,
+     * include calls like:
+     *
+     * $model->{attribute_name} = $value;
+     *
+     * @param $value
+     * @return mixed
+     */
     public function setValue($value, $aliasConfig = null)
     {
         $this->_attribute = $value;
         return $this->_attribute;
+    }
+
+    /**
+     * Value for writing to database
+     */
+    public function getDbPreparedValue()
+    {
+        $value = $this->getAttribute();
+        if (is_null($value)) {
+            if ($this->null) {
+                return null;
+            } else {
+                return $this->getBlankValue();
+            }
+        }
+        return $value;
     }
 
     public function beforeInsert()
@@ -110,6 +178,14 @@ class Field
     }
 
     public function afterDelete()
+    {
+    }
+
+    public function beforeSave()
+    {
+    }
+
+    public function afterSave()
     {
     }
 }

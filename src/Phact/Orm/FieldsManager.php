@@ -22,9 +22,10 @@ use Phact\Orm\Fields\AutoField;
 class FieldsManager
 {
     protected $_fields = [];
-    protected $_dbFields = [];
+    protected $_attributes = [];
     protected $_virtualFields = [];
     protected $_pkField;
+    protected $_pkAttribute;
     protected $_aliases = [];
 
     public function __construct($fields, $metaData = [])
@@ -54,10 +55,46 @@ class FieldsManager
         $field->setName($name);
         $aliases = $field->getAliases();
         $this->mergeAliases($name, $aliases);
+        $attribute = $field->getAttributeName();
         if ($field->pk) {
             $this->_pkField = $name;
+            $this->_pkAttribute = $attribute;
+        }
+        if ($attribute) {
+            $this->_attributes[$name] = $attribute;
         }
         return $field;
+    }
+
+    public function getFieldsList()
+    {
+        return array_keys($this->_fields);
+    }
+
+    public function getAttributesList()
+    {
+        return $this->_attributes;
+    }
+
+    public function getAttributesListByFields($fields = [])
+    {
+        $attributes = [];
+        foreach ($fields as $fieldName) {
+            if (isset($this->_attributes[$fieldName])) {
+                $attributes[] = $this->_attributes[$fieldName];
+            }
+        }
+        return $attributes;
+    }
+
+    public function getPkField()
+    {
+        return $this->_pkField;
+    }
+
+    public function getPkAttribute()
+    {
+        return $this->_pkAttribute;
     }
 
     protected function mergeAliases($name, $aliases)
@@ -70,6 +107,9 @@ class FieldsManager
         }
     }
 
+    /**
+     * @return \Phact\Orm\Fields\Field[]
+     */
     public function getFields()
     {
         return $this->_fields;
@@ -92,6 +132,24 @@ class FieldsManager
         } else {
             throw new UnknownPropertyException(strtr("Getting unknown field: {field}", [
                 '{field}' => $name
+            ]));
+        }
+    }
+
+    /**
+     * @param $attribute
+     * @return \Phact\Orm\Fields\Field
+     * @throws UnknownPropertyException
+     */
+    public function getFieldByAttribute($attribute)
+    {
+        $attributes = array_reverse($this->_attributes);
+
+        if (isset($attributes[$attribute])) {
+            return $this->getField($attribute);
+        } else {
+            throw new UnknownPropertyException(strtr("Getting unknown field by attribute: {attribute}", [
+                '{attribute}' => $attribute
             ]));
         }
     }
