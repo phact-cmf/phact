@@ -15,14 +15,21 @@
 namespace Phact\Tests;
 
 use Modules\Test\Models\Note;
+use Modules\Test\Models\NoteThesis;
 
 class SaveTest extends DatabaseTest
 {
     public function testInsert()
     {
         $note = new Note();
-        $note->name = null;
-//        var_dump($note);die();
+        $note->name = "Test";
         $note->save();
+
+        $noteThesis = new NoteThesis();
+        $noteThesis->name = 'Test note thesis';
+        $noteThesis->note = $note;
+        $noteThesis->save();
+
+//        $this->assertInstanceOf(Note::class, $noteThesis->note);
     }
 }

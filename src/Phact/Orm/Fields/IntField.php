@@ -17,4 +17,18 @@ namespace Phact\Orm\Fields;
 
 class IntField extends Field
 {
+    public function getBlankValue()
+    {
+        return '';
+    }
+
+    public function getValue($aliasConfig = null)
+    {
+        return is_null($this->_attribute) ? null : (int)$this->_attribute;
+    }
+
+    public function _dbPrepareValue($value)
+    {
+        return (int) $value;
+    }
 }

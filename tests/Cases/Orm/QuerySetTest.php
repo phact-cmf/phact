@@ -20,7 +20,13 @@ use Phact\Orm\QuerySet;
 
 class QuerySetTest extends DatabaseTest
 {
-    public function testAll()
+    public function testInstances()
+    {
+        $this->assertInstanceOf(Manager::class, Note::objects());
+        $this->assertInstanceOf(QuerySet::class, Note::objects()->getQuerySet());
+    }
+
+    public function testCondition()
     {
         $this->assertInstanceOf(Manager::class, Note::objects());
         $this->assertInstanceOf(QuerySet::class, Note::objects()->getQuerySet());

@@ -9,13 +9,16 @@
  * @version 1.0
  * @company HashStudio
  * @site http://hashstudio.ru
- * @date 13/04/16 08:11
+ * @date 15/04/16 15:52
  */
 
-namespace Phact\Orm\Fields;
+namespace Phact\Orm;
 
 
-class AutoField extends IntField
+class Lookup
 {
-    public $pk = true;
+    public static function exact()
+    {
+        
+    }
 }

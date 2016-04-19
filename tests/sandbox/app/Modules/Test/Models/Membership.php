@@ -15,20 +15,25 @@
 namespace Modules\Test\Models;
 
 use Phact\Orm\Fields\CharField;
-use Phact\Orm\Fields\HasManyField;
+use Phact\Orm\Fields\ForeignField;
+use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Model;
 
-class Note extends Model
+class Membership extends Model
 {
     public static function getFields()
     {
         return [
-            'name' => [
+            'role' => [
                 'class' => CharField::class
             ],
-            'theses' => [
-                'class' => HasManyField::class,
-                'modelClass' => NoteThesis::class
+            'person' => [
+                'class' => ForeignField::class,
+                'modelClass' => Person::class
+            ],
+            'group' => [
+                'class' => ForeignField::class,
+                'modelClass' => Group::class
             ]
         ];
     }

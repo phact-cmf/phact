@@ -14,19 +14,50 @@
 
 namespace Phact\Orm\Fields;
 
-
 use Phact\Orm\Model;
 
+/**
+ * Class ForeignField
+ * 
+ * @property $to string Related model field
+ * @property $from string Current model field
+ *
+ * @package Phact\Orm\Fields
+ */
 class ForeignField extends Field
 {
-    public $to = 'id';
+    protected $_to = 'id';
+    protected $_from = null;
     public $modelClass;
 
-    public function getAttributeName()
+    public function getFrom()
     {
+        if ($this->_from) {
+            return $this->_from;
+        }
         $name = $this->getName();
         $to = $this->to;
         return "{$name}_{$to}";
+    }
+
+    public function setFrom($from)
+    {
+        $this->_from = $from;
+    }
+
+    public function getTo()
+    {
+        return $this->_to;
+    }
+
+    public function setTo($to)
+    {
+        $this->_to = $to;
+    }
+
+    public function getAttributeName()
+    {
+        return $this->getFrom();
     }
 
     public function getAliases()

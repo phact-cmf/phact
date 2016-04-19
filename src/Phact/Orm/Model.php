@@ -16,6 +16,7 @@ namespace Phact\Orm;
 
 use InvalidArgumentException;
 use Phact\Exceptions\UnknownMethodException;
+use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Main\Phact;
@@ -29,7 +30,7 @@ use Phact\Main\Phact;
  */
 class Model
 {
-    use SmartProperties;
+    use SmartProperties, ClassNames;
 
     static $_fieldsManager;
     static $_query;
@@ -48,7 +49,7 @@ class Model
         $class = get_called_class();
         $classParts = explode('\\', $class);
         $name = array_pop($classParts);
-        $moduleName = self::getModuleName();
+        $moduleName = static::getModuleName();
         $tableName = Text::camelCaseToUnderscores($name);
         if ($moduleName) {
             $tableName = Text::camelCaseToUnderscores($moduleName) . '_' . $tableName;
@@ -74,7 +75,7 @@ class Model
             $fieldsManager = $metaData['fieldsManager'];
             unset($metaData['fieldsManager']);
         }
-        static::$_fieldsManager = new $fieldsManager(static::getFields(), $metaData);
+        static::$_fieldsManager = new $fieldsManager(get_called_class(), static::getFields(), $metaData);
     }
 
     /**
@@ -109,6 +110,19 @@ class Model
     {
         $pkAttribute = $this->getPkAttribute();
         return isset($this->_dbAttributes[$pkAttribute]) ? $this->_dbAttributes[$pkAttribute] : null;
+    }
+
+    public function getField($name)
+    {
+        $manager = $this->getFieldsManager();
+        if ($manager->has($name)) {
+            $field = $manager->getField($name);
+            $attributeName = $field->getAttributeName();
+            $field->setModel($this);
+            $field->setAttribute($this->getAttribute($attributeName));
+            return $field;
+        }
+        return null;
     }
 
     /**
@@ -170,11 +184,6 @@ class Model
     public function clearAttributes()
     {
         $this->_attributes = [];
-    }
-
-    public static function className()
-    {
-        return get_called_class();
     }
 
     /**

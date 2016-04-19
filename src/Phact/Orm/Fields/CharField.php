@@ -17,4 +17,13 @@ namespace Phact\Orm\Fields;
 
 class CharField extends Field
 {
+    public function getValue($aliasConfig = null)
+    {
+        return !is_null($this->_attribute) ? (string)$this->_attribute : null;
+    }
+
+    public function _dbPrepareValue($value)
+    {
+        return (string)$value;
+    }
 }

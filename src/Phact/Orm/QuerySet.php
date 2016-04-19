@@ -15,6 +15,7 @@
 namespace Phact\Orm;
 
 
+use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 
 /**
@@ -34,6 +35,17 @@ class QuerySet
     public $model;
 
     protected $_queryLayer;
+
+    protected $_filter = [];
+    protected $_exclude = [];
+    protected $_order = [];
+
+    protected $_where = [];
+
+    public static function nextQuerySet($qs)
+    {
+        return $qs;
+    }
 
     public function getQueryLayer()
     {
@@ -72,5 +84,78 @@ class QuerySet
     {
         $row = $this->getQueryLayer()->get();
         return $row ? $this->createModel($row) : null;
+    }
+
+    public function filter($filter = [])
+    {
+        if (!is_array($filter)) {
+            throw new InvalidArgumentException('QuerySet::filter() accept only arrays');
+        }
+        if (!empty($filter)) {
+            $this->_filter[] = $filter;
+        }
+        return $this->nextQuerySet($this);
+    }
+
+    public function exclude($exclude = [])
+    {
+        if (!is_array($exclude)) {
+            throw new InvalidArgumentException('QuerySet::exclude() accept only arrays');
+        }
+        if (!empty($exclude)) {
+            $this->_exclude[] = $exclude;
+        }
+        return $this->nextQuerySet($this);
+    }
+
+    public function order($order = [])
+    {
+        if (is_string($order)) {
+            $order = [$order];
+        } elseif (!is_array($order)) {
+            throw new InvalidArgumentException('QuerySet::order() accept only arrays or strings');
+        }
+
+        $this->_order[] = $order;
+        return $this->nextQuerySet($this);
+    }
+
+    public function buildCondition($key, $value)
+    {
+        explode('__', $key);
+    }
+
+    public function buildConditions($data)
+    {
+        $conditions = [];
+        foreach ($data as $key => $condition) {
+            if (is_numeric($key)) {
+                if (is_array($condition)) {
+                    $conditions[] = $this->buildConditions($condition);
+                } else {
+                    throw new InvalidArgumentException("Condition is invalid. Please, check condition structure for methods QuerySet::filter() and QuerySet::exclude().");
+                }
+            } else {
+                $condition = $this->buildCondition($key, $condition);
+            }
+        }
+        return $conditions;
+    }
+
+    public function build()
+    {
+        $filter = null;
+        if ($this->_filter) {
+            $filter = $this->buildConditions($this->_filter);
+        }
+        $exclude = null;
+        if ($this->_exclude) {
+            $exclude = $this->buildConditions(Q::notQ($this->_exclude));
+        }
+        if (!$filter || !$exclude) {
+            $this->_where = $filter ? $filter : $exclude;
+        } else {
+            $this->_where = Q::andQ([$filter,$exclude]);
+        }
     }
 }

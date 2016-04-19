@@ -31,6 +31,8 @@ class Field
 
     public $pk = false;
 
+    protected $_ownerModelClass;
+
     /**
      * @var \Phact\Orm\Model
      */
@@ -47,6 +49,16 @@ class Field
     public function getBlankValue()
     {
         return '';
+    }
+
+    public function setOwnerModelClass($modelClass)
+    {
+        $this->_ownerModelClass = $modelClass;
+    }
+
+    public function getOwnerModelClass()
+    {
+        return $this->_ownerModelClass;
     }
 
     public function setModel($model)
@@ -154,7 +166,12 @@ class Field
                 return $this->getBlankValue();
             }
         }
-        return $value;
+        return $this->_dbPrepareValue($value);
+    }
+
+    public function getAdditionalFields()
+    {
+        return [];
     }
 
     public function beforeInsert()
@@ -187,5 +204,10 @@ class Field
 
     public function afterSave()
     {
+    }
+
+    protected function _dbPrepareValue($value)
+    {
+        return $value;
     }
 }

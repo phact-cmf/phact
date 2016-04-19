@@ -9,13 +9,12 @@
  * @version 1.0
  * @company HashStudio
  * @site http://hashstudio.ru
- * @date 13/04/16 08:11
+ * @date 15/04/16 13:56
  */
 
 namespace Phact\Orm\Fields;
 
 
-class AutoField extends IntField
+class TextField extends CharField
 {
-    public $pk = true;
 }

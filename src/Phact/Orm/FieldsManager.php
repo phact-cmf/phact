@@ -27,16 +27,29 @@ class FieldsManager
     protected $_pkField;
     protected $_pkAttribute;
     protected $_aliases = [];
+    protected $_className;
 
-    public function __construct($fields, $metaData = [])
+    public function __construct($modelClass, $fields, $metaData = [])
     {
+        $this->_modelClass = $modelClass;
         $this->initFields($fields);
+    }
+
+    public function getModelClass()
+    {
+        return $this->_modelClass;
     }
 
     protected function initFields($fields)
     {
         foreach ($fields as $name => $config) {
-            $this->_fields[$name] = $this->initField($name, $config);
+            $field = $this->initField($name, $config);
+            if ($additionalFields = $field->getAdditionalFields()) {
+                foreach ($additionalFields as $additionalName => $additionalConfig) {
+                    $this->_fields[$additionalName] = $this->initField($additionalName, $additionalConfig);
+                }
+            }
+            $this->_fields[$name] = $field;
         }
         if (!$this->_pkField && !$this->has('id')) {
             $autoField = $this->initField('id', [
@@ -53,6 +66,7 @@ class FieldsManager
         /* @var $field \Phact\Orm\Fields\Field */
         $field = Configurator::create($config);
         $field->setName($name);
+        $field->setOwnerModelClass($this->getModelClass());
         $aliases = $field->getAliases();
         $this->mergeAliases($name, $aliases);
         $attribute = $field->getAttributeName();
@@ -63,6 +77,7 @@ class FieldsManager
         if ($attribute) {
             $this->_attributes[$name] = $attribute;
         }
+
         return $field;
     }
 
@@ -143,7 +158,7 @@ class FieldsManager
      */
     public function getFieldByAttribute($attribute)
     {
-        $attributes = array_reverse($this->_attributes);
+        $attributes = array_flip($this->_attributes);
 
         if (isset($attributes[$attribute])) {
             return $this->getField($attribute);
