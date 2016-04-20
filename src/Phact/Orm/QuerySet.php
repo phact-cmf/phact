@@ -14,9 +14,10 @@
 
 namespace Phact\Orm;
 
-
 use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
+use Phact\Orm\Fields\ManyToManyField;
+use Phact\Orm\Fields\RelationField;
 
 /**
  * Class QuerySet
@@ -41,6 +42,8 @@ class QuerySet
     protected $_order = [];
 
     protected $_where = [];
+
+    protected $_relations = [];
 
     public static function nextQuerySet($qs)
     {
@@ -120,15 +123,132 @@ class QuerySet
         return $this->nextQuerySet($this);
     }
 
+    public function appendRelation($name, $model, $joins = [])
+    {
+        $name = $this->stringRelationPath($name);
+        $this->_relations[$name] = [
+            'model' => $model,
+            'joins' => $joins
+        ];
+    }
+
+    public function searchRelation($name)
+    {
+        $path = $this->arrayRelationPath($name);
+
+        $foundName = [];
+        $searchName = [];
+        $nextName = [];
+
+        $model = $this->model;
+
+        foreach ($path as $part) {
+            $searchName[] = $part;
+            $searchRelation = implode('__', $searchName);
+            if ($this->hasRelation($searchRelation)) {
+                $foundName[] = $part;
+                $relation = $this->getRelation($searchRelation);
+                $model = $relation['model'];
+            } else {
+                $nextName[] = $part;
+            }
+        }
+
+        return [$model, $nextName, $foundName];
+    }
+
+    public function connectRelation($name)
+    {
+        /* @var $model Model */
+        list($model, $path, $found) = $this->searchRelation($name);
+        $full = $found;
+
+        foreach ($path as $relationName) {
+            $full[] = $relationName;
+            /* @var $field \Phact\Orm\Fields|RelationField */
+            if (($field = $model->getField($relationName)) && is_a($field, RelationField::class)) {
+                if (is_a($field, ManyToManyField::class) && ($throughName = $field->getThroughName())) {
+                    $throughRelationPath = $this->siblingRelationPath($full, $throughName);
+                    if (!$this->hasRelation($throughRelationPath)) {
+                        $this->connectRelation($throughRelationPath);
+                    }
+                }
+                $this->appendRelation($full, $field->getRelationModel(), $field->getRelationJoins());
+            } else {
+                throw new InvalidArgumentException("Invalid relation name. Please, check relations in your conditions.");
+            }
+        }
+    }
+
+    public function hasRelation($name)
+    {
+        $name = $this->stringRelationPath($name);
+        return isset($this->_relations[$name]);
+    }
+
+    public function getRelation($name)
+    {
+        if (!$this->hasRelation($name)) {
+            $this->connectRelation($name);
+        }
+        return $this->_relations[$name];
+    }
+
+    public function stringRelationPath($path)
+    {
+        if (is_array($path)) {
+            $path = implode('__', $path);
+        }
+        return $path;
+    }
+
+    public function arrayRelationPath($path)
+    {
+        if (is_string($path)) {
+            $path = explode('__', $path);
+        }
+        return $path;
+    }
+
+    public function siblingRelationPath($path, $name)
+    {
+        $path = $this->arrayRelationPath($path);
+        array_pop($path);
+        return array_merge($path, [$name]);
+    }
+
     public function buildCondition($key, $value)
     {
-        explode('__', $key);
+        $info = explode('__', $key);
+        $field = array_pop($info);
+        $lookup = Lookup::$defaultLookup;
+        if (in_array($field, Lookup::map())) {
+            $lookup = $field;
+            $field = array_pop($info);
+        }
+        $relationName = implode('__', $info);
+        if ($relationName) {
+            $this->getRelation($relationName);
+        } else {
+            $relationName = '__this';
+        }
+        $condition = [
+            'relation' => $relationName,
+            'field' => $field,
+            'lookup' => $lookup,
+            'value' => $value
+        ];
+
+        return $condition;
     }
 
     public function buildConditions($data)
     {
         $conditions = [];
         foreach ($data as $key => $condition) {
+            if ($key == 0 && in_array($condition, ['not', 'and', 'or'])) {
+                $conditions[] = $condition;
+            }
             if (is_numeric($key)) {
                 if (is_array($condition)) {
                     $conditions[] = $this->buildConditions($condition);
@@ -136,7 +256,7 @@ class QuerySet
                     throw new InvalidArgumentException("Condition is invalid. Please, check condition structure for methods QuerySet::filter() and QuerySet::exclude().");
                 }
             } else {
-                $condition = $this->buildCondition($key, $condition);
+                $conditions[] = $this->buildCondition($key, $condition);
             }
         }
         return $conditions;

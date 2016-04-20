@@ -17,8 +17,23 @@ namespace Phact\Orm;
 
 class Lookup
 {
-    public static function exact()
+    public static $defaultLookup = 'exact';
+    
+    public static function map()
     {
-        
+        return [
+            'exact',
+            'contains',
+            'in',
+            'gt',
+            'gte',
+            'lt',
+            'lte',
+            'startswith',
+            'endswith',
+            'range',
+            'isnull',
+            'regex'
+        ];
     }
 }

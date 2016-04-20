@@ -49,7 +49,7 @@ class Configurator
         foreach ($properties as $name => $value) {
             $object->$name = $value;
         }
-
+        
         return $object;
     }
 }

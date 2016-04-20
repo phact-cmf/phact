@@ -22,13 +22,11 @@ namespace Phact\Orm\Fields;
  *
  * @package Phact\Orm\Fields
  */
-class HasManyField extends Field
+class HasManyField extends RelationField
 {
     protected $_to = null;
     protected $_from = 'id';
     protected $_throughFor;
-
-    public $modelClass;
 
     public function setThroughFor($throughFor)
     {
@@ -69,5 +67,10 @@ class HasManyField extends Field
     public function getAttributeName()
     {
        return null;
+    }
+
+    public function getRelationJoins()
+    {
+        return [];
     }
 }

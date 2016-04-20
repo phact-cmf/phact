@@ -28,7 +28,7 @@ class QuerySetTest extends DatabaseTest
 
     public function testCondition()
     {
-        $this->assertInstanceOf(Manager::class, Note::objects());
-        $this->assertInstanceOf(QuerySet::class, Note::objects()->getQuerySet());
+        $qs = Note::objects()->getQuerySet();
+        $qs->filter(['name' => 'Test', 'id__gte' => 10, 'theses__id__lte' => 5]);
     }
 }

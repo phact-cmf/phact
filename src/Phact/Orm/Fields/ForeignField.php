@@ -24,11 +24,10 @@ use Phact\Orm\Model;
  *
  * @package Phact\Orm\Fields
  */
-class ForeignField extends Field
+class ForeignField extends RelationField
 {
     protected $_to = 'id';
     protected $_from = null;
-    public $modelClass;
 
     public function getFrom()
     {
@@ -97,5 +96,17 @@ class ForeignField extends Field
         $value = $this->_attribute;
         $class = $this->modelClass;
         return new Model();
+    }
+
+    public function getRelationJoins()
+    {
+        $relationModelClass = $this->modelClass;
+        return [
+            [
+                'table' => $relationModelClass::getTableName(),
+                'from' => $this->getFrom(),
+                'to' => $this->getTo()
+            ]
+        ];
     }
 }

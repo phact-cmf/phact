@@ -22,7 +22,7 @@ namespace Phact\Orm\Fields;
  *
  * @package Phact\Orm\Fields
  */
-class ManyToManyField extends Field
+class ManyToManyField extends RelationField
 {
     /**
      * Related model field
@@ -44,8 +44,6 @@ class ManyToManyField extends Field
     protected $_throughName;
 
     protected $_throughModel;
-
-    public $modelClass;
 
     public $reverse = false;
 
@@ -160,5 +158,10 @@ class ManyToManyField extends Field
     public function getAttributeName()
     {
        return null;
+    }
+
+    public function getRelationJoins()
+    {
+        return [];
     }
 }
