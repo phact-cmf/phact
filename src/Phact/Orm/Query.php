@@ -20,6 +20,7 @@ use Phact\Main\Phact;
 class Query
 {
     protected $_connectionName = 'default';
+    protected $_adapter;
 
     public function setConnectionName($connectionName)
     {
@@ -31,11 +32,35 @@ class Query
         return $this->_connectionName;
     }
 
-    public function getQueryBuilder()
+    public function getConnection()
     {
         $connectionName = $this->getConnectionName();
-        $connection = Phact::app()->db->getConnection($connectionName);
-        return $connection->getQueryBuilder();
+        return Phact::app()->db->getConnection($connectionName);
+    }
+
+    public function getQueryConnection()
+    {
+        return $this->getConnection()->getQueryConnection();
+    }
+
+    /**
+     * @return \Pixie\QueryBuilder\Adapters\BaseAdapter
+     */
+    public function getAdapter()
+    {
+        if (!$this->_adapter) {
+            $queryConnection = $this->getQueryConnection();
+            $adapter = $queryConnection->getAdapter();
+            $adapterClass = '\\Pixie\\QueryBuilder\\Adapters\\' . ucfirst($adapter);
+            $this->_adapter = new $adapterClass($queryConnection);
+        }
+        return $this->_adapter;
+    }
+
+    public function getQueryBuilder()
+    {
+
+        return $this->getConnection()->getQueryBuilder();
     }
 
     public function insert($tableName, $data)

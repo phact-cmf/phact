@@ -162,6 +162,30 @@ class ManyToManyField extends RelationField
 
     public function getRelationJoins()
     {
-        return [];
+        $relationModelClass = $this->modelClass;
+        if ($throughName = $this->getThroughName()) {
+            return [
+                $throughName,
+                [
+                    'table' => $relationModelClass::getTableName(),
+                    'from' => $this->getThroughTo(),
+                    'to' => $this->getTo()
+                ]
+            ];
+        } else {
+            return [
+                [
+                    'table' => $this->getThroughTableName(),
+                    'from' => $this->getFrom(),
+                    'to' => $this->getThroughFrom()
+                ],
+                [
+                    'table' => $relationModelClass::getTableName(),
+                    'from' => $this->getThroughTo(),
+                    'to' => $this->getTo()
+                ]
+            ];
+        }
+
     }
 }

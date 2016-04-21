@@ -14,13 +14,15 @@
 
 namespace Phact\Orm;
 
+use Exception;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 
 /**
  * Class QueryLayer
  *
- * @property $model Model
+ * @property $model \Phact\Orm\Model
+ * @property $querySet \Phact\Orm\QuerySet
  *
  * @package Phact\Orm
  */
@@ -33,8 +35,23 @@ class QueryLayer
     /**
      * @var \Phact\Orm\QuerySet
      */
-    public $querySet;
+    protected $_querySet;
 
+    protected $_aliases;
+
+    public function __construct($querySet)
+    {
+        $this->_querySet = $querySet;
+        $this->setAliases();
+    }
+
+    /**
+     * @return \Phact\Orm\QuerySet
+     */
+    public function getQuerySet()
+    {
+        return $this->_querySet;
+    }
 
     /**
      * @return \Phact\Orm\Query
@@ -70,10 +87,152 @@ class QueryLayer
         return $this->getQuery()->getQueryBuilder();
     }
 
+    public function getQueryAdapter()
+    {
+        return $this->getQuery()->getAdapter();
+    }
+
+    public function sanitize($value)
+    {
+        return $this->getQueryAdapter()->wrapSanitizer($value);
+    }
+
+    public function setAliases()
+    {
+        $this->_aliases = [];
+        $tables = [$this->getTableName() => '__this'];
+        $relations = $this->querySet->getRelations();
+        foreach ($relations as $relationName => $relation) {
+            if (isset($relation['joins']) && is_array($relation['joins'])) {
+                foreach ($relation['joins'] as $join) {
+                    if (is_array($join) && isset($join['table'])) {
+                        $tableName = $join['table'];
+                        if (isset($tables[$tableName])) {
+                            $this->setAlias($relationName, $tableName);
+                        } else {
+                            $tables[$join['table']] = $relationName;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public function getAliases()
+    {
+        return $this->_aliases;
+    }
+
+    public function setAlias($relationName, $tableName)
+    {
+        $this->_aliases[$relationName . '#' . $tableName] = $tableName . '_' . (count($this->_aliases) + 1);
+    }
+
+    public function getAlias($relationName, $tableName)
+    {
+        if (isset($this->_aliases[$relationName . '#' . $tableName])) {
+            return $this->_aliases[$relationName . '#' . $tableName];
+        }
+        return null;
+    }
+
+    public function getTableOrAlias($relationName, $tableName)
+    {
+        if ($alias = $this->getAlias($relationName, $tableName)) {
+            return $alias;
+        }
+        return $tableName;
+    }
+
+    public function getRelationModel($relationName)
+    {
+        if ($relationName) {
+            $relation = $this->getQuerySet()->getRelation($relationName);
+            /** @var $model Model */
+            return isset($relation['model']) ? $relation['model'] : null;
+        } else {
+            return $this->getModel();
+        }
+    }
+
+    public function getRelationTable($relationName)
+    {
+        $model = $this->getRelationModel($relationName);
+        return $model->getTableName();
+    }
+
+    public function columnAlias($relationName, $attribute, $tableName = null)
+    {
+        $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
+        return $this->column($tableName, $attribute);
+    }
+
+    public function column($tableName, $attribute)
+    {
+        return $tableName . '.' . $attribute;
+    }
+
+    /**
+     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @return \Pixie\QueryBuilder\QueryBuilderHandler
+     * @throws Exception
+     */
+    public function processJoins($query)
+    {
+        $relations = $this->querySet->getRelations();
+        foreach ($relations as $relationName => $relation) {
+            // A relation and a table on which a join is to be build
+            $currentRelationName = $this->querySet->parentRelationName($relationName);
+            $currentTable = $this->getRelationTable($currentRelationName);
+
+            if (isset($relation['joins']) && is_array($relation['joins'])) {
+                foreach ($relation['joins'] as $join) {
+                    if (is_array($join)) {
+                        if (isset($join['table']) && isset($join['from']) && isset($join['to'])) {
+                            $attributeFrom = $join['from'];
+                            $attributeTo = $join['to'];
+
+                            $tableName = $join['table'];
+                            $connectTable = $tableName;
+
+                            if ($alias = $this->getAlias($relationName, $tableName)) {
+                                $aliasedTable = $query->addTablePrefix($tableName);
+                                $connectTable = $this->sanitize($aliasedTable) . ' AS ' . $this->sanitize($alias);
+                                $connectTable = $query->raw($connectTable);
+                            }
+
+                            $query->join(
+                                $connectTable,
+                                $this->columnAlias($currentRelationName, $attributeFrom, $currentTable),
+                                '=',
+                                $this->column($alias ?: $tableName, $attributeTo),
+                                isset($join['type']) ? $join['type'] : 'inner'
+                            );
+
+                            // We change the current join
+                            $currentTable = $tableName;
+                            $currentRelationName = $relationName;
+                        } else {
+                            throw new Exception('Invalid join configuration. Please, check your relation fields.');
+                        }
+                    }
+                }
+            }
+        }
+        return $query;
+    }
+
     public function all()
     {
         $qb = $this->getQueryBuilder();
         $query = $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
+        $qs = $this->getQuerySet();
+        if ($select = $qs->getSelect()) {
+
+        } else {
+            $query->select($this->column($this->getTableName(), '*'));
+        }
+        $query = $this->processJoins($query);
         $result = $query->get();
         return $result;
     }

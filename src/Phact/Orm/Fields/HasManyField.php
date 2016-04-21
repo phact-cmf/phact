@@ -71,6 +71,13 @@ class HasManyField extends RelationField
 
     public function getRelationJoins()
     {
-        return [];
+        $relationModelClass = $this->modelClass;
+        return [
+            [
+                'table' => $relationModelClass::getTableName(),
+                'from' => $this->getFrom(),
+                'to' => $this->getTo()
+            ]
+        ];
     }
 }

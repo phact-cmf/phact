@@ -41,22 +41,21 @@ class QuerySet
     protected $_exclude = [];
     protected $_order = [];
 
+    protected $_select;
     protected $_where = [];
-
     protected $_relations = [];
 
-    public static function nextQuerySet($qs)
+    /**
+     * @return mixed QuerySet
+     */
+    protected function nextQuerySet()
     {
-        return $qs;
+        return $this;
     }
 
     public function getQueryLayer()
     {
-        if (is_null($this->_queryLayer)) {
-            $this->_queryLayer = new QueryLayer();
-        }
-        $this->_queryLayer->querySet = $this;
-        return $this->_queryLayer;
+        return new QueryLayer($this->nextQuerySet()->build());
     }
 
     public function createModel($row)
@@ -97,7 +96,7 @@ class QuerySet
         if (!empty($filter)) {
             $this->_filter[] = $filter;
         }
-        return $this->nextQuerySet($this);
+        return $this->nextQuerySet();
     }
 
     public function exclude($exclude = [])
@@ -108,7 +107,7 @@ class QuerySet
         if (!empty($exclude)) {
             $this->_exclude[] = $exclude;
         }
-        return $this->nextQuerySet($this);
+        return $this->nextQuerySet();
     }
 
     public function order($order = [])
@@ -120,7 +119,7 @@ class QuerySet
         }
 
         $this->_order[] = $order;
-        return $this->nextQuerySet($this);
+        return $this->nextQuerySet();
     }
 
     public function appendRelation($name, $model, $joins = [])
@@ -217,6 +216,13 @@ class QuerySet
         return array_merge($path, [$name]);
     }
 
+    public function parentRelationName($path)
+    {
+        $path = $this->arrayRelationPath($path);
+        array_pop($path);
+        return $this->stringRelationPath($path);
+    }
+
     public function buildCondition($key, $value)
     {
         $info = explode('__', $key);
@@ -277,5 +283,21 @@ class QuerySet
         } else {
             $this->_where = Q::andQ([$filter,$exclude]);
         }
+        return $this;
+    }
+
+    public function getSelect()
+    {
+        return $this->_select;
+    }
+
+    public function getWhere()
+    {
+        return $this->_where;
+    }
+
+    public function getRelations()
+    {
+        return $this->_relations;
     }
 }
