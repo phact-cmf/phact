@@ -241,7 +241,6 @@ class QueryLayer
         }
 
         $query = $this->processJoins($query);
-        var_dump($query->getQuery()->getSql());
         $result = $query->get();
         return $result;
     }
