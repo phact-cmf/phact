@@ -80,4 +80,9 @@ class HasManyField extends RelationField
             ]
         ];
     }
+
+    public function getIsMany()
+    {
+        return true;
+    }
 }

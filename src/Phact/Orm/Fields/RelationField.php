@@ -35,4 +35,9 @@ abstract class RelationField extends Field
         $class = $this->modelClass;
         return new $class();
     }
+
+    public function getIsMany()
+    {
+        return false;
+    }
 }

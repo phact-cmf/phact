@@ -179,10 +179,10 @@ class QueryLayer
      */
     public function processJoins($query)
     {
-        $relations = $this->querySet->getRelations();
+        $relations = $this->getQuerySet()->getRelations();
         foreach ($relations as $relationName => $relation) {
             // A relation and a table on which a join is to be build
-            $currentRelationName = $this->querySet->parentRelationName($relationName);
+            $currentRelationName = $this->getQuerySet()->parentRelationName($relationName);
             $currentTable = $this->getRelationTable($currentRelationName);
 
             if (isset($relation['joins']) && is_array($relation['joins'])) {
@@ -215,6 +215,11 @@ class QueryLayer
                         } else {
                             throw new Exception('Invalid join configuration. Please, check your relation fields.');
                         }
+                    } elseif (is_string($join) && ($joinRelation = $this->getQuerySet()->getRelation($join))) {
+                        /* @var $model Model */
+                        $model = $joinRelation['model'];
+                        $currentRelationName = $join;
+                        $currentTable = $model->getTableName();
                     }
                 }
             }
@@ -227,12 +232,16 @@ class QueryLayer
         $qb = $this->getQueryBuilder();
         $query = $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
         $qs = $this->getQuerySet();
-        if ($select = $qs->getSelect()) {
 
+        $select = $this->column($this->getTableName(), '*');
+        if ($qs->getHasManyRelations()) {
+            $query->selectDistinct($select);
         } else {
-            $query->select($this->column($this->getTableName(), '*'));
+            $query->select($select);
         }
+
         $query = $this->processJoins($query);
+        var_dump($query->getQuery()->getSql());
         $result = $query->get();
         return $result;
     }

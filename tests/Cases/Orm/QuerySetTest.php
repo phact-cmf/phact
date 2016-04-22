@@ -16,6 +16,7 @@ namespace Phact\Tests;
 
 use Modules\Test\Models\Area;
 use Modules\Test\Models\Author;
+use Modules\Test\Models\Group;
 use Modules\Test\Models\Note;
 use Phact\Orm\Manager;
 use Phact\Orm\QuerySet;
@@ -34,19 +35,21 @@ class QuerySetTest extends DatabaseTest
         $qs->filter(['name' => 'Test', 'id__gte' => 10, 'theses__id__lte' => 5]);
     }
 
-    public function testAliases()
+    public function testBuildRelations()
     {
         $qs = Area::objects()->getQuerySet();
         $qs->filter(['parent__id' => 1]);
-        $qs->all();
+        $qs->build();
+        $this->assertEquals(['parent'], array_keys($qs->getRelations()));
 
-        $ql = $qs->getQueryLayer();
-        $this->assertEquals([
-            'parent#test_area' => "test_area_1"
-        ], $ql->getAliases());
-//
-//        $qs = Author::objects()->getQuerySet();
-//        $qs->filter(['books__id__in' => [1,2,3]]);
-//        var_dump($qs->all());
+        $qs = Author::objects()->getQuerySet();
+        $qs->filter(['books__id__in' => [1,2,3]]);
+        $qs->build();
+        $this->assertEquals(['books'], array_keys($qs->getRelations()));
+
+        $qs = Group::objects()->getQuerySet();
+        $qs->filter(['persons__id__in' => [1,2,3], 'membership__id__gte' => 1]);
+        $qs->build();
+        $this->assertEquals(['membership', 'persons'], array_keys($qs->getRelations()));
     }
 }

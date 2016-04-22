@@ -44,6 +44,7 @@ class QuerySet
     protected $_select;
     protected $_where = [];
     protected $_relations = [];
+    protected $_hasManyRelations = false;
 
     /**
      * @return mixed QuerySet
@@ -88,6 +89,10 @@ class QuerySet
         return $row ? $this->createModel($row) : null;
     }
 
+    /**
+     * @param array $filter
+     * @return QuerySet
+     */
     public function filter($filter = [])
     {
         if (!is_array($filter)) {
@@ -156,6 +161,11 @@ class QuerySet
         return [$model, $nextName, $foundName];
     }
 
+    public function getHasManyRelations()
+    {
+        return $this->_hasManyRelations;
+    }
+
     public function connectRelation($name)
     {
         /* @var $model Model */
@@ -171,6 +181,9 @@ class QuerySet
                     if (!$this->hasRelation($throughRelationPath)) {
                         $this->connectRelation($throughRelationPath);
                     }
+                }
+                if ($field->getIsMany()) {
+                    $this->_hasManyRelations = $field->getIsMany();
                 }
                 $this->appendRelation($full, $field->getRelationModel(), $field->getRelationJoins());
             } else {

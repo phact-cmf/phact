@@ -186,6 +186,10 @@ class ManyToManyField extends RelationField
                 ]
             ];
         }
+    }
 
+    public function getIsMany()
+    {
+        return true;
     }
 }
