@@ -15,8 +15,11 @@
 namespace Phact\Orm;
 
 use Exception;
+use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
+use Pixie\QueryBuilder\QueryBuilderHandler;
+use Pixie\QueryBuilder\Raw;
 
 /**
  * Class QueryLayer
@@ -144,21 +147,27 @@ class QueryLayer
         return $tableName;
     }
 
+    /**
+     * @param $relationName
+     * @return Model
+     */
     public function getRelationModel($relationName)
     {
-        if ($relationName) {
-            $relation = $this->getQuerySet()->getRelation($relationName);
-            /** @var $model Model */
-            return isset($relation['model']) ? $relation['model'] : null;
-        } else {
-            return $this->getModel();
-        }
+        $relation = $this->getQuerySet()->getRelation($relationName);
+        /** @var $model Model */
+        return isset($relation['model']) ? $relation['model'] : null;
     }
 
     public function getRelationTable($relationName)
     {
         $model = $this->getRelationModel($relationName);
         return $model->getTableName();
+    }
+
+    public function relationColumnAlias($column)
+    {
+        list($relationName, $attribute) = $this->getQuerySet()->getRelationColumn($column);
+        return $this->columnAlias($relationName, $attribute);
     }
 
     public function columnAlias($relationName, $attribute, $tableName = null)
@@ -227,7 +236,7 @@ class QueryLayer
         return $query;
     }
 
-    public function all()
+    public function all($sql = false)
     {
         $qb = $this->getQueryBuilder();
         $query = $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
@@ -241,15 +250,120 @@ class QueryLayer
         }
 
         $query = $this->processJoins($query);
+        $this->buildConditions($query, $qs->getWhere(), 'and', true);
+        $this->buildOrder($query, $qs->getOrderBy());
+        if ($sql) {
+            return $query->getQuery()->getRawSql();
+        }
         $result = $query->get();
         return $result;
     }
 
-    public function get()
+    public function get($sql = false)
     {
         $qb = $this->getQueryBuilder();
         $query = $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
         $result = $query->first();
         return $result;
+    }
+
+    public function clearConditions($conditions)
+    {
+        if (is_array($conditions) && count($conditions) == 1) {
+            $conditions = array_shift($conditions);
+            return $this->clearConditions($conditions);
+        } else {
+            return $conditions;
+        }
+    }
+
+    /**
+     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $conditions
+     * @param string $operator
+     * @param bool $clear
+     */
+    public function buildConditions($query, $conditions, $operator = 'and', $clear = false)
+    {
+        if ($clear) {
+            $conditions = $this->clearConditions($conditions);
+        }
+        if (!is_array($conditions) || isset($conditions['relation'])) {
+            $conditions = [$conditions];
+        }
+        foreach ($conditions as $key => $condition) {
+            if (is_array($condition) && isset($condition['relation'])) {
+                $lookupManager = $this->getQuerySet()->getLookupManager();
+                $column = $this->columnAlias($condition['relation'], $condition['field']);
+                $value = $condition['value'];
+                if ($value instanceof Expression) {
+                    $value = $this->convertExpression($value);
+                }
+                $lookupManager->processCondition($query, $column, $condition['lookup'], $value, $operator);
+            } elseif ($condition instanceof Expression) {
+                $expression = $this->convertExpression($condition);
+                $method = 'where';
+                if ($operator == 'or') {
+                    $method = 'orWhere';
+                }
+                $query->{$method}($expression);
+            } elseif (is_array($condition)) {
+                $nextOperator = 'and';
+                if (isset($condition[0]) && in_array($condition[0], ['not', 'and', 'or'])) {
+                    $nextOperator = array_shift($condition);
+                }
+                $method = 'where';
+                if ($nextOperator == 'not') {
+                    $nextOperator = 'and';
+                    if ($operator == 'and') {
+                        $method = 'whereNot';
+                    } else {
+                        $method = 'orWhereNot';
+                    }
+                } else {
+                    if ($operator == 'and') {
+                        $method = 'where';
+                    } else {
+                        $method = 'orWhere';
+                    }
+                }
+                $query->{$method}(function($q) use ($condition, $nextOperator) {
+                    $this->buildConditions($q, $condition, $nextOperator);
+                });
+            }
+        }
+    }
+
+    /**
+     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $order array
+     * @return array
+     */
+    public function buildOrder($query, $order)
+    {
+        $builtOrder = [];
+        foreach ($order as $item) {
+            if ($item instanceof Expression) {
+                $value = $this->convertExpression($item);
+                $query->orderBy($value);
+            } elseif (is_array($item)) {
+                $column = $this->columnAlias($item['relation'], $item['field']);
+                $query->orderBy($column, $item['direction']);
+            }
+        }
+    }
+
+    public function convertExpression(Expression $expression)
+    {
+        $value = $expression->getExpression();
+        if ($expression->getUseAliases() && ($aliases = $expression->getAliases())) {
+            $replaces = [];
+            foreach ($aliases as $relationColumn) {
+                $column = $this->relationColumnAlias($relationColumn);
+                $replaces['{' . $relationColumn . '}'] = $this->sanitize($column);
+            }
+            $value = strtr($value, $replaces);
+        }
+        return new Raw($value, $expression->getParams());
     }
 }

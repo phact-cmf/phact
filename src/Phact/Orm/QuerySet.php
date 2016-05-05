@@ -23,6 +23,7 @@ use Phact\Orm\Fields\RelationField;
  * Class QuerySet
  *
  * @property $queryLayer QueryLayer
+ * @property $model Model
  *
  * @package Phact\Orm
  */
@@ -33,15 +34,40 @@ class QuerySet
     /**
      * @var Model
      */
-    public $model;
+    protected $_model;
 
     protected $_queryLayer;
+    protected $_lookupManager;
 
+    /**
+     * Raw filter
+     * @var array
+     */
     protected $_filter = [];
+    /**
+     * Raw exclude
+     * @var array
+     */
     protected $_exclude = [];
+
+    /**
+     * Raw order
+     * @var array
+     */
     protected $_order = [];
 
+    /**
+     * Built order
+     * @var array
+     */
+    protected $_orderBy = [];
+
     protected $_select;
+
+    /**
+     * Built filter and exclude
+     * @var array
+     */
     protected $_where = [];
     protected $_relations = [];
     protected $_hasManyRelations = false;
@@ -54,9 +80,35 @@ class QuerySet
         return $this;
     }
 
+    public function getModel()
+    {
+        return $this->_model;
+    }
+
+    public function setModel(Model $model)
+    {
+        $this->_model = $model;
+    }
+
     public function getQueryLayer()
     {
         return new QueryLayer($this->nextQuerySet()->build());
+    }
+
+    /**
+     * @return LookupManager
+     */
+    public function getLookupManager()
+    {
+        if (!$this->_lookupManager) {
+            $this->_lookupManager = new LookupManager();
+        }
+        return $this->_lookupManager;
+    }
+
+    public function setLookupManager($lookup)
+    {
+        $this->_lookup = $lookup;
     }
 
     public function createModel($row)
@@ -77,15 +129,21 @@ class QuerySet
         return $result;
     }
 
-    public function all()
+    public function all($sql = false)
     {
-        $data = $this->getQueryLayer()->all();
+        $data = $this->getQueryLayer()->all($sql);
+        if ($sql) {
+            return $data;
+        }
         return $this->createModels($data);
     }
 
-    public function get()
+    public function get($sql = false)
     {
-        $row = $this->getQueryLayer()->get();
+        $row = $this->getQueryLayer()->get($sql);
+        if ($sql) {
+            return $sql;
+        }
         return $row ? $this->createModel($row) : null;
     }
 
@@ -115,6 +173,21 @@ class QuerySet
         return $this->nextQuerySet();
     }
 
+    public function getOrder()
+    {
+        return $this->_order;
+    }
+
+    public function setOrder($order = [])
+    {
+        $this->_order = $order;
+    }
+
+    public function getOrderBy()
+    {
+        return $this->_orderBy;
+    }
+
     public function order($order = [])
     {
         if (is_string($order)) {
@@ -122,8 +195,7 @@ class QuerySet
         } elseif (!is_array($order)) {
             throw new InvalidArgumentException('QuerySet::order() accept only arrays or strings');
         }
-
-        $this->_order[] = $order;
+        $this->_order = array_merge($this->_order, $order);
         return $this->nextQuerySet();
     }
 
@@ -200,6 +272,11 @@ class QuerySet
 
     public function getRelation($name)
     {
+        if (!$name || $name == '__this') {
+            return [
+                'model' => $this->getModel()
+            ];
+        }
         if (!$this->hasRelation($name)) {
             $this->connectRelation($name);
         }
@@ -240,25 +317,43 @@ class QuerySet
     {
         $info = explode('__', $key);
         $field = array_pop($info);
-        $lookup = Lookup::$defaultLookup;
-        if (in_array($field, Lookup::map())) {
+
+        $lookupManager = $this->getLookupManager();
+        $lookup = $lookupManager::$defaultLookup;
+        if (in_array($field, $lookupManager->map())) {
             $lookup = $field;
             $field = array_pop($info);
         }
-        $relationName = implode('__', $info);
-        if ($relationName) {
-            $this->getRelation($relationName);
+
+        $relation = implode('__', $info);
+        if ($relation) {
+            $this->getRelation($relation);
         } else {
+            $relation = '__this';
+        }
+        if ($value instanceof Expression) {
+            $value = $this->handleExpression($value);
+        }
+        return compact('relation', 'field', 'lookup', 'value');
+    }
+
+    public function getRelationColumn($column)
+    {
+        $info = explode('__', $column);
+
+        $field = array_pop($info);
+        $relationName = implode('__', $info);
+        if (!$relationName) {
             $relationName = '__this';
         }
-        $condition = [
-            'relation' => $relationName,
-            'field' => $field,
-            'lookup' => $lookup,
-            'value' => $value
-        ];
+        return [$relationName, $field];
+    }
 
-        return $condition;
+    public function handleRelationColumn($column)
+    {
+        list($relationName, $field) = $this->getRelationColumn($column);
+        $this->getRelation($relationName);
+        return [$relationName, $field];
     }
 
     public function buildConditions($data)
@@ -267,10 +362,11 @@ class QuerySet
         foreach ($data as $key => $condition) {
             if ($key == 0 && in_array($condition, ['not', 'and', 'or'])) {
                 $conditions[] = $condition;
-            }
-            if (is_numeric($key)) {
+            } elseif (is_numeric($key)) {
                 if (is_array($condition)) {
                     $conditions[] = $this->buildConditions($condition);
+                } elseif ($condition instanceof Expression) {
+                    $conditions[] = $this->handleExpression($condition);
                 } else {
                     throw new InvalidArgumentException("Condition is invalid. Please, check condition structure for methods QuerySet::filter() and QuerySet::exclude().");
                 }
@@ -279,6 +375,31 @@ class QuerySet
             }
         }
         return $conditions;
+    }
+
+    public function buildOrder()
+    {
+        $builtOrder = [];
+        foreach ($this->_order as $key => $item) {
+            if ($item instanceof Expression) {
+                $builtOrder[] = $this->handleExpression($item);
+            } else {
+                if (is_string($key) && is_string($item)) {
+                    $direction = strtoupper($item) == 'ASC' ? 'ASC' : 'DESC';
+                    list($relation, $field) = $this->getRelationColumn($key);
+                } elseif (is_string($item)) {
+                    $column = $item;
+                    $direction = 'ASC';
+                    if (substr($column, 0, 1) == '-') {
+                        $column = substr($column, 1);
+                        $direction = 'DESC';
+                    }
+                    list($relation, $field) = $this->getRelationColumn($column);
+                }
+                $builtOrder[] = compact('relation', 'field', 'direction');
+            }
+        }
+        return $builtOrder;
     }
 
     public function build()
@@ -296,7 +417,28 @@ class QuerySet
         } else {
             $this->_where = Q::andQ([$filter,$exclude]);
         }
+
+        if ($this->_order) {
+            $this->_orderBy = $this->buildOrder();
+        }
+
         return $this;
+    }
+
+    /**
+     * Connect expression's relations (ex: {user__id}, {book__author__name}, etc)
+     *
+     * @param Expression $expression
+     * @return Expression
+     */
+    public function handleExpression(Expression $expression)
+    {
+        if ($expression->getUseAliases() && ($aliases = $expression->getAliases())) {
+            foreach ($aliases as $relationColumn) {
+                $this->handleRelationColumn($relationColumn);
+            }
+        }
+        return $expression;
     }
 
     public function getSelect()

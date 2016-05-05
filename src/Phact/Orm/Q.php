@@ -18,19 +18,22 @@ use InvalidArgumentException;
 
 class Q
 {
-    public static function andQ($q)
+    public static function andQ()
     {
-        return static::buildQ($q, 'and');
+        $args = func_get_args();
+        return static::buildQ($args, 'and');
     }
 
-    public static function orQ($q)
+    public static function orQ()
     {
-        return static::buildQ($q, 'or');
+        $args = func_get_args();
+        return static::buildQ($args, 'or');
     }
 
-    public static function notQ($q)
+    public static function notQ()
     {
-        return static::buildQ($q, 'not');
+        $args = func_get_args();
+        return static::buildQ($args, 'not');
     }
 
     public static function buildQ($q, $condition)
