@@ -115,6 +115,9 @@ class Model
     public function getField($name)
     {
         $manager = $this->getFieldsManager();
+        if ($name == 'pk') {
+            $name = $this->getPkAttribute();
+        }
         if ($manager->has($name)) {
             $field = $manager->getField($name);
             $attributeName = $field->getAttributeName();

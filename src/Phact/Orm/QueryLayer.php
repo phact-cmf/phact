@@ -18,6 +18,7 @@ use Exception;
 use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
+use Phact\Orm\Aggregations\Aggregation;
 use Pixie\QueryBuilder\QueryBuilderHandler;
 use Pixie\QueryBuilder\Raw;
 
@@ -85,9 +86,15 @@ class QueryLayer
         return $this->getModel()->getTableName();
     }
 
-    public function getQueryBuilder()
+    public function getQueryBuilderRaw()
     {
         return $this->getQuery()->getQueryBuilder();
+    }
+
+    public function getQueryBuilder()
+    {
+        $qb = $this->getQueryBuilderRaw();
+        return $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
     }
 
     public function getQueryAdapter()
@@ -164,20 +171,33 @@ class QueryLayer
         return $model->getTableName();
     }
 
-    public function relationColumnAlias($column)
+    public function relationColumnAlias($column, $addTablePrefix = false)
     {
         list($relationName, $attribute) = $this->getQuerySet()->getRelationColumn($column);
-        return $this->columnAlias($relationName, $attribute);
+        return $this->columnAlias($relationName, $attribute, null, $addTablePrefix);
     }
 
-    public function columnAlias($relationName, $attribute, $tableName = null)
+    public function columnAlias($relationName, $attribute, $tableName = null, $addTablePrefix = false)
     {
+        $field = $this->getRelationModel($relationName)->getField($attribute);
+        if ($field) {
+            $attribute = $field->getAttributeName();
+        } else {
+            throw new InvalidArgumentException(strtr("Invalid attribute name {attribute} for relation {relation}", [
+                '{attribute}' => $attribute,
+                '{relation}' => $relationName
+            ]));
+        }
+
         $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
-        return $this->column($tableName, $attribute);
+        return $this->column($tableName, $attribute, $addTablePrefix);
     }
 
-    public function column($tableName, $attribute)
+    public function column($tableName, $attribute, $addTablePrefix = false)
     {
+        if ($addTablePrefix) {
+            $tableName = $this->getQueryBuilderRaw()->addTablePrefix($tableName);
+        }
         return $tableName . '.' . $attribute;
     }
 
@@ -236,10 +256,19 @@ class QueryLayer
         return $query;
     }
 
+    public function buildQuery($query, $buildOrder = true, $buildLimitOffset = true, $buildConditions = true)
+    {
+        $qs = $this->getQuerySet();
+        $query = $this->processJoins($query);
+        $this->buildConditions($query, $qs->getWhere(), 'and', true);
+        $this->buildOrder($query, $qs->getOrderBy());
+        $this->buildLimitOffset($query, $qs->getLimit(), $qs->getOffset());
+        return $query;
+    }
+
     public function all($sql = false)
     {
-        $qb = $this->getQueryBuilder();
-        $query = $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
+        $query = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
 
         $select = $this->column($this->getTableName(), '*');
@@ -248,10 +277,7 @@ class QueryLayer
         } else {
             $query->select($select);
         }
-
-        $query = $this->processJoins($query);
-        $this->buildConditions($query, $qs->getWhere(), 'and', true);
-        $this->buildOrder($query, $qs->getOrderBy());
+        $this->buildQuery($query);
         if ($sql) {
             return $query->getQuery()->getRawSql();
         }
@@ -261,10 +287,37 @@ class QueryLayer
 
     public function get($sql = false)
     {
-        $qb = $this->getQueryBuilder();
-        $query = $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
+        $query = $this->getQueryBuilder();
+        $this->buildQuery($query, false);
+        $query->select($this->column($this->getTableName(), '*'));
+
+        if ($sql) {
+            return $query->getQuery()->getRawSql();
+        }
+
         $result = $query->first();
         return $result;
+    }
+
+    public function aggregate(Aggregation $aggregation, $sql = false)
+    {
+        $query = $this->getQueryBuilder();
+        $this->buildQuery($query, false);
+
+        $field = $aggregation->getField();
+        if (!$aggregation->getRaw()) {
+            $field = $this->relationColumnAlias($field, true);
+            $field = $this->sanitize($field);
+        }
+        $query->select(new Raw($aggregation->getSql($field) . ' as aggregation'));
+        if ($sql) {
+            return $query->getQuery()->getRawSql();
+        }
+        $item = $query->first();
+        if (isset($item['aggregation'])) {
+            return $item['aggregation'];
+        }
+        return null;
     }
 
     public function clearConditions($conditions)
@@ -341,7 +394,6 @@ class QueryLayer
      */
     public function buildOrder($query, $order)
     {
-        $builtOrder = [];
         foreach ($order as $item) {
             if ($item instanceof Expression) {
                 $value = $this->convertExpression($item);
@@ -353,13 +405,31 @@ class QueryLayer
         }
     }
 
+    /**
+     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $limit int|null
+     * @param $offset int|null
+     * @return array
+     * @internal param array $order
+     */
+    public function buildLimitOffset($query, $limit, $offset)
+    {
+        if (!is_null($limit)) {
+            $query->limit($limit);
+        }
+
+        if (!is_null($offset)) {
+            $query->offset($offset);
+        }
+    }
+
     public function convertExpression(Expression $expression)
     {
         $value = $expression->getExpression();
         if ($expression->getUseAliases() && ($aliases = $expression->getAliases())) {
             $replaces = [];
             foreach ($aliases as $relationColumn) {
-                $column = $this->relationColumnAlias($relationColumn);
+                $column = $this->relationColumnAlias($relationColumn, true);
                 $replaces['{' . $relationColumn . '}'] = $this->sanitize($column);
             }
             $value = strtr($value, $replaces);

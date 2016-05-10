@@ -18,6 +18,8 @@ use Modules\Test\Models\Area;
 use Modules\Test\Models\Author;
 use Modules\Test\Models\Group;
 use Modules\Test\Models\Note;
+use Phact\Orm\Aggregations\Avg;
+use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Expression;
 use Phact\Orm\Manager;
 use Phact\Orm\Q;
@@ -58,18 +60,54 @@ class QuerySetTest extends DatabaseTest
     public function testBuildRelations()
     {
         $qs = Area::objects()->getQuerySet();
-        $qs->filter(['parent__id' => 1]);
+        $qs = $qs->filter(['parent__id' => 1]);
         $qs->build();
         $this->assertEquals(['parent'], array_keys($qs->getRelations()));
 
         $qs = Author::objects()->getQuerySet();
-        $qs->filter(['books__id__in' => [1,2,3]]);
+        $qs = $qs->filter(['books__id__in' => [1,2,3]]);
         $qs->build();
         $this->assertEquals(['books'], array_keys($qs->getRelations()));
 
         $qs = Group::objects()->getQuerySet();
-        $qs->filter(['persons__id__in' => [1,2,3], 'membership__id__gte' => 1]);
+        $qs = $qs->filter(['persons__id__in' => [1,2,3], 'membership__id__gte' => 1]);
         $qs->build();
         $this->assertEquals(['membership', 'persons'], array_keys($qs->getRelations()));
+    }
+
+    public function testLimitOffset()
+    {
+        $sql = Note::objects()->getQuerySet()->filter(['id' => 3])->limit(1)->all(true);
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 3 LIMIT 1", $sql);
+
+        $sql = Note::objects()->getQuerySet()->filter(['id' => 3])->limit(1)->offset(2)->all(true);
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 3 LIMIT 1 OFFSET 2", $sql);
+
+        $sql = Note::objects()->getQuerySet()->filter(['id' => 3])->offset(3)->all(true);
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 3 OFFSET 3", $sql);
+    }
+
+    public function testAggregations()
+    {
+        $sql = Note::objects()->getQuerySet()->aggregate(new Count(), true);
+        $this->assertEquals("SELECT COUNT(*) as aggregation FROM `test_note`", $sql);
+
+        $sql = Note::objects()->getQuerySet()->aggregate(new Avg('theses__id'), true);
+        $this->assertEquals("SELECT AVG(`test_note_thesis`.`id`) as aggregation FROM `test_note` INNER JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id`", $sql);
+    }
+
+    public function testGet()
+    {
+        $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->get(true);
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 1", $sql);
+    }
+
+    public function testPk()
+    {
+        $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->get(true);
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 1", $sql);
+
+        $sql = Note::objects()->getQuerySet()->filter(['theses__pk__in' => [1,2]])->all(true);
+        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` INNER JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note_thesis`.`id` IN (1, 2)", $sql);
     }
 }

@@ -16,6 +16,8 @@ namespace Phact\Orm;
 
 use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
+use Phact\Orm\Aggregations\Aggregation;
+use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Fields\RelationField;
 
@@ -70,7 +72,20 @@ class QuerySet
      */
     protected $_where = [];
     protected $_relations = [];
+
+    /**
+     * Limit and offset
+     * @var int|null
+     */
+    protected $_limit = null;
+    protected $_offset = null;
+
     protected $_hasManyRelations = false;
+
+    /**
+     * @var Aggregation|null
+     */
+    protected $_aggregation = null;
 
     /**
      * @return mixed QuerySet
@@ -142,9 +157,20 @@ class QuerySet
     {
         $row = $this->getQueryLayer()->get($sql);
         if ($sql) {
-            return $sql;
+            return $row;
         }
         return $row ? $this->createModel($row) : null;
+    }
+
+    public function aggregate(Aggregation $aggregation, $sql = false)
+    {
+        $this->_aggregation = $aggregation;
+        return $this->getQueryLayer()->aggregate($aggregation, $sql);
+    }
+
+    public function count()
+    {
+        return $this->aggregate(new Count());
     }
 
     /**
@@ -197,6 +223,28 @@ class QuerySet
         }
         $this->_order = array_merge($this->_order, $order);
         return $this->nextQuerySet();
+    }
+
+    public function limit($limit)
+    {
+        $this->_limit = $limit;
+        return $this->nextQuerySet();
+    }
+
+    public function offset($offset)
+    {
+        $this->_offset = $offset;
+        return $this->nextQuerySet();
+    }
+
+    public function getLimit()
+    {
+        return $this->_limit;
+    }
+
+    public function getOffset()
+    {
+        return $this->_offset;
     }
 
     public function appendRelation($name, $model, $joins = [])
@@ -404,6 +452,10 @@ class QuerySet
 
     public function build()
     {
+        if ($this->_aggregation) {
+            $this->handleAggregation($this->_aggregation);
+        }
+
         $filter = null;
         if ($this->_filter) {
             $filter = $this->buildConditions($this->_filter);
@@ -439,6 +491,15 @@ class QuerySet
             }
         }
         return $expression;
+    }
+    
+    public function handleAggregation(Aggregation $aggregation)
+    {
+        $field = $aggregation->getField();
+        $raw = $aggregation->getRaw();
+        if (!$raw) {
+            $this->handleRelationColumn($field);
+        }
     }
 
     public function getSelect()
