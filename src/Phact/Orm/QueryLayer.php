@@ -177,18 +177,22 @@ class QueryLayer
         return $this->columnAlias($relationName, $attribute, null, $addTablePrefix);
     }
 
-    public function columnAlias($relationName, $attribute, $tableName = null, $addTablePrefix = false)
+    public function relationColumnAttribute($relationName, $attribute)
     {
         $field = $this->getRelationModel($relationName)->getField($attribute);
         if ($field) {
-            $attribute = $field->getAttributeName();
+            return $field->getAttributeName();
         } else {
             throw new InvalidArgumentException(strtr("Invalid attribute name {attribute} for relation {relation}", [
                 '{attribute}' => $attribute,
                 '{relation}' => $relationName
             ]));
         }
+    }
 
+    public function columnAlias($relationName, $attribute, $tableName = null, $addTablePrefix = false)
+    {
+        $attribute = $this->relationColumnAttribute($relationName, $attribute);
         $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
         return $this->column($tableName, $attribute, $addTablePrefix);
     }
@@ -260,9 +264,16 @@ class QueryLayer
     {
         $qs = $this->getQuerySet();
         $query = $this->processJoins($query);
-        $this->buildConditions($query, $qs->getWhere(), 'and', true);
-        $this->buildOrder($query, $qs->getOrderBy());
-        $this->buildLimitOffset($query, $qs->getLimit(), $qs->getOffset());
+
+        if ($buildConditions) {
+            $this->buildConditions($query, $qs->getWhere(), 'and', true);
+        }
+        if ($buildOrder) {
+            $this->buildOrder($query, $qs->getOrderBy());
+        }
+        if ($buildLimitOffset) {
+            $this->buildLimitOffset($query, $qs->getLimit(), $qs->getOffset());
+        }
         return $query;
     }
 
@@ -318,6 +329,65 @@ class QueryLayer
             return $item['aggregation'];
         }
         return null;
+    }
+
+    public function update($data = [], $sql = false)
+    {
+        $query = $this->getQueryBuilder();
+        $this->buildQuery($query, false, false);
+
+        if ($this->getQuerySet()->hasRelations()) {
+            $query = $this->wrapQuery($query);
+        }
+
+        $updateData = [];
+        foreach ($data as $attribute => $value) {
+            $column = $this->relationColumnAlias($attribute);
+            $updateData[$column] = $value;
+        }
+        if ($sql) {
+            return $query->getQuery('update', $updateData)->getRawSql();
+        }
+        $pdoStatement = $query->update($updateData);
+        return $pdoStatement->rowCount();
+    }
+
+    public function delete($sql = false)
+    {
+        $query = $this->getQueryBuilder();
+        $this->buildQuery($query, false, false);
+
+        if ($this->getQuerySet()->hasRelations()) {
+            $query = $this->wrapQuery($query);
+        }
+
+        if ($sql) {
+            return $query->getQuery('delete')->getRawSql();
+        }
+        $pdoStatement = $query->delete();
+        return $pdoStatement->rowCount();
+    }
+
+    /**
+     * Wrap query for update/delete
+     */
+    public function wrapQuery($query)
+    {
+        // Create a temporary table for correct operation with JOIN
+        $queryUpdate = $this->getQueryBuilder();
+        $queryWrapper = $this->getQueryBuilderRaw();
+
+        $pk = $this->relationColumnAlias('pk');
+        $pkAttribute = $this->relationColumnAttribute('__this', 'pk');
+
+        $tempTable = 'temp_table_wrapper';
+
+        $query->select($pk);
+        $queryWrapper
+            ->from($query->subQuery($query, $this->sanitize($tempTable)))
+            ->select($this->column($tempTable, $pkAttribute));
+        $queryUpdate->whereIn($pk, $query->subQuery($queryWrapper));
+        return $queryUpdate;
     }
 
     public function clearConditions($conditions)

@@ -168,6 +168,16 @@ class QuerySet
         return $this->getQueryLayer()->aggregate($aggregation, $sql);
     }
 
+    public function update($data = [], $sql = false)
+    {
+        return $this->getQueryLayer()->update($data, $sql);
+    }
+
+    public function delete($sql = false)
+    {
+        return $this->getQueryLayer()->delete($sql);
+    }
+
     public function count()
     {
         return $this->aggregate(new Count());
@@ -515,5 +525,10 @@ class QuerySet
     public function getRelations()
     {
         return $this->_relations;
+    }
+
+    public function hasRelations()
+    {
+        return count($this->_relations) > 0;
     }
 }
