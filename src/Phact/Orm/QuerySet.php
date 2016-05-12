@@ -230,6 +230,19 @@ class QuerySet
         return $this->aggregateSql(new Count());
     }
 
+    public function choices($key, $value)
+    {
+        if (!is_string($key) && !is_string($value)) {
+            throw new InvalidArgumentException('QuerySet::choices() accept only strings as $key and $value attributes');
+        }
+        $choices = [];
+        $data = $this->values([$key, $value]);
+        foreach ($data as $row) {
+            $choices[$row[$key]] = $row[$value];
+        }
+        return $choices;
+    }
+
     /**
      * @param array $filter
      * @return QuerySet

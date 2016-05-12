@@ -143,4 +143,9 @@ class QuerySetTest extends DatabaseTest
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'name', 'theses__name'], false, false);
         $this->assertEquals("SELECT `test_note`.`id` as `id`, `test_note`.`name` as `name`, `test_note_thesis`.`name` as `theses__name` FROM `test_note` INNER JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` = 1", $sql);
     }
+
+    public function testChoices()
+    {
+        $data = Note::objects()->getQuerySet()->choices('id', 'name');
+    }
 }
