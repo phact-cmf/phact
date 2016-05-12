@@ -144,43 +144,90 @@ class QuerySet
         return $result;
     }
 
-    public function all($sql = false)
+    public function all()
     {
-        $data = $this->getQueryLayer()->all($sql);
-        if ($sql) {
-            return $data;
-        }
+        $data = $this->getQueryLayer()->all();
         return $this->createModels($data);
     }
 
-    public function get($sql = false)
+    public function allSql()
     {
-        $row = $this->getQueryLayer()->get($sql);
-        if ($sql) {
-            return $row;
-        }
+        return $this->getQueryLayer()->all(true);
+    }
+
+    public function get()
+    {
+        $row = $this->getQueryLayer()->get();
         return $row ? $this->createModel($row) : null;
     }
 
-    public function aggregate(Aggregation $aggregation, $sql = false)
+    public function getSql()
+    {
+        return $this->getQueryLayer()->get(true);
+    }
+
+    public function aggregate(Aggregation $aggregation)
     {
         $this->_aggregation = $aggregation;
-        return $this->getQueryLayer()->aggregate($aggregation, $sql);
+        return $this->getQueryLayer()->aggregate($aggregation);
     }
 
-    public function update($data = [], $sql = false)
+    public function aggregateSql(Aggregation $aggregation)
     {
-        return $this->getQueryLayer()->update($data, $sql);
+        $this->_aggregation = $aggregation;
+        return $this->getQueryLayer()->aggregate($aggregation, true);
     }
 
-    public function delete($sql = false)
+    public function values($columns = [], $flat = false, $distinct = true)
     {
-        return $this->getQueryLayer()->delete($sql);
+        $this->handleRelationColumns($columns);
+        $data = $this->getQueryLayer()->values($columns, $distinct);
+        if ($flat) {
+            $result = [];
+            foreach ($data as $row) {
+                foreach ($row as $value) {
+                    $result[] = $value;
+                }
+            }
+            return $result;
+        }
+        return $data;
+    }
+
+    public function valuesSql($columns = [], $flat = false, $distinct = true)
+    {
+        $this->handleRelationColumns($columns);
+        return $this->getQueryLayer()->values($columns, $distinct, true);
+    }
+
+    public function update($data = [])
+    {
+        return $this->getQueryLayer()->update($data);
+    }
+
+    public function updateSql($data = [])
+    {
+        return $this->getQueryLayer()->update($data, true);
+    }
+
+    public function delete()
+    {
+        return $this->getQueryLayer()->delete();
+    }
+
+    public function deleteSql()
+    {
+        return $this->getQueryLayer()->delete(true);
     }
 
     public function count()
     {
         return $this->aggregate(new Count());
+    }
+
+    public function countSql()
+    {
+        return $this->aggregateSql(new Count());
     }
 
     /**
@@ -412,6 +459,12 @@ class QuerySet
         list($relationName, $field) = $this->getRelationColumn($column);
         $this->getRelation($relationName);
         return [$relationName, $field];
+    }
+
+    public function handleRelationColumns($columns) {
+        foreach ($columns as $column) {
+            $this->handleRelationColumn($column);
+        }
     }
 
     public function buildConditions($data)

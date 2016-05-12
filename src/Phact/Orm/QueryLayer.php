@@ -299,7 +299,7 @@ class QueryLayer
     public function get($sql = false)
     {
         $query = $this->getQueryBuilder();
-        $this->buildQuery($query, false);
+        $this->buildQuery($query);
         $query->select($this->column($this->getTableName(), '*'));
 
         if ($sql) {
@@ -366,6 +366,37 @@ class QueryLayer
         }
         $pdoStatement = $query->delete();
         return $pdoStatement->rowCount();
+    }
+
+    public function values($columns = [], $distinct = true, $sql = false)
+    {
+        $query = $this->getQueryBuilder();
+        $qs = $this->getQuerySet();
+
+        if (!$columns) {
+            $select = $this->column($this->getTableName(), '*');
+        } else {
+            $select = [];
+            foreach ($columns as $attribute) {
+                $column = $this->relationColumnAlias($attribute, true);
+                $column = $this->sanitize($column);
+                $attribute = $this->sanitize($attribute);
+                $select[] = $query->raw($column . ' as ' . $attribute);
+            }
+        }
+
+        if ($qs->getHasManyRelations() && $distinct) {
+            $query->selectDistinct($select);
+        } else {
+            $query->select($select);
+        }
+
+        $this->buildQuery($query);
+        if ($sql) {
+            return $query->getQuery()->getRawSql();
+        }
+        $result = $query->get();
+        return $result;
     }
 
     /**
