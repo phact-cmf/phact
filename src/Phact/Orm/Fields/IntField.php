@@ -17,6 +17,8 @@ namespace Phact\Orm\Fields;
 
 class IntField extends Field
 {
+    public $length = 11;
+
     public function getBlankValue()
     {
         return '';
@@ -27,8 +29,20 @@ class IntField extends Field
         return is_null($this->_attribute) ? null : (int)$this->_attribute;
     }
 
-    public function _dbPrepareValue($value)
+    public function dbPrepareValue($value)
     {
         return (int) $value;
+    }
+
+    public function getSqlType()
+    {
+        $sql = ["int({$this->length})"];
+        if ($this->unsigned) {
+            $sql[] = "UNSIGNED";
+        }
+        if ($this->zerofill) {
+            $sql[] = "ZEROFILL";
+        }
+        return implode(' ', $sql);
     }
 }

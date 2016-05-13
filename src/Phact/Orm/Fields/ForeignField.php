@@ -109,4 +109,14 @@ class ForeignField extends RelationField
             ]
         ];
     }
+
+    public function getSqlType()
+    {
+        $to = $this->getTo();
+        $relationModelClass = $this->modelClass;
+        /** @var Model $relationModel */
+        $relationModel = new $relationModelClass();
+        $field = $relationModel->getField($to);
+        return $field->getSqlType();
+    }
 }

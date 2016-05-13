@@ -14,16 +14,22 @@
 
 namespace Phact\Orm\Fields;
 
-
 class CharField extends Field
 {
+    public $length = 255;
+
     public function getValue($aliasConfig = null)
     {
         return !is_null($this->_attribute) ? (string)$this->_attribute : null;
     }
 
-    public function _dbPrepareValue($value)
+    public function dbPrepareValue($value)
     {
         return (string)$value;
+    }
+
+    public function getSqlType()
+    {
+        return "varchar({$this->length})";
     }
 }

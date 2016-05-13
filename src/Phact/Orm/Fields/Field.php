@@ -25,7 +25,7 @@ use Phact\Helpers\SmartProperties;
  *
  * @package Phact\Orm\Fields
  */
-class Field
+abstract class Field
 {
     use SmartProperties;
 
@@ -45,6 +45,23 @@ class Field
     public $null = false;
 
     public $blank = false;
+
+    /**
+     * Unsigned operator for table column
+     * @var bool
+     */
+    public $unsigned = false;
+
+    /**
+     * Zerofill operator for table column
+     * @var bool
+     */
+    public $zerofill = false;
+
+    /**
+     * @var mixed
+     */
+    public $default = null;
 
     public function getBlankValue()
     {
@@ -166,7 +183,7 @@ class Field
                 return $this->getBlankValue();
             }
         }
-        return $this->_dbPrepareValue($value);
+        return $this->dbPrepareValue($value);
     }
 
     public function getAdditionalFields()
@@ -206,8 +223,13 @@ class Field
     {
     }
 
-    protected function _dbPrepareValue($value)
+    protected function dbPrepareValue($value)
     {
         return $value;
     }
+
+    /**
+     * @return string
+     */
+    abstract public function getSqlType();
 }

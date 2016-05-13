@@ -14,8 +14,6 @@
 
 namespace Phact\Orm\Fields;
 
-use Phact\Orm\Model;
-
 /**
  * Class RelationField
  *
@@ -39,5 +37,10 @@ abstract class RelationField extends Field
     public function getIsMany()
     {
         return false;
+    }
+
+    public function getSqlType()
+    {
+        return '';
     }
 }
