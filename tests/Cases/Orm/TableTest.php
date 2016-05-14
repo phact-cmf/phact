@@ -14,8 +14,14 @@
 
 namespace Phact\Tests;
 
+use Modules\Test\Models\Author;
+use Modules\Test\Models\Book;
+use Modules\Test\Models\Group;
+use Modules\Test\Models\Membership;
 use Modules\Test\Models\Note;
 
+use Modules\Test\Models\NoteThesis;
+use Modules\Test\Models\Person;
 use Phact\Orm\TableManager;
 
 class TableTest extends DatabaseTest
@@ -24,7 +30,13 @@ class TableTest extends DatabaseTest
     {
         $tableManager = new TableManager();
         $tableManager->create([
-            new Note()
+            new Note(),
+            new NoteThesis(),
+            new Author(),
+            new Book(),
+            new Person(),
+            new Group(),
+            new Membership()
         ]);
     }
 }

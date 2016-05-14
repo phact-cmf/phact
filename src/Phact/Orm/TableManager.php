@@ -17,6 +17,7 @@ namespace Phact\Orm;
 
 use Phact\Orm\Fields\AutoField;
 use Phact\Orm\Fields\Field;
+use Phact\Orm\Fields\ManyToManyField;
 
 class TableManager
 {
@@ -54,6 +55,49 @@ class TableManager
 
         $query = "CREATE TABLE {$exists} {$tableNameSafe} ({$fields}) ENGINE={$engine} DEFAULT CHARSET={$charset}";
         list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
+        $this->createM2MTables($model);
+    }
+
+    /**
+     * @param $model Model
+     */
+    public function createM2MTables($model)
+    {
+        $engine = $this->defaultEngine;
+        $charset = $this->defaultCharset;
+
+        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
+
+        foreach ($model->getFieldsManager()->getFields() as $field) {
+            if ($field instanceof ManyToManyField && !$field->getThrough()) {
+                $tableName = $field->getThroughTableName();
+                $tableNameSafe = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
+                $tableNameSafe = $queryLayer->sanitize($tableNameSafe);
+
+                $statements = [];
+
+                $toModelClass = $field->modelClass;
+                /** @var Model $toModel */
+                $toModel = new $toModelClass();
+
+                $to = $field->getTo();
+                $columnTo = $field->getThroughTo();
+                $columnTo = $queryLayer->sanitize($columnTo);
+                $toType = $toModel->getField($to)->getSqlType();
+                $statements[] = "{$columnTo} {$toType} NOT NULL";
+
+                $from = $field->getFrom();
+                $columnFrom = $field->getThroughFrom();
+                $columnFrom = $queryLayer->sanitize($columnFrom);
+                $fromType = $model->getField($from)->getSqlType();
+                $statements[] = "{$columnFrom} {$fromType} NOT NULL";
+
+                $fields = implode(',', $statements);
+
+                $query = "CREATE TABLE IF NOT EXISTS {$tableNameSafe} ({$fields}) ENGINE={$engine} DEFAULT CHARSET={$charset}";
+                list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
+            }
+        }
     }
 
     /**

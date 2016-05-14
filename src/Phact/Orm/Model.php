@@ -39,11 +39,6 @@ class Model
     protected $_dbAttributes = [];
     protected $_oldAttributes = [];
 
-    public function __construct()
-    {
-        static::setFieldsManager();
-    }
-
     public static function getTableName()
     {
         $class = get_called_class();
@@ -67,23 +62,22 @@ class Model
         return null;
     }
 
-    public static function setFieldsManager()
-    {
-        $metaData = static::getMetaData();
-        $fieldsManager = FieldsManager::class;
-        if (isset($metaData['fieldsManager'])) {
-            $fieldsManager = $metaData['fieldsManager'];
-            unset($metaData['fieldsManager']);
-        }
-        static::$_fieldsManager = new $fieldsManager(get_called_class(), static::getFields(), $metaData);
-    }
-
     /**
      * @return FieldsManager
      */
     public static function getFieldsManager()
     {
-        return static::$_fieldsManager;
+        $metaData = static::getMetaData();
+        $fieldsManagerClass = FieldsManager::class;
+        if (isset($metaData['fieldsManager'])) {
+            $fieldsManagerClass = $metaData['fieldsManager'];
+            unset($metaData['fieldsManager']);
+        }
+        $class = get_called_class();
+        if (!$fieldsManagerClass::hasInstance($class)) {
+            $fieldsManagerClass::makeInstance($class, static::getFields(), $metaData);
+        }
+        return $fieldsManagerClass::getInstance($class);
     }
 
     public function getFieldsList()

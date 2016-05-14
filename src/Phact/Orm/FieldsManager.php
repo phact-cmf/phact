@@ -29,6 +29,26 @@ class FieldsManager
     protected $_aliases = [];
     protected $_className;
 
+    protected static $_instances;
+
+    public static function hasInstance($modelClass)
+    {
+        return isset(self::$_instances[$modelClass]);
+    }
+
+    public static function makeInstance($modelClass, $fields, $metaData = [])
+    {
+        self::$_instances[$modelClass] = new self($modelClass, $fields, $metaData);
+    }
+
+    public static function getInstance($modelClass)
+    {
+        if (isset(self::$_instances[$modelClass])) {
+             return self::$_instances[$modelClass];
+        }
+        return null;
+    }
+
     public function __construct($modelClass, $fields, $metaData = [])
     {
         $this->_modelClass = $modelClass;
