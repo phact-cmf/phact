@@ -112,6 +112,14 @@ abstract class Field
     }
 
     /**
+     * @return bool
+     */
+    public function hasDbAttribute()
+    {
+        return (bool) $this->getAttributeName();
+    }
+
+    /**
      * Calls only in internal methods of Model
      * such as:
      *
@@ -127,6 +135,26 @@ abstract class Field
     public function setAttribute($value)
     {
         $this->_attribute = $value;
+    }
+
+    /**
+     * Set model attribute
+     *
+     * @param $value
+     */
+    public function setModelAttribute($value)
+    {
+        $this->getModel()->setAttribute($this->getAttributeName(), $value);
+    }
+
+    /**
+     * Has model attribute
+     *
+     * @return bool
+     */
+    public function hasModelAttribute()
+    {
+        return $this->getModel()->hasAttribute($this->getAttributeName());
     }
 
     /**
@@ -186,6 +214,23 @@ abstract class Field
         return $this->dbPrepareValue($value);
     }
 
+    public function setDefaultDbValue()
+    {
+        if ($this->hasDbAttribute()) {
+            if (is_null($this->attribute)) {
+                if ($this->null) {
+                    if (!$this->hasModelAttribute()) {
+                        $this->setModelAttribute(null);
+                    }
+                } elseif ($this->blank) {
+                    $value = $this->getBlankValue();
+                    $this->setAttribute($value);
+                    $this->setModelAttribute($value);
+                }
+            }
+        }
+    }
+
     public function getAdditionalFields()
     {
         return [];
@@ -193,6 +238,7 @@ abstract class Field
 
     public function beforeInsert()
     {
+        $this->setDefaultDbValue();
     }
 
     public function beforeUpdate()

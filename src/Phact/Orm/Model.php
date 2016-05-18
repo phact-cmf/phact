@@ -157,6 +157,11 @@ class Model
         return null;
     }
 
+    public function hasAttribute($name)
+    {
+        return array_key_exists($name, $this->_attributes) || array_key_exists($name, $this->_dbAttributes);
+    }
+
     public function setAttribute($attributeName, $attribute)
     {
         $this->_attributes[$attributeName] = $attribute;

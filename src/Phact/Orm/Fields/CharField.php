@@ -20,12 +20,12 @@ class CharField extends Field
 
     public function getValue($aliasConfig = null)
     {
-        return !is_null($this->_attribute) ? (string)$this->_attribute : null;
+        return is_null($this->_attribute) ? null : (string) $this->_attribute;
     }
 
     public function dbPrepareValue($value)
     {
-        return (string)$value;
+        return (string) $value;
     }
 
     public function getSqlType()

@@ -26,7 +26,7 @@ class IntField extends Field
 
     public function getValue($aliasConfig = null)
     {
-        return is_null($this->_attribute) ? null : (int)$this->_attribute;
+        return is_null($this->_attribute) ? null : (int) $this->_attribute;
     }
 
     public function dbPrepareValue($value)
