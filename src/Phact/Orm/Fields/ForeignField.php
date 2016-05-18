@@ -29,6 +29,15 @@ class ForeignField extends RelationField
     protected $_to = 'id';
     protected $_from = null;
 
+    const CASCADE = 1;
+    const SET_NULL = 2;
+    const NO_ACTION = 3;
+    const RESTRICT = 4;
+    const SET_DEFAULT = 5;
+
+    public $onUpdate = self::CASCADE;
+    public $onDelete = self::CASCADE;
+
     public function getFrom()
     {
         if ($this->_from) {
@@ -95,7 +104,11 @@ class ForeignField extends RelationField
     {
         $value = $this->_attribute;
         $class = $this->modelClass;
-        return new Model();
+        if (!is_object($value)) {
+            return $class::objects()->filter([$this->getTo() => $value])->limit(1)->get();
+        } else {
+            return $value;
+        }
     }
 
     public function getRelationJoins()

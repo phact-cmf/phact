@@ -18,6 +18,7 @@ use Modules\Test\Models\Area;
 use Modules\Test\Models\Author;
 use Modules\Test\Models\Group;
 use Modules\Test\Models\Note;
+use Modules\Test\Models\NoteThesis;
 use Phact\Orm\Aggregations\Avg;
 use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Expression;
@@ -27,6 +28,17 @@ use Phact\Orm\QuerySet;
 
 class QuerySetTest extends DatabaseTest
 {
+    public function useModels()
+    {
+        return [
+            new Note(),
+            new NoteThesis(),
+            new Author(),
+            new Area(),
+            new Group()
+        ];
+    }
+
     public function testInstances()
     {
         $this->assertInstanceOf(Manager::class, Note::objects());
@@ -146,6 +158,18 @@ class QuerySetTest extends DatabaseTest
 
     public function testChoices()
     {
+        $note1 = new Note();
+        $note1->name = 'First note';
+        $note1->save();
+
+        $note2 = new Note();
+        $note2->name = 'Second note';
+        $note2->save();
+
         $data = Note::objects()->getQuerySet()->choices('id', 'name');
+        $this->assertEquals([
+            1 => 'First note',
+            2 => 'Second note'
+        ], $data);
     }
 }

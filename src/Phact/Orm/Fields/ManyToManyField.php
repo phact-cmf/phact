@@ -47,6 +47,12 @@ class ManyToManyField extends RelationField
 
     public $reverse = false;
 
+    public $onUpdateTo = ForeignField::CASCADE;
+    public $onDeleteTo = ForeignField::CASCADE;
+
+    public $onUpdateFrom = ForeignField::CASCADE;
+    public $onDeleteFrom = ForeignField::CASCADE;
+
     public function getFrom()
     {
         return $this->_from;

@@ -38,5 +38,14 @@ class TableTest extends DatabaseTest
             new Group(),
             new Membership()
         ]);
+        $tableManager->drop([
+            new Note(),
+            new NoteThesis(),
+            new Author(),
+            new Book(),
+            new Person(),
+            new Group(),
+            new Membership()
+        ]);
     }
 }

@@ -15,6 +15,7 @@
 namespace Phact\Tests;
 
 use Phact\Orm\ConnectionManager;
+use Phact\Orm\TableManager;
 
 class DatabaseTest extends AppTest
 {
@@ -26,6 +27,31 @@ class DatabaseTest extends AppTest
                 'connections' => $this->getConnections()
             ]
         ];
+    }
+
+    public function setUp()
+    {
+        parent::setUp();
+        $tableManager = new TableManager();
+        $models = $this->useModels();
+        if ($models) {
+            $tableManager->create($models);
+        }
+    }
+
+    public function tearDown()
+    {
+        parent::tearDown();
+        $tableManager = new TableManager();
+        $models = $this->useModels();
+        if ($models) {
+            $tableManager->drop($models);
+        }
+    }
+
+    public function useModels()
+    {
+        return [];
     }
     
     public function getConnections()
