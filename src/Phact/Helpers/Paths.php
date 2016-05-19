@@ -42,4 +42,22 @@ class Paths
         }
         return null;
     }
+
+    public static function file($name, $extensions = [])
+    {
+        $path = self::get($name);
+        if (is_file($path)) {
+            return $path;
+        }
+        if (!is_array($extensions)) {
+            $extensions = [$extensions];
+        }
+        foreach ($extensions as $extension) {
+            $fileName = $path . '.' . $extension;
+            if (is_file($fileName)) {
+                return $fileName;
+            }
+        }
+        return null;
+    }
 }

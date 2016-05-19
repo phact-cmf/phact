@@ -12,5 +12,8 @@
         <testsuite name="Orm">
             <directory>./tests/Cases/Orm</directory>
         </testsuite>
+        <testsuite name="Router">
+            <directory>./tests/Cases/Router</directory>
+        </testsuite>
     </testsuites>
 </phpunit>
