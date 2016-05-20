@@ -1,7 +1,9 @@
 <?php
 
-use Phact\Router\Routes;
-
 return [
-    new Routes('', 'Modules.Test.routes', 'test')
+    [
+        'route' => '',
+        'path' => 'Modules.Test.routes',
+        'namespace' => 'test'
+    ]
 ];

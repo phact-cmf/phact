@@ -4,12 +4,18 @@ namespace Phact\Router;
 
 use Exception;
 use InvalidArgumentException;
+use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Traversable;
 
 class Router
 {
     use SmartProperties;
+
+    /**
+     * @var array Default HTTP-methods
+     */
+    public $defaultMethods = ['GET', 'POST'];
 
     /**
      * @var array Array of all routes (incl. named routes).
@@ -312,34 +318,72 @@ class Router
         return "`^$route$`u";
     }
 
-    public function collect($configuration = [])
+    /**
+     * Append routes from array
+     *
+     * @param array $configuration
+     * @param string $namespace
+     * @param string $route
+     */
+    public function collect($configuration = [], $namespace = '', $route = '')
     {
         foreach ($configuration as $item) {
-            if ($item instanceof Route) {
-                $this->appendRoute($item);
-            } elseif ($item instanceof Routes) {
-                foreach ($item->getRoutes() as $route) {
-                    $this->appendRoute($route);
-                }
+
+            if (isset($item['route']) && isset($item['path'])) {
+                $this->appendRoutes($item, $namespace, $route);
+            } elseif (isset($item['route']) && isset($item['target'])) {
+                $this->appendRoute($item, $namespace, $route);
             }
         }
     }
 
     /**
-     * @param $route Route
+     * Append routes
+     *
+     * @param $item
+     * @param string $namespace
+     * @param string $route
+     */
+    public function appendRoutes($item, $namespace = '', $route = '')
+    {
+        if (isset($item['path'])) {
+            $itemNamespace = isset($item['namespace']) ? $item['namespace'] : '';
+            if ($itemNamespace && $namespace) {
+                $itemNamespace = $namespace . ':' . $itemNamespace;
+            }
+            $path = isset($item['route']) ? $item['route'] : '';
+            if ($path && $route) {
+                $path = $route . $path;
+            }
+            $routesFile = Paths::file($item['path'], 'php');
+            if (!$routesFile) {
+                return;
+            }
+            $routes = include $routesFile;
+            $this->collect($routes, $itemNamespace, $path);
+        }
+    }
+    
+    /**
+     * Append single route
+     * @param $item
+     * @param string $namespace
+     * @param string $route
      * @throws Exception
      */
-    public function appendRoute($route)
+    public function appendRoute($item, $namespace = '', $route = '')
     {
-        $methods = $route->methods;
-        if (!$methods) {
-            $methods = ["GET", "POST"];
-        }
+        $methods = isset($item['methods']) ? $item['methods'] : ["GET", "POST"];
         $method = implode('|', $methods);
-        $name = $route->getFullName();
-        $path = $route->getFullRoute();
-        $target = $route->target;
-
+        $name = isset($item['name']) ? $item['name'] : '';
+        if ($name && $namespace) {
+            $name = $name . ':' . $namespace;
+        }
+        $path = isset($item['route']) ? $item['route'] : '';
+        if ($route && $path) {
+            $path = $path . $route;
+        }
+        $target = isset($item['target']) ? $item['target'] : null;
         $this->map($method, $path, $target, $name);
     }
 }

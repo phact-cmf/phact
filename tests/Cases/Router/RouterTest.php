@@ -16,10 +16,7 @@
 namespace Phact\Tests;
 
 use InvalidArgumentException;
-use Phact\Application\Application;
-use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
-use Phact\Router\Route;
 use Phact\Router\Router;
 
 class RouterTest extends AppTest
@@ -55,9 +52,21 @@ class RouterTest extends AppTest
     {
         $router = new Router();
         $router->collect([
-            new Route('/test1/{[0-9]+:id}', 'target', 'first-route'),
-            new Route('/test2/{slug:name}', 'target', 'second-route'),
-            new Route('/test3/{:name}', 'target', 'third-route')
+            [
+                'route' => '/test1/{[0-9]+:id}',
+                'target' => 'target',
+                'name' => 'first-route'
+            ],
+            [
+                'route' => '/test2/{slug:name}',
+                'target' => 'target',
+                'name' => 'second-route'
+            ],
+            [
+                'route' => '/test3/{:name}',
+                'target' => 'target',
+                'name' => 'third-route'
+            ]
         ]);
 
         $this->assertEquals([
