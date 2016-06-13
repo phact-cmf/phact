@@ -41,7 +41,11 @@ class Configurator
         }
         $obj = empty($config) ? new $class : new $class($config);
 
-        return self::configure($obj, $config);
+        $obj = self::configure($obj, $config);
+        if (method_exists($obj, 'init')) {
+            $obj->init();
+        }
+        return $obj;
     }
 
     public static function configure($object, $properties)

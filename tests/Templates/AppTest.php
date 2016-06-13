@@ -21,33 +21,15 @@ use Phact\Main\Phact;
 
 class AppTest extends TestCase
 {
-    public function getAppPath()
+    protected function getComponents()
     {
-        return implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'sandbox', 'app']);
-    }
-
-    public function getModules()
-    {
-        $path = implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'Modules']);
-        $list = glob($path . DIRECTORY_SEPARATOR . '*');
-        return $list;
+        return [];
     }
 
     protected function setUp()
     {
-        $config = [
-            'name' => 'New phact application',
-            'paths' => [
-                'base' => $this->getAppPath()
-            ],
-            'modules' => $this->getModules(),
-            'components' => $this->getComponents()
-        ];
+        $config = include implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'sandbox', 'app', 'config', 'settings.php']);
+        $config['components'] = array_merge($config['components'], $this->getComponents());
         Phact::init($config);
-    }
-    
-    protected function getComponents()
-    {
-        return [];
     }
 }
