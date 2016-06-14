@@ -25,6 +25,7 @@ use Phact\Orm\ConnectionManager;
  * Class Application
  *
  * @property \Phact\Orm\ConnectionManager $db Database connection.
+ * @property \Phact\Router\Router $router Url manager, router.
  *
  * @package Phact\Application
  */
@@ -37,15 +38,9 @@ class Application
     protected $_modules;
     protected $_modulesConfig;
 
-    public function __construct($config = [])
+    public function init()
     {
-        $this->configure($config);
         $this->setUpPaths();
-    }
-
-    public function configure($config = [])
-    {
-        Configurator::configure($this, $config);
     }
 
     public function setPaths($paths)

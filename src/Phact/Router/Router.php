@@ -33,6 +33,11 @@ class Router
     protected $_basePath = '';
 
     /**
+     * @var string|null Path to routes file (ex: base.config.routes)
+     */
+    public $pathRoutes;
+
+    /**
      * @var array Array of default match types (regex helpers)
      */
     protected $_matchTypes = array(
@@ -45,17 +50,11 @@ class Router
         ''   => '[^/\.]++'
     );
 
-    /**
-     * Create router in one call from config.
-     *
-     * @param array $routes
-     * @param string $basePath
-     * @param array $matchTypes
-     */
-    public function __construct( $routes = array(), $basePath = '', $matchTypes = array() ) {
-        $this->addRoutes($routes);
-        $this->setBasePath($basePath);
-        $this->addMatchTypes($matchTypes);
+    public function init()
+    {
+        if ($this->pathRoutes) {
+            $this->collectFromFile($this->pathRoutes);
+        }
     }
 
     /**
@@ -319,6 +318,18 @@ class Router
     }
 
     /**
+     * Append routes from file
+     *
+     * @param $path
+     */
+    public function collectFromFile($path)
+    {
+        $routesPath = Paths::file($path, 'php');
+        $routes = include $routesPath;
+        $this->collect($routes);
+    }
+
+    /**
      * Append routes from array
      *
      * @param array $configuration
@@ -377,7 +388,7 @@ class Router
         $method = implode('|', $methods);
         $name = isset($item['name']) ? $item['name'] : '';
         if ($name && $namespace) {
-            $name = $name . ':' . $namespace;
+            $name = $namespace . ':' .$name ;
         }
         $path = isset($item['route']) ? $item['route'] : '';
         if ($route && $path) {

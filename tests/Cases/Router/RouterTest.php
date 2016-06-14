@@ -28,14 +28,25 @@ class RouterTest extends AppTest
         $routes = include $routesPath;
         $router->collect($routes);
         $this->assertEquals([[
-            'GET|POST',
-            '/test_route',
-            [
-                'Modules\Test\Controllers\TestController',
-                'test'
+                'GET|POST',
+                '/test_route',
+                [
+                    'Modules\Test\Controllers\TestController',
+                    'test'
+                ],
+                'test:test'
             ],
-            'test:test'
-        ]], $router->getRoutes());
+            [
+                'GET|POST',
+                '/test_route/{:name}',
+                [
+                    'Modules\Test\Controllers\TestController',
+                    'testParam'
+                ],
+                'test:test_param'
+            ]
+        ], $router->getRoutes());
+
         $this->assertEquals('/test_route', $router->url('test:test'));
         $this->assertEquals([
             'target' => [

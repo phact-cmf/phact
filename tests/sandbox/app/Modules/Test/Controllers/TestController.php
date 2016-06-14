@@ -14,11 +14,17 @@
 
 namespace Modules\Test\Controllers;
 
+use Phact\Controller\Controller;
 
-class TestController
+class TestController extends Controller
 {
     public function test()
     {
-        
+        echo 'test';
+    }
+
+    public function testParam($name)
+    {
+        echo 'Name: ' . $name;
     }
 }

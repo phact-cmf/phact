@@ -1,0 +1,82 @@
+<?php
+/**
+ *
+ *
+ * All rights reserved.
+ *
+ * @author Okulov Anton
+ * @email qantus@mail.ru
+ * @version 1.0
+ * @company HashStudio
+ * @site http://hashstudio.ru
+ * @date 14/06/16 08:01
+ */
+
+namespace Phact\Controller;
+
+use Phact\Exceptions\InvalidConfigException;
+use Phact\Helpers\SmartProperties;
+use Phact\Request\Request;
+use ReflectionMethod;
+
+class Controller
+{
+    use SmartProperties;
+
+    /**
+     * @var Request
+     */
+    protected $_request;
+
+    /**
+     * @var string|null Default action
+     */
+    public $defaultAction;
+
+    public function __construct(Request $request)
+    {
+        $this->_request = $request;
+    }
+
+    public function run($action = null, $params = [])
+    {
+        if (!$action) {
+            $action = $this->defaultAction;
+        }
+        if (method_exists($this, $action)) {
+            $this->runAction($action, $params);
+        } else {
+            $class = self::class;
+            throw new InvalidConfigException("There is no action {$action} in controller {$class}");
+        }
+    }
+
+    public function runAction($action, $params = [])
+    {
+        $method = new ReflectionMethod($this, $action);
+        $ps = [];
+        if ($method->getNumberOfParameters() > 0) {
+            foreach ($method->getParameters() as $param) {
+                $name = $param->getName();
+                if (isset($params[$name])) {
+                    if ($param->isArray()) {
+                        $ps[] = is_array($params[$name]) ? $params[$name] : [$params[$name]];
+                    } elseif (!is_array($params[$name])) {
+                        $ps[] = $params[$name];
+                    } else {
+                        return false;
+                    }
+                } elseif ($param->isDefaultValueAvailable()) {
+                    $ps[] = $param->getDefaultValue();
+                } else {
+                    $class = self::class;
+                    throw new InvalidConfigException("Param {$name} for action {$action} in controller {$class} must be defined. Please, check your routes.");
+                }
+            }
+            $method->invokeArgs($this, $ps);
+        } else {
+            $this->{$action}();
+        }
+        return true;
+    }
+}

@@ -15,5 +15,8 @@
         <testsuite name="Router">
             <directory>./tests/Cases/Router</directory>
         </testsuite>
+        <testsuite name="Controller">
+            <directory>./tests/Cases/Controller</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

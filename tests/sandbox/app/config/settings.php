@@ -11,6 +11,10 @@ return [
     'components' => [
         'request' => [
             'class' => \Phact\Request\Request::class
+        ],
+        'router' => [
+            'class' => \Phact\Router\Router::class,
+            'pathRoutes' => 'base.config.routes'
         ]
     ]
 ];

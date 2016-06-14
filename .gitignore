@@ -3,3 +3,4 @@ composer.lock
 vendor
 .idea
 /tests/config/connections_local.php
+.DS_Store

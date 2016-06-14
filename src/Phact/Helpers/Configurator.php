@@ -39,8 +39,8 @@ class Configurator
         } elseif (!is_string($class)) {
             throw new InvalidConfigException("Class name must be defined");
         }
-        $obj = empty($config) ? new $class : new $class($config);
-
+        
+        $obj = new $class;
         $obj = self::configure($obj, $config);
         if (method_exists($obj, 'init')) {
             $obj->init();
