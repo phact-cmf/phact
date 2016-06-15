@@ -21,6 +21,9 @@ class Request
 {
     use SmartProperties;
 
+    /**
+     * @var Http
+     */
     public $http;
 
     /**

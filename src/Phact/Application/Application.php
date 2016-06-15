@@ -14,7 +14,9 @@
 
 namespace Phact\Application;
 
+use Phact\Controller\Controller;
 use Phact\Exceptions\InvalidConfigException;
+use Phact\Exceptions\NotFoundHttpException;
 use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
@@ -24,8 +26,9 @@ use Phact\Orm\ConnectionManager;
 /**
  * Class Application
  *
- * @property \Phact\Orm\ConnectionManager $db Database connection.
- * @property \Phact\Router\Router $router Url manager, router.
+ * @property \Phact\Orm\ConnectionManager $db Database connection
+ * @property \Phact\Router\Router $router Url manager, router
+ * @property \Phact\Request\Request $request Request
  *
  * @package Phact\Application
  */
@@ -96,5 +99,69 @@ class Application
         if (!is_dir($modulesPath)) {
             throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');
         }
+    }
+
+    public function run()
+    {
+        register_shutdown_function([$this, 'end'], 0);
+        $this->handleRequest();
+    }
+
+    public function end($status = 0, $response = null)
+    {
+        $this->signal->send($this, 'endRequest', $this);
+        exit($status);
+    }
+
+    public function handleRequest()
+    {
+        if ($this->getIsWebMode()) {
+            $this->handleWebRequest();
+        } elseif ($this->getIsWebMode()) {
+            $this->handleCliRequest();
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public static function getIsCliMode()
+    {
+        return php_sapi_name() == 'cli';
+    }
+
+    /**
+     * @return bool
+     */
+    public static function getIsWebMode()
+    {
+        return php_sapi_name() != 'cli';
+    }
+
+    public function handleWebRequest()
+    {
+        $request = $this->request;
+        $router = $this->router;
+        $match = $router->match($request->http->getUrl(), $request->http->getMethod());
+        if (!$match) {
+            throw new NotFoundHttpException("Page not found");
+        }
+
+        if (is_array($match['target']) && isset($match['target'][0])) {
+            $controllerClass = $match['target'][0];
+            $action = isset($match['target'][1]) ? $match['target'][1] : null;
+            $params = $match['params'];
+
+            /** @var Controller $controller */
+            $controller = new $controllerClass($this->request);
+            $controller->run($action, $params);
+        } elseif (is_callable($match['target'])) {
+            $fn = $match['target'];
+            $fn($this->request, $match['params']);
+        }
+    }
+
+    public function handleCliRequest()
+    {
     }
 }
