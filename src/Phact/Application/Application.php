@@ -109,7 +109,6 @@ class Application
 
     public function end($status = 0, $response = null)
     {
-        $this->signal->send($this, 'endRequest', $this);
         exit($status);
     }
 
