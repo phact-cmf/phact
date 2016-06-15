@@ -10,7 +10,10 @@
       "Phact\\Main\\": "src/Phact/Main",
       "Phact\\Exceptions\\": "src/Phact/Exceptions",
       "Phact\\Helpers\\": "src/Phact/Helpers",
-      "Phact\\Orm\\": "src/Phact/Orm"
+      "Phact\\Orm\\": "src/Phact/Orm",
+      "Phact\\Request\\": "src/Phact/Request",
+      "Phact\\Controller\\": "src/Phact/Controller",
+      "Phact\\Router\\": "src/Phact/Router"
     }
   },
   "require": {
