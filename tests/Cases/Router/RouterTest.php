@@ -125,4 +125,28 @@ class RouterTest extends AppTest
     {
         $router->url('first-route');
     }
+
+    public function testIndex()
+    {
+        $router = new Router();
+        $router->collect([
+            [
+                'route' => '',
+                'target' => 'target',
+                'name' => 'first-route'
+            ]
+        ]);
+
+        $this->assertEquals([
+            'target' => 'target',
+            'params' => [],
+            'name' => 'first-route'
+        ], $router->match('/'));
+
+        $this->assertEquals([
+            'target' => 'target',
+            'params' => [],
+            'name' => 'first-route'
+        ], $router->match(''));
+    }
 }

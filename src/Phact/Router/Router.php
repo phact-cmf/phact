@@ -115,6 +115,10 @@ class Router
      */
     public function map($method, $route, $target, $name = null) {
 
+        if ($route == '') {
+            $route = '/';
+        }
+
         $this->_routes[] = array($method, $route, $target, $name);
 
         if($name) {
@@ -196,6 +200,8 @@ class Router
         // set Request Url if it isn't passed as parameter
         if($requestUrl === null) {
             $requestUrl = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
+        } elseif ($requestUrl === '') {
+            $requestUrl = '/';
         }
 
         // strip base path from request url
@@ -382,7 +388,7 @@ class Router
      * @param string $route
      * @throws Exception
      */
-    public function appendRoute($item, $namespace = '', $route = '')
+    public function appendRoute($item, $namespace = '', $route = '/')
     {
         $methods = isset($item['methods']) ? $item['methods'] : ["GET", "POST"];
         $method = implode('|', $methods);
