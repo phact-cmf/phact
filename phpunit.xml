@@ -18,5 +18,8 @@
         <testsuite name="Controller">
             <directory>./tests/Cases/Controller</directory>
         </testsuite>
+        <testsuite name="Event">
+            <directory>./tests/Cases/Event</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

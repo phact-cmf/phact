@@ -15,6 +15,9 @@ return [
         'router' => [
             'class' => \Phact\Router\Router::class,
             'pathRoutes' => 'base.config.routes'
+        ],
+        'events' => [
+            'class' => \Phact\Event\EventManager::class
         ]
     ]
 ];

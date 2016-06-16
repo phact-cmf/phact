@@ -13,7 +13,8 @@
       "Phact\\Orm\\": "src/Phact/Orm",
       "Phact\\Request\\": "src/Phact/Request",
       "Phact\\Controller\\": "src/Phact/Controller",
-      "Phact\\Router\\": "src/Phact/Router"
+      "Phact\\Router\\": "src/Phact/Router",
+      "Phact\\Event\\": "src/Phact/Event"
     }
   },
   "require": {
