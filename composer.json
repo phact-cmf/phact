@@ -14,12 +14,14 @@
       "Phact\\Request\\": "src/Phact/Request",
       "Phact\\Controller\\": "src/Phact/Controller",
       "Phact\\Router\\": "src/Phact/Router",
-      "Phact\\Event\\": "src/Phact/Event"
+      "Phact\\Event\\": "src/Phact/Event",
+      "Phact\\Template\\": "src/Phact/Template"
     }
   },
   "require": {
     "php": ">=5.4",
-    "usmanhalalit/pixie": "~2.0.0"
+    "usmanhalalit/pixie": "~2.0.0",
+    "fenom/fenom": ">=2.11.1"
   },
   "authors": [
     {

@@ -21,5 +21,8 @@
         <testsuite name="Event">
             <directory>./tests/Cases/Event</directory>
         </testsuite>
+        <testsuite name="Template">
+            <directory>./tests/Cases/Template</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

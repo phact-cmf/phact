@@ -61,8 +61,8 @@ class Application
     public function getModule($name)
     {
         if (!isset($this->_modules[$name])) {
-            if (isset($this->_modulesConfig[$name])) {
-                $config = $this->_modulesConfig[$name];
+            $config = $this->getModuleConfig($name);
+            if (!is_null($config)) {
                 if (!isset($config['class'])) {
                     $config['class'] = '\\Modules\\' . ucfirst($name) . '\\' . ucfirst($name) . 'Module';
                 }
@@ -73,6 +73,30 @@ class Application
         }
 
         return $this->_modules[$name];
+    }
+
+    public function getModuleConfig($name)
+    {
+        if (array_key_exists($name, $this->_modulesConfig)) {
+            return $this->_modulesConfig[$name];
+        } elseif (in_array($name, $this->_modulesConfig)) {
+            return [];
+        } else {
+            return null;
+        }
+    }
+
+    public function getModules()
+    {
+        $list = [];
+        foreach ($this->_modulesConfig as $key => $module) {
+            if (is_string($key)) {
+                $list[] = $key;
+            } elseif (is_string($module)) {
+                $list[] = $module;
+            }
+        }
+        return $list;
     }
 
     public function setUpPaths()
