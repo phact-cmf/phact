@@ -16,6 +16,7 @@ namespace Phact\Controller;
 
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\SmartProperties;
+use Phact\Main\Phact;
 use Phact\Request\Request;
 use ReflectionMethod;
 
@@ -78,5 +79,15 @@ class Controller
             $this->{$action}();
         }
         return true;
+    }
+
+    /**
+     * @param string $template Path to template
+     * @param array $params
+     * @return string
+     */
+    public function render($template, $params = [])
+    {
+        return Phact::app()->template->render($template, $params);
     }
 }

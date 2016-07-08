@@ -29,6 +29,7 @@ use Phact\Orm\ConnectionManager;
  * @property \Phact\Orm\ConnectionManager $db Database connection
  * @property \Phact\Router\Router $router Url manager, router
  * @property \Phact\Request\Request $request Request
+ * @property \Phact\Template\TemplateManager $template Template manager
  *
  * @package Phact\Application
  */
