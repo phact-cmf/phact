@@ -20,6 +20,13 @@ use Phact\Main\Phact;
 use Phact\Request\Request;
 use ReflectionMethod;
 
+/**
+ * Class Controller
+ *
+ * @property \Phact\Request\Request $request
+ *
+ * @package Phact\Controller
+ */
 class Controller
 {
     use SmartProperties;
@@ -37,6 +44,11 @@ class Controller
     public function __construct(Request $request)
     {
         $this->_request = $request;
+    }
+
+    public function getRequest()
+    {
+        return $this->_request;
     }
 
     public function run($action = null, $params = [])

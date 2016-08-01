@@ -16,11 +16,9 @@ namespace Phact\Request;
 
 use ArrayAccess;
 use Countable;
-use IteratorAggregate;
 use Phact\Exceptions\InvalidConfigException;
-use Phact\Helpers\Collection;
 use Phact\Helpers\Configurator;
-use Traversable;
+use SessionHandlerInterface;
 
 class Session implements ArrayAccess, Countable
 {
@@ -28,6 +26,9 @@ class Session implements ArrayAccess, Countable
 
     public $autoStart = true;
 
+    /**
+     * @var null|SessionHandlerInterface
+     */
     public $handler = null;
 
     public function init()
@@ -51,7 +52,7 @@ class Session implements ArrayAccess, Countable
             if (!is_object($this->handler)) {
                 $this->handler = Configurator::create($this->handler);
             }
-            if (!$this->handler instanceof \SessionHandlerInterface) {
+            if (!$this->handler instanceof SessionHandlerInterface) {
                 throw new InvalidConfigException('"' . get_class($this) . '::handler" must implement the SessionHandlerInterface.');
             }
             $this->debug ? session_set_save_handler($this->handler, false) : @session_set_save_handler($this->handler, false);
