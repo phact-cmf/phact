@@ -23,6 +23,8 @@ use Phact\Main\Phact;
  * Class Request
  *
  * @property \Phact\Request\Session $session
+ * @property \Phact\Helpers\Collection $get
+ * @property \Phact\Helpers\Collection $post
  *
  * @package Phact\Request
  */
@@ -53,5 +55,23 @@ class Request
     public function getSession()
     {
         return Phact::app()->session;
+    }
+
+    /**
+     * Alias to http/get
+     * @return Session
+     */
+    public function getGet()
+    {
+        return $this->http->get;
+    }
+
+    /**
+     * Alias to http/post
+     * @return Session
+     */
+    public function getPost()
+    {
+        return $this->http->post;
     }
 }
