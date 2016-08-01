@@ -15,7 +15,8 @@
       "Phact\\Controller\\": "src/Phact/Controller",
       "Phact\\Router\\": "src/Phact/Router",
       "Phact\\Event\\": "src/Phact/Event",
-      "Phact\\Template\\": "src/Phact/Template"
+      "Phact\\Template\\": "src/Phact/Template",
+      "Phact\\Cli\\": "src/Phact/Cli"
     }
   },
   "require": {
