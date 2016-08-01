@@ -2,7 +2,7 @@
 
 namespace Phact\Request;
 
-use Cli\Cli;
+use Phact\Cli\Cli;
 use Phact\Helpers\Collection;
 use Phact\Helpers\SmartProperties;
 

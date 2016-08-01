@@ -12,7 +12,7 @@
  * @date 01/08/16 15:01
  */
 
-namespace Cli;
+namespace Phact\Cli;
 
 class Cli
 {
