@@ -2,6 +2,7 @@
 
 namespace Phact\Request;
 
+use Cli\Cli;
 use Phact\Helpers\Collection;
 use Phact\Helpers\SmartProperties;
 
@@ -27,25 +28,13 @@ class Request
     public $http;
 
     /**
-     * @var Collection
+     * @var Cli
      */
-    public $get;
-
-    /**
-     * @var Collection
-     */
-    public $post;
-
-    public $files;
-
-    public $flash;
-
-    public $session;
+    public $cli;
 
     public function init()
     {
-        $this->get = new Collection($_GET);
-        $this->post = new Collection($_POST);
         $this->http = new Http();
+        $this->cli = new Cli();
     }
 }

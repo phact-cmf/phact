@@ -14,7 +14,6 @@
 
 namespace Phact\Helpers;
 
-
 use ArrayAccess;
 use ArrayIterator;
 use Countable;
@@ -25,6 +24,11 @@ use Traversable;
 class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializable
 {
     protected $_data = [];
+
+    public function __construct($data = [])
+    {
+        $this->_data = $data;
+    }
 
     public function add($key, $value)
     {

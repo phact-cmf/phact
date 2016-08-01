@@ -14,8 +14,8 @@
 
 namespace Phact\Request;
 
-
 use Phact\Exceptions\InvalidConfigException;
+use Phact\Helpers\Collection;
 
 class Http
 {
@@ -37,6 +37,16 @@ class Http
     protected $_port;
 
     protected $_securePort;
+
+    public $get;
+
+    public $post;
+
+    public function __construct()
+    {
+        $this->get = new Collection($_GET);
+        $this->post = new Collection($_POST);
+    }
 
     public function getMethod()
     {

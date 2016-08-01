@@ -141,7 +141,7 @@ class Application
     {
         if ($this->getIsWebMode()) {
             $this->handleWebRequest();
-        } elseif ($this->getIsWebMode()) {
+        } else {
             $this->handleCliRequest();
         }
     }
@@ -159,7 +159,7 @@ class Application
      */
     public static function getIsWebMode()
     {
-        return php_sapi_name() != 'cli';
+        return !self::getIsCliMode();
     }
 
     public function handleWebRequest()
