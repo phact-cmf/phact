@@ -14,10 +14,22 @@
 
 namespace Phact\Request;
 
+use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\Collection;
+use Phact\Helpers\Configurator;
 
-class Http
+/**
+ * Class HttpRequest
+ *
+ * @property \Phact\Request\Session $session
+ * @property \Phact\Helpers\Collection $get
+ * @property \Phact\Helpers\Collection $post
+ *
+ * @package Phact\Request
+ *
+ */
+class HttpRequest extends Request
 {
     /**
      * @var string the name of the POST parameter that is used to indicate if a request is a PUT, PATCH or DELETE
@@ -38,14 +50,103 @@ class Http
 
     protected $_securePort;
 
+    /**
+     * @var Session
+     */
+    protected $_session;
+
+    /**
+     * @var CookieCollection
+     */
+    public $cookie;
+
+    /**
+     * @var Collection
+     */
     public $get;
 
+    /**
+     * @var Collection
+     */
     public $post;
+
+    public $enableCsrfValidation = false;
+
+    public $csrfTokenName = "CSRF_TOKEN";
+
+    public $csrfTokenHeader = "X-CSRF-Token";
+
+    protected $_csrfToken;
+
+    public function init()
+    {
+        if ($this->enableCsrfValidation) {
+            $this->validateCsrfToken();
+        }
+    }
+
+    public function validateCsrfToken()
+    {
+        $method = $this->getMethod();
+        if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
+            // @TODO: PUT, PATCH, DELETE check
+            $userToken = $this->post->get($this->csrfTokenName);
+            $validToken = $this->getCsrfToken();
+
+            if (!$userToken) {
+                $userToken = $this->getCsrfTokenFromHeader();
+            }
+
+            $valid = $userToken == $validToken;
+            if (!$valid) {
+                throw new HttpException(400, 'CSRF token is invalid');
+            }
+        }
+    }
+
+    public function getCsrfTokenFromHeader()
+    {
+        return $this->getHeaderValue($this->csrfTokenHeader);
+    }
+
+    public function getHeaderValue($key)
+    {
+        $key = 'HTTP_' . str_replace('-', '_', strtoupper($key));
+        return isset($_SERVER[$key]) ? $_SERVER[$key] : null;
+    }
+
+    public function getCsrfToken()
+    {
+        // Write to cookie
+        if (!$this->_csrfToken) {
+            $this->_csrfToken = $this->cookie->get($this->csrfTokenName);
+            if (!$this->_csrfToken) {
+                $this->_csrfToken = sha1(uniqid(mt_rand(), true));
+                $this->cookie->add($this->csrfTokenName, $this->_csrfToken);
+            }
+        }
+        return $this->_csrfToken;
+    }
 
     public function __construct()
     {
         $this->get = new Collection($_GET);
         $this->post = new Collection($_POST);
+        $this->cookie = new Collection($_POST);
+    }
+    
+    public function setSession($session)
+    {
+        if ($session instanceof Session) {
+            $this->_session = $session;
+        } elseif (is_array($session) || is_string($session)) {
+            $this->_session = Configurator::create($session);
+        }
+    }
+
+    public function getSession()
+    {
+        $this->_session;
     }
 
     public function getMethod()

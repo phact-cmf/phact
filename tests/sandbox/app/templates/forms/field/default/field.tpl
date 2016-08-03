@@ -1,0 +1,4 @@
+{$label}
+{$input}
+{$errors}
+{$hint}

@@ -13,7 +13,7 @@ require_once(__DIR__ . '/Templates/TestCase.php');
 require_once(__DIR__ . '/Templates/AppTest.php');
 require_once(__DIR__ . '/Templates/DatabaseTest.php');
 
-$models = glob(__DIR__ . '/sandbox/app/Modules/Test/**/*.php');
-foreach ($models as $model) {
-    require_once($model);
+$classes = glob(__DIR__ . '/sandbox/app/Modules/Test/**/*.php');
+foreach ($classes as $class) {
+    require_once($class);
 }

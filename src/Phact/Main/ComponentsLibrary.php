@@ -44,6 +44,14 @@ trait ComponentsLibrary
         return $this->_components[$name];
     }
 
+    public function setComponent($name, $component)
+    {
+        if (!is_object($component)) {
+            $component = Configurator::create($component);
+        }
+        $this->_components[$name] = $component;
+    }
+
     public function hasComponent($name)
     {
         return isset($this->_componentsConfig[$name]);

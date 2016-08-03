@@ -20,6 +20,7 @@ use Modules\Test\Controllers\TestController;
 use Phact\Controller\Controller;
 use Phact\Helpers\Paths;
 use Phact\Main\Phact;
+use Phact\Request\HttpRequest;
 use Phact\Request\Request;
 use Phact\Router\Router;
 
@@ -28,7 +29,7 @@ class ControllerTest extends AppTest
     public function testSimple()
     {
         $this->expectOutputString('test');
-        $controller = new TestController(new Request());
+        $controller = new TestController(new HttpRequest());
         $controller->run('test');
     }
 
@@ -44,14 +45,14 @@ class ControllerTest extends AppTest
         $params = $match['params'];
 
         /** @var Controller $controller */
-        $controller = new $controllerClass(new Request());
+        $controller = new $controllerClass(new HttpRequest());
         $controller->run($action, $params);
     }
 
     public function testParams()
     {
         $this->expectOutputString('Name: params_test');
-        $controller = new TestController(new Request());
+        $controller = new TestController(new HttpRequest());
         $controller->run('testParam', ['name' => 'params_test']);
     }
 
@@ -67,7 +68,7 @@ class ControllerTest extends AppTest
         $params = $match['params'];
 
         /** @var Controller $controller */
-        $controller = new $controllerClass(new Request());
+        $controller = new $controllerClass(new HttpRequest());
         $controller->run($action, $params);
     }
 
@@ -76,7 +77,7 @@ class ControllerTest extends AppTest
      */
     public function testInvalidParams()
     {
-        $controller = new TestController(new Request());
+        $controller = new TestController(new HttpRequest());
         $controller->run('testParam', ['id' => 'params_test']);
     }
 
@@ -86,7 +87,7 @@ class ControllerTest extends AppTest
      */
     public function testUnknownAction()
     {
-        $controller = new TestController(new Request());
+        $controller = new TestController(new HttpRequest());
         $controller->run('unknownAction');
     }
 }

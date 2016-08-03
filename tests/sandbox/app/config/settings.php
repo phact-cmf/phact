@@ -10,11 +10,16 @@ return [
     ],
     'components' => [
         'request' => [
-            'class' => \Phact\Request\Request::class
-        ],
-        'session' => [
-            'class' => \Phact\Request\Session::class,
-            'autoStart' => \Phact\Application\Application::getIsCliMode()
+            'class' => \Phact\Request\RequestManager::class,
+            'httpRequest' => [
+                'class' => \Phact\Request\HttpRequest::class,
+                'session' => [
+                    'class' => \Phact\Request\Session::class
+                ]
+            ],
+            'cliRequest' => [
+                'class' => \Phact\Request\CliRequest::class,
+            ]
         ],
         'router' => [
             'class' => \Phact\Router\Router::class,
@@ -22,6 +27,9 @@ return [
         ],
         'events' => [
             'class' => \Phact\Event\EventManager::class
+        ],
+        'template' => [
+            'class' => \Phact\Template\TemplateManager::class
         ]
     ]
 ];

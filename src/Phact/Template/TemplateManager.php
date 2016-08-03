@@ -29,6 +29,10 @@ class TemplateManager
      */
     protected $_renderer;
 
+    public $forceCompile = false;
+    public $autoReload = true;
+    public $autoEscape = true;
+
     public $templateFolder = 'templates';
     public $cacheFolder = 'templates_cache';
 
@@ -42,6 +46,11 @@ class TemplateManager
         }
         $this->_renderer = new Fenom($provider);
         $this->_renderer->setCompileDir($cacheFolder);
+        $this->_renderer->setOptions([
+            'force_compile' => $this->forceCompile,
+            'auto_reload' => $this->autoReload
+        ]);
+        $this->extendRenderer();
     }
 
     /**
@@ -71,5 +80,12 @@ class TemplateManager
     public function render($template, $params = [])
     {
         return $this->_renderer->fetch($template, $params);
+    }
+
+    public function extendRenderer()
+    {
+        $this->_renderer->addModifier('safe_element', function($variable, $param, $default = '') {
+            return isset($variable[$param]) ? $variable[$param] : $default;
+        });
     }
 }

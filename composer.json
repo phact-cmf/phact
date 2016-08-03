@@ -16,12 +16,13 @@
       "Phact\\Router\\": "src/Phact/Router",
       "Phact\\Event\\": "src/Phact/Event",
       "Phact\\Template\\": "src/Phact/Template",
-      "Phact\\Cli\\": "src/Phact/Cli"
+      "Phact\\Cli\\": "src/Phact/Cli",
+      "Phact\\Form\\": "src/Phact/Form"
     }
   },
   "require": {
     "php": ">=5.4",
-    "usmanhalalit/pixie": "~2.0.0",
+    "phact-cmf/pixie": ">=2.0.1",
     "fenom/fenom": ">=2.11.1"
   },
   "authors": [

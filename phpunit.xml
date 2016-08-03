@@ -24,5 +24,8 @@
         <testsuite name="Template">
             <directory>./tests/Cases/Template</directory>
         </testsuite>
+        <testsuite name="Form">
+            <directory>./tests/Cases/Form</directory>
+        </testsuite>
     </testsuites>
 </phpunit>
