@@ -28,6 +28,8 @@ class HasManyField extends RelationField
     protected $_from = 'id';
     protected $_throughFor;
 
+    public $editable = false;
+
     public function setThroughFor($throughFor)
     {
         $this->_throughFor = $throughFor;

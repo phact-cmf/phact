@@ -84,20 +84,30 @@ class ForeignField extends RelationField
     public function setValue($value, $aliasConfig = null)
     {
         if (!is_null($value)) {
-            if ($aliasConfig == 'raw') {
-                if (!is_string($value) && !is_int($value) && !is_null($value)) {
-                    throw new \InvalidArgumentException("Value for raw ForeignField must be a string, int or null");
-                }
-                return $value;
+            if ($aliasConfig == 'raw' || !is_object($value)) {
+                $this->setRawValue($value);
             } else {
-                if (!is_object($value) || !is_a($value, $this->modelClass)) {
-                    throw new \InvalidArgumentException("Value for ForeignField must be instance of {class}");
-                }
-                return $value->{$this->to};
+                $this->setObjectValue($value);
             }
         } else {
-            return null;
+            $this->_attribute = null;
         }
+    }
+
+    public function setRawValue($value)
+    {
+        if (!is_string($value) && !is_int($value) && !is_null($value)) {
+            throw new \InvalidArgumentException("Raw value for ForeignField must be a string, int or null");
+        }
+        $this->_attribute = $value;
+    }
+
+    public function setObjectValue($value)
+    {
+        if (!is_a($value, $this->modelClass)) {
+            throw new \InvalidArgumentException("Object value for ForeignField must be instance of {$this->modelClass}");
+        }
+        $this->_attribute = $value->{$this->to};
     }
     
     protected function fetchModel()

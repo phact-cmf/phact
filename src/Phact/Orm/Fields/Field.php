@@ -14,6 +14,8 @@
 
 namespace Phact\Orm\Fields;
 
+use Phact\Form\Fields\CharField;
+use Phact\Form\Fields\DropDownField;
 
 use Phact\Helpers\SmartProperties;
 
@@ -42,8 +44,16 @@ abstract class Field
 
     protected $_attribute;
 
+    /**
+     * Can field be NULL
+     * @var bool
+     */
     public $null = false;
 
+    /**
+     * Can field be blank/empty
+     * @var bool
+     */
     public $blank = false;
 
     /**
@@ -63,6 +73,32 @@ abstract class Field
      */
     public $default = null;
 
+    /**
+     * @var array
+     */
+    public $choices = [];
+
+    /**
+     * Can edit with forms
+     * @var bool
+     */
+    public $editable = true;
+
+    /**
+     * Label
+     * @var bool
+     */
+    public $label = '';
+
+    /**
+     * Help text
+     * @var bool
+     */
+    public $hint = '';
+
+    /**
+     * @return string
+     */
     public function getBlankValue()
     {
         return '';
@@ -190,6 +226,7 @@ abstract class Field
      * $model->{attribute_name} = $value;
      *
      * @param $value
+     * @param null $aliasConfig
      * @return mixed
      */
     public function setValue($value, $aliasConfig = null)
@@ -207,6 +244,8 @@ abstract class Field
         if (is_null($value)) {
             if ($this->null) {
                 return null;
+            } elseif ($this->default) {
+                return $this->default;
             } else {
                 return $this->getBlankValue();
             }
@@ -269,6 +308,10 @@ abstract class Field
     {
     }
 
+    /**
+     * @param $value
+     * @return mixed
+     */
     protected function dbPrepareValue($value)
     {
         return $value;
@@ -278,4 +321,46 @@ abstract class Field
      * @return string
      */
     abstract public function getSqlType();
+
+
+    /**
+     * Getting config form field
+     * @return null
+     */
+    public function getFormField()
+    {
+        return $this->setUpFormField();
+    }
+
+    /**
+     * Setting up form field
+     *
+     * @param array $config
+     * @return null
+     */
+    public function setUpFormField($config = [])
+    {
+        if (!$this->editable) {
+            return null;
+        }
+
+        $class = isset($config['class']) ? $config['class'] : null;
+
+        if ($this->choices && !$class) {
+            $class = DropDownField::class;
+        }
+
+        if (!$class) {
+            $class = CharField::class;
+        }
+
+        return array_merge([
+            'class' => $class,
+            'required' => !$this->null && !$this->blank,
+            'label' => $this->label,
+            'hint' => $this->hint,
+            'value' => $this->default,
+            'choices' => $this->choices
+        ], $config);
+    }
 }

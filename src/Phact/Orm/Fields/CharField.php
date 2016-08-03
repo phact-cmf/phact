@@ -30,6 +30,6 @@ class CharField extends Field
 
     public function getSqlType()
     {
-        return "varchar({$this->length})";
+        return "VARCHAR({$this->length})";
     }
 }

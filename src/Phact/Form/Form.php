@@ -43,12 +43,28 @@ abstract class Form
      * @var string
      */
     public $prefix = '';
+
+    public function __construct($config = [])
+    {
+        Configurator::configure($this, $config);
+    }
+
     /**
      * @return array
      */
     public function getFields()
     {
         return [];
+    }
+
+    /**
+     * Fields preparation
+     *
+     * @return array
+     */
+    public function getFieldsConfigs()
+    {
+        return $this->getFields();
     }
 
     /**
@@ -59,7 +75,7 @@ abstract class Form
     {
         if (is_null($this->_initFields)) {
             $this->_initFields = [];
-            foreach ($this->getFields() as $name => $fieldConfig) {
+            foreach ($this->getFieldsConfigs() as $name => $fieldConfig) {
                 if (!in_array($name, $this->exclude)) {
                     /** @var Field $field */
                     $field = Configurator::create($fieldConfig);
@@ -68,8 +84,16 @@ abstract class Form
                     $this->_initFields[$name] = $field;
                 }
             }
+            $this->afterInitFields();
         }
         return $this->_initFields;
+    }
+
+    /**
+     * Calls after fields inited
+     */
+    public function afterInitFields()
+    {
     }
 
     /**
@@ -80,6 +104,12 @@ abstract class Form
     {
         $fields = $this->getInitFields();
         return isset($fields[$name]) ? $fields[$name] : null;
+    }
+
+    public function hasField($name)
+    {
+        $fields = $this->getInitFields();
+        return isset($fields[$name]) ? true : false;
     }
 
     public function fill($data, $files = [])
@@ -94,14 +124,18 @@ abstract class Form
 
     public function setAttributes($attributes)
     {
-        $fields = $this->getInitFields();
         foreach ($attributes as $name => $value)
         {
-            if (isset($fields[$name]) && ($field = $fields[$name])) {
-                $field->setValue($value);
-            }
+            $this->setAttribute($name, $value);
         }
         return $this;
+    }
+
+    public function setAttribute($name, $value)
+    {
+        if ($field = $this->getField($name)) {
+            $field->setValue($value);
+        }
     }
 
     public function getAttributes()

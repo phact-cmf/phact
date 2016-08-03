@@ -9,16 +9,22 @@
  * @version 1.0
  * @company HashStudio
  * @site http://hashstudio.ru
- * @date 15/04/16 13:56
+ * @date 13/04/16 08:11
  */
 
 namespace Phact\Orm\Fields;
 
-
-class TextField extends CharField
+class TimeField extends DateTimeField
 {
+    public $format = 'H:i:s';
+
+    public function getBlankValue()
+    {
+        return '00:00:00';
+    }
+
     public function getSqlType()
     {
-        return "TEXT";
+        return "TIME({$this->fsp})";
     }
 }

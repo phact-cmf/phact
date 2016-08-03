@@ -233,16 +233,18 @@ class FieldsManager
     }
 
     /**
+     * @param $model
      * @param $name
      * @param $attribute
      * @return mixed
      * @throws UnknownPropertyException
      */
-    public function getFieldValue($name, $attribute)
+    public function getFieldValue($model, $name, $attribute)
     {
         if ($this->has($name)) {
             $field = $this->getField($name);
             $alias = $this->getAliasConfig($name);
+            $field->setModel($model);
             $field->setAttribute($attribute);
             return $field->getValue($alias);
         } else {
@@ -253,18 +255,21 @@ class FieldsManager
     }
 
     /**
+     * @param $model
      * @param $name
      * @param $value
      * @return mixed
      * @throws UnknownPropertyException
      */
-    public function setFieldValue($name, $value)
+    public function setFieldValue($model, $name, $value)
     {
         if ($this->has($name)) {
             $field = $this->getField($name);
             $alias = $this->getAliasConfig($name);
             $field->cleanAttribute();
-            return $field->setValue($value, $alias);
+            $field->setModel($model);
+            $field->setValue($value, $alias);
+            return $field->getAttribute();
         } else {
             throw new UnknownPropertyException(strtr("Getting value of unknown field: {field}", [
                 '{field}' => $name

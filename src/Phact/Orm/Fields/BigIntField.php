@@ -15,10 +15,11 @@
 namespace Phact\Orm\Fields;
 
 
-class IntField extends NumericField
+class BigIntField extends IntField
 {
-    public $length = 11;
-    
+    public $length = 20;
+    public $unsigned = true;
+
     public function getValue($aliasConfig = null)
     {
         return is_null($this->_attribute) ? null : (int) $this->_attribute;
@@ -26,11 +27,11 @@ class IntField extends NumericField
 
     public function dbPrepareValue($value)
     {
-        return (int) $value;
+        return (float) $value;
     }
 
     public function mainSqlType()
     {
-        return "INT({$this->length})";
+        return "BIGINT({$this->length})";
     }
 }

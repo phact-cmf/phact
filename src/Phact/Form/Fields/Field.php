@@ -150,6 +150,11 @@ abstract class Field
     public $multiple = false;
 
     /**
+     * @var array
+     */
+    public $choices = [];
+
+    /**
      * Checks required field
      *
      * @return bool

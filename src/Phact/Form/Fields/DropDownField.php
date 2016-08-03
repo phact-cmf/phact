@@ -9,15 +9,12 @@
  * @version 1.0
  * @company HashStudio
  * @site http://hashstudio.ru
- * @date 13/04/16 08:11
+ * @date 02/08/16 08:22
  */
 
-namespace Phact\Orm\Fields;
+namespace Phact\Form\Fields;
 
-
-class AutoField extends IntField
+class DropDownField extends Field
 {
-    public $pk = true;
-    public $unsigned = true;
-    public $editable = false;
+
 }

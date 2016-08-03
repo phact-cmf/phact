@@ -15,22 +15,23 @@
 namespace Phact\Orm\Fields;
 
 
-class IntField extends NumericField
+class BooleanField extends IntField
 {
-    public $length = 11;
-    
+    public $length = 1;
+    public $unsigned = true;
+
     public function getValue($aliasConfig = null)
     {
-        return is_null($this->_attribute) ? null : (int) $this->_attribute;
+        return $this->_attribute ? true : false;
     }
 
     public function dbPrepareValue($value)
     {
-        return (int) $value;
+        return $value ? 1 : 0;
     }
 
     public function mainSqlType()
     {
-        return "INT({$this->length})";
+        return "TINYINT({$this->length})";
     }
 }

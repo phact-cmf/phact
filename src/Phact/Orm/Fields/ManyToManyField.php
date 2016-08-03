@@ -53,6 +53,8 @@ class ManyToManyField extends RelationField
     public $onUpdateFrom = ForeignField::CASCADE;
     public $onDeleteFrom = ForeignField::CASCADE;
 
+    public $editable = false;
+    
     public function getFrom()
     {
         return $this->_from;

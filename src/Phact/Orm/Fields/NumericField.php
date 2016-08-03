@@ -15,10 +15,13 @@
 namespace Phact\Orm\Fields;
 
 
-class IntField extends NumericField
+abstract class NumericField extends Field
 {
-    public $length = 11;
-    
+    public function getBlankValue()
+    {
+        return 0;
+    }
+
     public function getValue($aliasConfig = null)
     {
         return is_null($this->_attribute) ? null : (int) $this->_attribute;
@@ -29,8 +32,17 @@ class IntField extends NumericField
         return (int) $value;
     }
 
-    public function mainSqlType()
+    public function getSqlType()
     {
-        return "INT({$this->length})";
+        $sql = [$this->mainSqlType()];
+        if ($this->unsigned) {
+            $sql[] = "UNSIGNED";
+        }
+        if ($this->zerofill) {
+            $sql[] = "ZEROFILL";
+        }
+        return implode(' ', $sql);
     }
+    
+    abstract public function mainSqlType();
 }

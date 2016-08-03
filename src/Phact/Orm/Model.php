@@ -20,6 +20,7 @@ use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Main\Phact;
+use Phact\Orm\Fields\Field;
 
 /**
  * Class Model
@@ -100,6 +101,14 @@ class Model
         return $this->getFieldsManager()->getPkAttribute();
     }
 
+    /**
+     * @return Field[]
+     */
+    public function getInitFields()
+    {
+        return $this->getFieldsManager()->getFields();
+    }
+
     public function getPk()
     {
         $pkAttribute = $this->getPkAttribute();
@@ -157,14 +166,52 @@ class Model
         return null;
     }
 
+
+    public function getAttributes()
+    {
+        $attributes = [];
+        $field = $this->getFieldsList();
+        foreach ($field as $fieldName) {
+            $attributes[$fieldName] = $this->getFieldValue($fieldName);
+        }
+        return $attributes;
+    }
+
+
     public function hasAttribute($name)
     {
         return array_key_exists($name, $this->_attributes) || array_key_exists($name, $this->_dbAttributes);
     }
 
-    public function setAttribute($attributeName, $attribute)
+    /**
+     * Use setAttribute to safe set attribute value
+     * @param $attributeName
+     * @param $attribute
+     */
+    public function setAttributeInternal($attributeName, $attribute)
     {
         $this->_attributes[$attributeName] = $attribute;
+    }
+
+    /**
+     * Safe set attribute value
+     *
+     * @param $attributeName
+     * @param $attribute
+     */
+    public function setAttribute($attributeName, $attribute)
+    {
+        $this->setFieldValue($attributeName, $attribute);
+    }
+
+    public function setAttributes($attributes)
+    {
+        if (!is_array($attributes)) {
+            throw new InvalidArgumentException('Attributes should be an array');
+        }
+        foreach ($attributes as $name => $value) {
+            $this->setAttribute($name, $value);
+        }
     }
 
     public function setDbData($data)
@@ -205,16 +252,37 @@ class Model
         return isset($metaData['connection']) ? $metaData['connection'] : 'default';
     }
 
-    public function __get($name)
+    public function getFieldValue($field)
     {
         $manager = $this->getFieldsManager();
-        if ($manager->has($name)) {
-            $attributeName = $manager->getFieldAttributeName($name);
+        if ($manager->has($field)) {
+            $attributeName = $manager->getFieldAttributeName($field);
             $attribute = null;
             if ($attributeName) {
                 $attribute = $this->getAttribute($attributeName);
             }
-            return $manager->getFieldValue($name, $attribute);
+            return $manager->getFieldValue($this, $field, $attribute);
+        }
+        return null;
+    }
+
+    public function setFieldValue($field, $value)
+    {
+        $manager = $this->getFieldsManager();
+        if ($manager->has($field)) {
+            $attributeName = $manager->getFieldAttributeName($field);
+            $attribute = $manager->setFieldValue($this, $field, $value);
+            if ($attributeName) {
+                $this->setAttributeInternal($attributeName, $attribute);
+            }
+        }
+    }
+
+    public function __get($name)
+    {
+        $manager = $this->getFieldsManager();
+        if ($manager->has($name)) {
+            return $this->getFieldValue($name);
         } else {
             return $this->__smartGet($name);
         }
@@ -224,11 +292,7 @@ class Model
     {
         $manager = $this->getFieldsManager();
         if ($manager->has($name)) {
-            $attributeName = $manager->getFieldAttributeName($name);
-            $attribute = $manager->setFieldValue($name, $value);
-            if ($attributeName) {
-                $this->setAttribute($attributeName, $attribute);
-            }
+            $this->setFieldValue($name, $value);
         } else {
             $this->__smartSet($name, $value);
         }
