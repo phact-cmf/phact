@@ -40,11 +40,12 @@ class Application
 
     public $name = 'Phact Application';
 
-    protected $_modules;
-    protected $_modulesConfig;
+    protected $_modules = [];
+    protected $_modulesConfig = [];
 
     public function init()
     {
+        $this->_provideModuleEvent('onApplicationInit');
         $this->setUpPaths();
     }
 
@@ -57,7 +58,37 @@ class Application
 
     public function setModules($config = [])
     {
-        $this->_modulesConfig = $config;
+        $this->_modulesConfig = $this->prepareModulesConfigs($config);
+    }
+
+    public function prepareModulesConfigs($rawConfig)
+    {
+        $configs = [];
+        foreach ($rawConfig as $key => $module) {
+            $name = null;
+            if (is_string($key)) {
+                $name = $key;
+            } elseif (is_string($module)) {
+                $name = $module;
+            }
+
+            if (!$name) {
+                throw new InvalidConfigException("Unable to configure module {$key}");
+            }
+
+            $name = ucfirst($name);
+            $class = '\\Modules\\' . $name . '\\' . $name . 'Module';
+            $config = [];
+            if (is_array($module)) {
+                $config = $module;
+            }
+            if ($class && $name) {
+                $configs[$name] = array_merge($config, [
+                    'class' => $class
+                ]);
+            }
+        }
+        return $configs;
     }
 
     public function getModule($name)
@@ -65,9 +96,6 @@ class Application
         if (!isset($this->_modules[$name])) {
             $config = $this->getModuleConfig($name);
             if (!is_null($config)) {
-                if (!isset($config['class'])) {
-                    $config['class'] = '\\Modules\\' . ucfirst($name) . '\\' . ucfirst($name) . 'Module';
-                }
                 $this->_modules[$name] = Configurator::create($config);
             } else {
                 throw new UnknownPropertyException("Module with name" . $name . " not found");
@@ -81,24 +109,21 @@ class Application
     {
         if (array_key_exists($name, $this->_modulesConfig)) {
             return $this->_modulesConfig[$name];
-        } elseif (in_array($name, $this->_modulesConfig)) {
-            return [];
-        } else {
-            return null;
         }
+        return null;
     }
 
-    public function getModules()
+    public function getModulesList()
     {
-        $list = [];
-        foreach ($this->_modulesConfig as $key => $module) {
-            if (is_string($key)) {
-                $list[] = $key;
-            } elseif (is_string($module)) {
-                $list[] = $module;
-            }
+        return array_keys($this->_modulesConfig);
+    }
+
+    protected function _provideModuleEvent($event, $args = [])
+    {
+        foreach ($this->_modulesConfig as $name => $config) {
+            $class = $config['class'];
+            forward_static_call_array([$class, $event], $args);
         }
-        return $list;
     }
 
     public function setUpPaths()
@@ -129,12 +154,14 @@ class Application
 
     public function run()
     {
+        $this->_provideModuleEvent('onApplicationRun');
         register_shutdown_function([$this, 'end'], 0);
         $this->handleRequest();
     }
 
     public function end($status = 0, $response = null)
     {
+        $this->_provideModuleEvent('onApplicationEnd', [$status, $response]);
         exit($status);
     }
 

@@ -67,7 +67,7 @@ class TemplateManager
     protected function collectTemplatesPaths()
     {
         $modulesPath = Paths::get('Modules');
-        $activeModules = Phact::app()->getModules();
+        $activeModules = Phact::app()->getModulesList();
         $paths = [
             Paths::get('base') . DIRECTORY_SEPARATOR . $this->templateFolder
         ];

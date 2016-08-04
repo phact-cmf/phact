@@ -18,7 +18,8 @@
       "Phact\\Template\\": "src/Phact/Template",
       "Phact\\Cli\\": "src/Phact/Cli",
       "Phact\\Form\\": "src/Phact/Form",
-      "Phact\\Validators\\": "src/Phact/Validators"
+      "Phact\\Validators\\": "src/Phact/Validators",
+      "Phact\\Module\\": "src/Phact/Module"
     }
   },
   "require": {
