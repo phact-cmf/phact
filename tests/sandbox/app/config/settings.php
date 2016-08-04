@@ -9,6 +9,9 @@ return [
         'Test'
     ],
     'components' => [
+        'errorHandler' => [
+            'class' => \Phact\Main\ErrorHandler::class
+        ],
         'request' => [
             'class' => \Phact\Request\RequestManager::class,
             'httpRequest' => [
@@ -31,5 +34,8 @@ return [
         'template' => [
             'class' => \Phact\Template\TemplateManager::class
         ]
+    ],
+    'autoloadComponents' => [
+        'errorHandler'
     ]
 ];

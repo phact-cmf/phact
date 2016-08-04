@@ -43,16 +43,26 @@ class Application
     protected $_modules = [];
     protected $_modulesConfig = [];
 
+    public $autoloadComponents = [];
+
     public function init()
     {
         $this->_provideModuleEvent('onApplicationInit');
         $this->setUpPaths();
+        $this->autoload();
     }
 
     public function setPaths($paths)
     {
         foreach ($paths as $name => $path) {
             Paths::add($name, $path);
+        }
+    }
+
+    public function autoload()
+    {
+        foreach ($this->autoloadComponents as $name) {
+            $this->getComponent($name);
         }
     }
 
