@@ -20,7 +20,6 @@ class NotFoundHttpException extends HttpException
 {
     public function __construct($message = null, $code = 0, Exception $previous = null)
     {
-        $this->status = 404;
-        parent::__construct($message, $code, $previous);
+        parent::__construct(404, $message, $code, $previous);
     }
 }
