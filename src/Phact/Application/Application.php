@@ -21,14 +21,14 @@ use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
 use Phact\Main\ComponentsLibrary;
-use Phact\Orm\ConnectionManager;
+use Phact\Request\HttpRequest;
 
 /**
  * Class Application
  *
  * @property \Phact\Orm\ConnectionManager $db Database connection
  * @property \Phact\Router\Router $router Url manager, router
- * @property \Phact\Request\Request $request Request
+ * @property \Phact\Request\HttpRequest|\Phact\Request\CliRequest $request Request
  * @property \Phact\Request\Session $session Session
  * @property \Phact\Template\TemplateManager $template Template manager
  *
@@ -192,9 +192,10 @@ class Application
 
     public function handleWebRequest()
     {
+        /** @var HttpRequest $request */
         $request = $this->request;
         $router = $this->router;
-        $match = $router->match($request->http->getUrl(), $request->http->getMethod());
+        $match = $router->match($request->getUrl(), $request->getMethod());
         if (!$match) {
             throw new NotFoundHttpException("Page not found");
         }

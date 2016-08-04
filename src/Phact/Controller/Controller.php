@@ -41,7 +41,7 @@ class Controller
      */
     public $defaultAction;
 
-    public function __construct(Request $request)
+    public function __construct($request)
     {
         $this->_request = $request;
     }
