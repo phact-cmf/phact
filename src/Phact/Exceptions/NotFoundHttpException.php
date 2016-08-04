@@ -14,7 +14,13 @@
 
 namespace Phact\Exceptions;
 
+use Exception;
+
 class NotFoundHttpException extends HttpException
 {
-    protected $code = 404;
+    public function __construct($message = null, $code = 0, Exception $previous = null)
+    {
+        $this->status = 404;
+        parent::__construct($message, $code, $previous);
+    }
 }
