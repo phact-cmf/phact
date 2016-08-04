@@ -43,4 +43,12 @@ class Text
     {
         return mb_strtoupper(mb_substr($string, 0, 1, $enc), $enc) . mb_substr($string, 1, mb_strlen($string, $enc), $enc);
     }
+
+    public static function removePrefix($prefix, $text)
+    {
+        if (0 === mb_strpos($text, $prefix, null, 'UTF-8')) {
+            $text = (string) mb_substr($text, strlen($prefix), null, 'UTF-8');
+        }
+        return $text;
+    }
 }

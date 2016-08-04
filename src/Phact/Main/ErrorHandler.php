@@ -18,7 +18,9 @@ use ErrorException;
 use Exception;
 use Phact\Exceptions\HttpException;
 use Phact\Helpers\Http;
+use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
+use Phact\Helpers\Text;
 use Phact\Template\Renderer;
 
 class ErrorHandler
@@ -77,15 +79,51 @@ class ErrorHandler
         }
     }
 
-    public function renderException($exception, $code)
+    public function renderException(Exception $exception, $code)
     {
         $template = $this->errorTemplate;
         if ($this->debug) {
             $template = $this->exceptionTemplate;
         }
-        self::renderTemplate($template, [
+
+        $trace = [];
+        $traceRaw = $exception->getTrace();
+        $closestLines = 5;
+        $basePath = realpath(Paths::get('base'));
+
+        foreach ($traceRaw as $traceItem) {
+            $line = $traceItem['line'];
+            $startLine = $line - $closestLines;
+            $endLine = $line + $closestLines;
+            if ($startLine < 0) {
+                $endLine += abs($startLine);
+                $startLine = 0;
+            }
+            $itemLines = [];
+            $fileName = $traceItem['file'];
+
+            try {
+                $lines = @file($fileName);
+                $itemLines = array_slice($lines, $startLine, $endLine - $startLine, true);
+            } catch (Exception $e) {
+
+            }
+
+            $fileName = Text::removePrefix($basePath, $fileName);
+
+            $trace[] = [
+                'fileName' => $fileName,
+                'trace' => $traceItem,
+                'startLine' => $startLine,
+                'endLine' => $endLine,
+                'itemLines' => $itemLines
+            ];
+        }
+
+        echo self::renderTemplate($template, [
             'exception' => $exception,
-            'status' => $code
+            'code' => $code,
+            'trace' => $trace
         ]);
     }
 }

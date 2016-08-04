@@ -87,5 +87,12 @@ class TemplateManager
         $this->_renderer->addModifier('safe_element', function($variable, $param, $default = '') {
             return isset($variable[$param]) ? $variable[$param] : $default;
         });
+
+        $this->_renderer->addModifier('class', function($object) {
+            if (is_object($object)) {
+                return get_class($object);
+            }
+            return null;
+        });
     }
 }
