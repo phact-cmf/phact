@@ -16,4 +16,5 @@ namespace Phact\Exceptions;
 
 class NotFoundHttpException extends HttpException
 {
+    protected $code = 404;
 }

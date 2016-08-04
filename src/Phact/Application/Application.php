@@ -196,7 +196,7 @@ class Application
         $request = $this->request;
         $router = $this->router;
         $match = $router->match($request->getUrl(), $request->getMethod());
-        if (!$match) {
+        if (empty($match)) {
             throw new NotFoundHttpException("Page not found");
         }
 
