@@ -412,7 +412,7 @@ class Model
         $this->_provideEvent('afterInsert');
         $this->setOldAttributes($prepared);
 
-        return true;
+        return $pk;
     }
 
     public function update($fields = [])
@@ -422,13 +422,13 @@ class Model
         $prepared = $this->getDbPreparedAttributes($data);
 
         $query = $this->getQuery();
-        $query->updateByPk($this->getTableName(), $this->getPkAttribute(), $this->getPk(), $prepared);
+        $result = $query->updateByPk($this->getTableName(), $this->getPkAttribute(), $this->getPk(), $prepared);
 
         $this->clearAttributes();
         $this->setDbAttributes($prepared);
         $this->_provideEvent('afterUpdate');
         $this->setOldAttributes($prepared);
 
-        return true;
+        return $result;
     }
 }
