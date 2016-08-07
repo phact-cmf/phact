@@ -21,7 +21,7 @@ class VarDumper
     private static $_output;
     private static $_depth;
 
-    public static function dump($var, $depth = 10, $highlight = false)
+    public static function dump($var, $depth = 10, $highlight = true)
     {
         self::$_output = '';
         self::$_objects = [];

@@ -23,7 +23,7 @@ use ReflectionMethod;
 /**
  * Class Controller
  *
- * @property \Phact\Request\Request $request
+ * @property \Phact\Request\HttpRequest $request
  *
  * @package Phact\Controller
  */
@@ -101,5 +101,15 @@ class Controller
     public function render($template, $params = [])
     {
         return Phact::app()->template->render($template, $params);
+    }
+
+    public function redirect($url, $data = [], $status = 302)
+    {
+        $this->request->redirect($url, $data, $status);
+    }
+
+    public function refresh()
+    {
+        $this->request->refresh();
     }
 }

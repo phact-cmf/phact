@@ -44,7 +44,7 @@ class RequestManager
 
     public function __call($name, $arguments)
     {
-        call_user_func_array([$this->getRequest(), $name], $arguments);
+        return call_user_func_array([$this->getRequest(), $name], $arguments);
     }
 
     public function __get($name)

@@ -20,6 +20,7 @@ use Phact\Exceptions\NotFoundHttpException;
 use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
+use Phact\Interfaces\AuthInterface;
 use Phact\Main\ComponentsLibrary;
 use Phact\Request\HttpRequest;
 
@@ -31,7 +32,9 @@ use Phact\Request\HttpRequest;
  * @property \Phact\Request\HttpRequest|\Phact\Request\CliRequest $request Request
  * @property \Phact\Request\Session $session Session
  * @property \Phact\Template\TemplateManager $template Template manager
- *
+ * @property \Phact\Interfaces\AuthInterface $auth Authorization component
+ * @property $user
+ * 
  * @package Phact\Application
  */
 class Application
@@ -200,6 +203,14 @@ class Application
         return !self::getIsCliMode();
     }
 
+    public function getUser()
+    {
+        /** @var AuthInterface $auth */
+        if ($auth = $this->getComponent('auth')) {
+            return $auth->getUser();
+        }
+        return null;
+    }
     public function handleWebRequest()
     {
         /** @var HttpRequest $request */

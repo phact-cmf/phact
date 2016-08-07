@@ -2,6 +2,6 @@
 
 function d($data)
 {
-    Phact\Main\VarDumper::dump($data);
+    echo Phact\Main\VarDumper::dump($data);
     die();
 }

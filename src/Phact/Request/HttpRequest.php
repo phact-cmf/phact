@@ -18,6 +18,7 @@ use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\Collection;
 use Phact\Helpers\Configurator;
+use Phact\Main\Phact;
 
 /**
  * Class HttpRequest
@@ -534,5 +535,30 @@ class HttpRequest extends Request
             return $_SERVER['HTTP_CONTENT_TYPE'];
         }
         return null;
+    }
+
+    /**
+     * Redirects the browser to the specified URL.
+     * @param string $url URL to be redirected to. Note that when URL is not
+     * absolute (not starting with "/") it will be relative to current request URL.
+     * @param array $data Data for create url
+     * @param integer $statusCode the HTTP status code. Defaults to 302. See {@link http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html}
+     * for details about HTTP status code.
+     */
+    public function redirect($url, $data = [], $statusCode = 302)
+    {
+        if (is_object($url) && method_exists($url, 'getAbsoluteUrl')) {
+            $url = $url->getAbsoluteUrl();
+        } elseif (strpos($url, ':') !== false) {
+            $url = Phact::app()->router->url($url, $data);
+        }
+
+        header('Location: '.$url, true, $statusCode);
+        Phact::app()->end();
+    }
+
+    public function refresh()
+    {
+        $this->redirect($this->getUrl());
     }
 }

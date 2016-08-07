@@ -491,7 +491,7 @@ abstract class Field
         if (!is_array($error)) {
             $error = [$error];
         }
-        $this->_errors[] = array_merge($this->_errors, $error);
+        $this->_errors = array_merge($this->_errors, $error);
     }
 
     public function clearErrors()
