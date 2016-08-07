@@ -19,8 +19,12 @@
       "Phact\\Cli\\": "src/Phact/Cli",
       "Phact\\Form\\": "src/Phact/Form",
       "Phact\\Validators\\": "src/Phact/Validators",
-      "Phact\\Module\\": "src/Phact/Module"
-    }
+      "Phact\\Module\\": "src/Phact/Module",
+      "Phact\\Interfaces\\": "src/Phact/Interfaces"
+    },
+    "files": [
+      "src/dump.php"
+    ]
   },
   "require": {
     "php": ">=5.4",

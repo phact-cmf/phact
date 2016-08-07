@@ -132,7 +132,7 @@ class HttpRequest extends Request
     {
         $this->get = new Collection($_GET);
         $this->post = new Collection($_POST);
-        $this->cookie = new Collection($_POST);
+        $this->cookie = new CookieCollection();
     }
     
     public function setSession($session)
@@ -146,7 +146,7 @@ class HttpRequest extends Request
 
     public function getSession()
     {
-        $this->_session;
+        return $this->_session;
     }
 
     public function getMethod()
