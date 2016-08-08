@@ -48,7 +48,8 @@ class TemplateManager
         $this->_renderer->setCompileDir($cacheFolder);
         $this->_renderer->setOptions([
             'force_compile' => $this->forceCompile,
-            'auto_reload' => $this->autoReload
+            'auto_reload' => $this->autoReload,
+            'auto_escape' => $this->autoEscape
         ]);
         $this->extendRenderer();
     }
@@ -93,6 +94,10 @@ class TemplateManager
                 return get_class($object);
             }
             return null;
+        });
+
+        $this->_renderer->addFunction('url', function($params) {
+            return Phact::app()->router->url($params['route'], isset($params['params']) ? $params['params'] : [] );
         });
     }
 }
