@@ -15,8 +15,13 @@
 namespace Phact\Module;
 
 
+use Phact\Helpers\ClassNames;
+use Phact\Helpers\SmartProperties;
+
 abstract class Module
 {
+    use ClassNames, SmartProperties;
+
     public static function onApplicationInit()
     {
     }
@@ -27,5 +32,10 @@ abstract class Module
 
     public static function onApplicationEnd()
     {
+    }
+
+    public function getVerboseName()
+    {
+        return str_replace('Module', '', self::classNameShort());
     }
 }

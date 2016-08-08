@@ -14,6 +14,7 @@
 
 namespace Phact\Controller;
 
+use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
@@ -56,6 +57,7 @@ class Controller
         if (!$action) {
             $action = $this->defaultAction;
         }
+        $this->beforeAction($action, $params);
         if (method_exists($this, $action)) {
             $this->runAction($action, $params);
         } else {
@@ -111,5 +113,14 @@ class Controller
     public function refresh()
     {
         $this->request->refresh();
+    }
+
+    public function beforeAction($action, $params)
+    {
+    }
+
+    public function error($code = 404, $message = null)
+    {
+        throw new HttpException($code, $message);
     }
 }
