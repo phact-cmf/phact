@@ -44,6 +44,8 @@ abstract class Field
 
     protected $_attribute;
 
+    protected $_oldAttribute;
+
     /**
      * Can field be NULL
      * @var bool
@@ -173,6 +175,21 @@ abstract class Field
         $this->_attribute = $value;
     }
 
+    public function setOldAttribute($value)
+    {
+        $this->_oldAttribute = $value;
+    }
+
+    public function getOldAttribute()
+    {
+        return $this->_oldAttribute;
+    }
+
+    public function getIsChanged()
+    {
+        return $this->_attribute != $this->_oldAttribute;
+    }
+
     /**
      * Set model attribute
      *
@@ -270,6 +287,13 @@ abstract class Field
         }
     }
 
+    public function setFromDbValue($value)
+    {
+        $attribute = $this->attributePrepareValue($value);
+        $this->setAttribute($attribute);
+        $this->setOldAttribute($attribute);
+    }
+
     public function getAdditionalFields()
     {
         return [];
@@ -308,11 +332,27 @@ abstract class Field
     {
     }
 
+
     /**
+     * Prepare attribute value for database value
+     * Reverse function for attributePrepareValue
+     *
      * @param $value
      * @return mixed
      */
     protected function dbPrepareValue($value)
+    {
+        return $value;
+    }
+
+    /**
+     * Prepare db database for model attribute
+     * Reverse function for dbPrepareValue
+     *
+     * @param $value
+     * @return mixed
+     */
+    protected function attributePrepareValue($value)
     {
         return $value;
     }

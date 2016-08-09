@@ -153,6 +153,22 @@ class DefaultModelTest extends DatabaseTest
     }
 
     /**
+     * @depends testValidFillInstance
+     * @param $form ModelForm
+     * @return ModelForm
+     */
+    public function testSaveInstance($form)
+    {
+        $form->save();
+        $instance = $form->getInstance();
+        $pk = $instance->pk;
+        $dbInstance = $instance::objects()->filter(['pk' => $pk])->limit(1)->get();
+        $this->assertEquals($dbInstance->name, $form->getField('name')->getValue());
+        $this->assertEquals($dbInstance->founded, $form->getField('founded')->getValue());
+        return $form;
+    }
+
+    /**
      * @depends testCreateInstance
      * @param $form ModelForm
      * @return ModelForm
@@ -173,22 +189,6 @@ class DefaultModelTest extends DatabaseTest
             'name' => null,
             'founded' => '2015'
         ], $form->getAttributes());
-        return $form;
-    }
-
-    /**
-     * @depends testValidFillInstance
-     * @param $form ModelForm
-     * @return ModelForm
-     */
-    public function testSaveInstance($form)
-    {
-        $form->save();
-        $instance = $form->getInstance();
-        $pk = $instance->pk;
-        $dbInstance = $instance::objects()->filter(['pk' => $pk])->limit(1)->get();
-        $this->assertEquals($dbInstance->name, $form->getField('name')->getValue());
-        $this->assertEquals($dbInstance->founded, $form->getField('founded')->getValue());
         return $form;
     }
 }

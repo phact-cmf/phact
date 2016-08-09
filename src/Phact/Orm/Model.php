@@ -37,7 +37,6 @@ class Model
     static $_query;
 
     protected $_attributes = [];
-    protected $_dbAttributes = [];
     protected $_oldAttributes = [];
 
     public static function getTableName()
@@ -112,7 +111,7 @@ class Model
     public function getPk()
     {
         $pkAttribute = $this->getPkAttribute();
-        return isset($this->_dbAttributes[$pkAttribute]) ? $this->_dbAttributes[$pkAttribute] : null;
+        return isset($this->_attributes[$pkAttribute]) ? $this->_attributes[$pkAttribute] : null;
     }
 
     public function getField($name)
@@ -123,9 +122,13 @@ class Model
         }
         if ($manager->has($name)) {
             $field = $manager->getField($name);
-            $attributeName = $field->getAttributeName();
             $field->setModel($this);
-            $field->setAttribute($this->getAttribute($attributeName));
+
+            $attributeName = $field->getAttributeName();
+            if ($attributeName) {
+                $field->setAttribute($this->getAttribute($attributeName));
+                $field->setOldAttribute($this->getOldAttribute($attributeName));
+            }
             return $field;
         }
         return null;
@@ -160,12 +163,21 @@ class Model
         if (array_key_exists($name, $this->_attributes)) {
             return $this->_attributes[$name];
         }
-        if (array_key_exists($name, $this->_dbAttributes)) {
-            return $this->_dbAttributes[$name];
+        return null;
+    }
+
+    public function getOldAttribute($name)
+    {
+        if (array_key_exists($name, $this->_oldAttributes)) {
+            return $this->_oldAttributes[$name];
         }
         return null;
     }
 
+    protected function _setOldAttribute($name, $attribute)
+    {
+        $this->_oldAttributes[$name] = $attribute;
+    }
 
     public function getAttributes()
     {
@@ -177,10 +189,9 @@ class Model
         return $attributes;
     }
 
-
     public function hasAttribute($name)
     {
-        return array_key_exists($name, $this->_attributes) || array_key_exists($name, $this->_dbAttributes);
+        return array_key_exists($name, $this->_attributes);
     }
 
     /**
@@ -188,7 +199,7 @@ class Model
      * @param $attributeName
      * @param $attribute
      */
-    public function setAttributeInternal($attributeName, $attribute)
+    protected function _setAttribute($attributeName, $attribute)
     {
         $this->_attributes[$attributeName] = $attribute;
     }
@@ -216,18 +227,28 @@ class Model
 
     public function setDbData($data)
     {
-        $this->setDbAttributes($data);
-        $this->setOldAttributes($data);
+        foreach ($data as $name => $value) {
+            $field = $this->getField($name);
+            if ($field) {
+                $field->setFromDbValue($value);
+                $attributeName = $field->getAttributeName();
+
+                if ($attributeName) {
+                    $attribute = $field->getAttribute();
+                    $oldAttribute = $field->getOldAttribute();
+
+                    $this->_setAttribute($attributeName, $attribute);
+                    $this->_setOldAttribute($attributeName, $oldAttribute);
+                }
+            }
+        }
     }
 
-    public function setDbAttributes($attributes)
+    protected function _mergeOldAttributes($attributes)
     {
-        $this->_dbAttributes = $attributes;
-    }
-
-    public function setOldAttributes($attributes)
-    {
-        $this->_oldAttributes = $attributes;
+        foreach ($attributes as $name => $attribute) {
+            $this->_oldAttributes[$name] = $attribute;
+        }
     }
 
     public function clearAttributes()
@@ -273,7 +294,7 @@ class Model
             $attributeName = $manager->getFieldAttributeName($field);
             $attribute = $manager->setFieldValue($this, $field, $value);
             if ($attributeName) {
-                $this->setAttributeInternal($attributeName, $attribute);
+                $this->_setAttribute($attributeName, $attribute);
             }
         }
     }
@@ -321,7 +342,7 @@ class Model
 
     public function getIsNew()
     {
-        return empty($this->_dbAttributes);
+        return empty($this->_oldAttributes);
     }
 
     public function save($fields = [])
@@ -364,18 +385,15 @@ class Model
 
     public function getChangedAttributes($fields = [])
     {
+        $changed = [];
         $fieldsManager = $this->getFieldsManager();
         if (!$fields) {
             $fields = $fieldsManager->getFieldsList();
         }
-        $changed = [];
-        $attributes = $fieldsManager->getAttributesListByFields($fields);
-        foreach ($attributes as $attributeName) {
-            if (array_key_exists($attributeName, $this->_attributes)) {
-                $value = $this->_attributes[$attributeName];
-                if (!array_key_exists($attributeName, $this->_dbAttributes) || $this->_dbAttributes[$attributeName] != $value) {
-                    $changed[$attributeName] = $this->_attributes[$attributeName];
-                }
+        foreach ($fields as $name) {
+            $field = $this->getField($name);
+            if ($field && ($attributeName = $field->getAttributeName()) && $field->getIsChanged()) {
+                $changed[$attributeName] = $field->getAttribute();
             }
         }
         return $changed;
@@ -405,12 +423,9 @@ class Model
         $pk = $query->insert($this->getTableName(), $prepared);
         $pkAttribute = $this->getPkAttribute();
 
-        $prepared[$pkAttribute] = $pk;
-
-        $this->clearAttributes();
-        $this->setDbAttributes($prepared);
+        $this->_setAttribute($pkAttribute, $pk);
         $this->_provideEvent('afterInsert');
-        $this->setOldAttributes($prepared);
+        $this->_mergeOldAttributes($prepared);
 
         return $pk;
     }
@@ -424,10 +439,8 @@ class Model
         $query = $this->getQuery();
         $result = $query->updateByPk($this->getTableName(), $this->getPkAttribute(), $this->getPk(), $prepared);
 
-        $this->clearAttributes();
-        $this->setDbAttributes($prepared);
         $this->_provideEvent('afterUpdate');
-        $this->setOldAttributes($prepared);
+        $this->_mergeOldAttributes($prepared);
 
         return $result;
     }

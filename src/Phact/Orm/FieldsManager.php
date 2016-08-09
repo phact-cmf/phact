@@ -258,7 +258,7 @@ class FieldsManager
      * @param $model
      * @param $name
      * @param $value
-     * @return mixed
+     * @return mixed Attribute of field
      * @throws UnknownPropertyException
      */
     public function setFieldValue($model, $name, $value)
