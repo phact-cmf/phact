@@ -89,6 +89,9 @@ class TemplateManager
             return isset($variable[$param]) ? $variable[$param] : $default;
         });
 
+        $this->_renderer->addAccessorSmart("request", "request", Fenom::ACCESSOR_PROPERTY);
+        $this->_renderer->request = Phact::app()->request;
+
         $this->_renderer->addModifier('class', function($object) {
             if (is_object($object)) {
                 return get_class($object);
