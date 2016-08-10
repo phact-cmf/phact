@@ -64,6 +64,12 @@ class QuerySet
      */
     protected $_orderBy = [];
 
+    /**
+     * Built group
+     * @var array
+     */
+    protected $_groupBy = [];
+
     protected $_select;
 
     /**
@@ -87,7 +93,6 @@ class QuerySet
      */
     protected $_aggregation = null;
 
-    protected $_group;
 
     /**
      * @return mixed QuerySet
@@ -288,23 +293,29 @@ class QuerySet
 
     public function order($order = [])
     {
-        if (is_string($order)) {
+        if (is_string($order) || $order instanceof Expression) {
             $order = [$order];
         } elseif (!is_array($order)) {
-            throw new InvalidArgumentException('QuerySet::order() accept only arrays or strings');
+            throw new InvalidArgumentException('QuerySet::order() accept only arrays, strings or Expression objects');
         }
         $this->_order = array_merge($this->_order, $order);
         return $this->nextQuerySet();
     }
 
-    public function group($group = [])
+    public function group($group)
     {
-        $this->_group = $group;
+        if (is_string($group)) {
+            $group = [$group];
+        } elseif (!is_array($group)) {
+            throw new InvalidArgumentException('QuerySet::group() accept only arrays or strings');
+        }
+        $this->_groupBy = array_merge($this->_groupBy, $group);
+        return $this->nextQuerySet();
     }
 
     public function getGroupBy()
     {
-        return $this->_group;
+        return $this->_groupBy;
     }
 
     public function limit($limit)
