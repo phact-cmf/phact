@@ -15,6 +15,9 @@
 namespace Phact\Orm\Aggregations;
 
 
+use Exception;
+use Phact\Orm\Expression;
+
 abstract class Aggregation
 {
     protected $_field = '*';
@@ -36,5 +39,22 @@ abstract class Aggregation
         return $this->_field == '*' || $this->_raw;
     }
 
-    abstract public function getSql($field);
+    public static function expression($field = '*', $alias = null)
+    {
+        $sql = static::getSql($field);
+        if ($alias) {
+            $sql .= ' as ' . $alias;
+        }
+        return new Expression($sql);
+    }
+
+    /**
+     * @param $field
+     * @return string
+     * @throws Exception
+     */
+    public static function getSql($field)
+    {
+        throw new Exception('Not implemented');
+    }
 }

@@ -265,6 +265,10 @@ class QuerySet
         return $this->nextQuerySet();
     }
 
+    /**
+     * @param array $exclude
+     * @return QuerySet
+     */
     public function exclude($exclude = [])
     {
         if (!is_array($exclude)) {
@@ -291,6 +295,10 @@ class QuerySet
         return $this->_orderBy;
     }
 
+    /**
+     * @param array $order
+     * @return QuerySet
+     */
     public function order($order = [])
     {
         if (is_string($order) || $order instanceof Expression) {
@@ -302,7 +310,11 @@ class QuerySet
         return $this->nextQuerySet();
     }
 
-    public function group($group)
+    /**
+     * @param array $group
+     * @return QuerySet
+     */
+    public function group($group = [])
     {
         if (is_string($group)) {
             $group = [$group];
@@ -499,7 +511,11 @@ class QuerySet
 
     public function handleRelationColumns($columns) {
         foreach ($columns as $column) {
-            $this->handleRelationColumn($column);
+            if ($column instanceof Expression) {
+                $this->handleExpression($column);
+            } else {
+                $this->handleRelationColumn($column);
+            }
         }
     }
 
@@ -604,6 +620,17 @@ class QuerySet
     public function getSelect()
     {
         return $this->_select;
+    }
+
+    public function select($select = [])
+    {
+        if (is_string($select) || $select instanceof Expression) {
+            $select = [$select];
+        } elseif (!is_array($select)) {
+            throw new InvalidArgumentException('QuerySet::select() accept only arrays, strings or Expression objects');
+        }
+        $this->_select = array_merge($this->_select, $select);
+        return $this->nextQuerySet();
     }
 
     public function getWhere()

@@ -381,10 +381,15 @@ class QueryLayer
         } else {
             $select = [];
             foreach ($columns as $attribute) {
-                $column = $this->relationColumnAlias($attribute, true);
-                $column = $this->sanitize($column);
-                $attribute = $this->sanitize($attribute);
-                $select[] = $query->raw($column . ' as ' . $attribute);
+                if ($attribute instanceof Expression) {
+                    $select[] = $this->convertExpression($attribute);
+                } else {
+                    $column = $this->relationColumnAlias($attribute, true);
+                    $column = $this->sanitize($column);
+                    $attribute = $this->sanitize($attribute);
+                    $select[] = $query->raw($column . ' as ' . $attribute);
+                }
+
             }
         }
 

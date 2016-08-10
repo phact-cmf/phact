@@ -17,7 +17,7 @@ namespace Phact\Orm\Aggregations;
 
 class Avg extends Aggregation
 {
-    public function getSql($field)
+    public static function getSql($field)
     {
         return "AVG($field)";
     }

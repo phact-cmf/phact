@@ -17,7 +17,7 @@ namespace Phact\Orm\Aggregations;
 
 class Min extends Aggregation
 {
-    public function getSql($field)
+    public static function getSql($field)
     {
         return "MIN($field)";
     }
