@@ -260,7 +260,7 @@ class QueryLayer
         return $query;
     }
 
-    public function buildQuery($query, $buildOrder = true, $buildLimitOffset = true, $buildConditions = true)
+    public function buildQuery($query, $buildOrder = true, $buildLimitOffset = true, $buildConditions = true, $buildGroup = true)
     {
         $qs = $this->getQuerySet();
         $query = $this->processJoins($query);
@@ -270,6 +270,9 @@ class QueryLayer
         }
         if ($buildOrder) {
             $this->buildOrder($query, $qs->getOrderBy());
+        }
+        if ($buildGroup) {
+            $this->buildGroup($query, $qs->getGroupBy());
         }
         if ($buildLimitOffset) {
             $this->buildLimitOffset($query, $qs->getLimit(), $qs->getOffset());
@@ -502,6 +505,23 @@ class QueryLayer
             } elseif (is_array($item)) {
                 $column = $this->columnAlias($item['relation'], $item['field']);
                 $query->orderBy($column, $item['direction']);
+            }
+        }
+    }
+
+    /**
+     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $group array
+     * @return array
+     */
+    public function buildGroup($query, $group)
+    {
+        foreach ($group as $item) {
+            if ($item instanceof Expression) {
+                $value = $this->convertExpression($item);
+                $query->groupBy($value);
+            } elseif (is_string($item)) {
+                $query->groupBy($item);
             }
         }
     }

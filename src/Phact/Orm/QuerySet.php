@@ -87,6 +87,8 @@ class QuerySet
      */
     protected $_aggregation = null;
 
+    protected $_group;
+
     /**
      * @return mixed QuerySet
      */
@@ -293,6 +295,16 @@ class QuerySet
         }
         $this->_order = array_merge($this->_order, $order);
         return $this->nextQuerySet();
+    }
+
+    public function group($group = [])
+    {
+        $this->_group = $group;
+    }
+
+    public function getGroupBy()
+    {
+        return $this->_group;
     }
 
     public function limit($limit)
