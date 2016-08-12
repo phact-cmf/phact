@@ -88,6 +88,9 @@ class TemplateManager
         $this->_renderer->addModifier('safe_element', function($variable, $param, $default = '') {
             return isset($variable[$param]) ? $variable[$param] : $default;
         });
+        $this->_renderer->addModifier('not_in', function($variable, $array) {
+            return !array_key_exists($variable, $array);
+        });
 
         $this->_renderer->addAccessorSmart("request", "request", Fenom::ACCESSOR_PROPERTY);
         $this->_renderer->request = Phact::app()->request;
