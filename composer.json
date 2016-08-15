@@ -20,7 +20,8 @@
       "Phact\\Form\\": "src/Phact/Form",
       "Phact\\Validators\\": "src/Phact/Validators",
       "Phact\\Module\\": "src/Phact/Module",
-      "Phact\\Interfaces\\": "src/Phact/Interfaces"
+      "Phact\\Interfaces\\": "src/Phact/Interfaces",
+      "Phact\\Pagination\\": "src/Phact/Pagination"
     },
     "files": [
       "src/dump.php"
