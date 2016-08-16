@@ -27,5 +27,8 @@
         <testsuite name="Form">
             <directory>./tests/Cases/Form</directory>
         </testsuite>
+        <testsuite name="Pagination">
+            <directory>./tests/Cases/Pagination</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

@@ -20,6 +20,7 @@ use Phact\Orm\Aggregations\Aggregation;
 use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Fields\RelationField;
+use Phact\Pagination\PaginableInterface;
 
 /**
  * Class QuerySet
@@ -29,7 +30,7 @@ use Phact\Orm\Fields\RelationField;
  *
  * @package Phact\Orm
  */
-class QuerySet
+class QuerySet implements PaginableInterface
 {
     use SmartProperties;
 
@@ -646,5 +647,29 @@ class QuerySet
     public function hasRelations()
     {
         return count($this->_relations) > 0;
+    }
+
+    public function setPaginationLimit($limit)
+    {
+        $this->limit($limit);
+    }
+
+    public function setPaginationOffset($offset)
+    {
+        $this->offset($offset);
+    }
+
+    public function getPaginationTotal()
+    {
+        return $this->count();
+    }
+
+    public function getPaginationData($dataType = null)
+    {
+        if ($dataType == 'raw') {
+            return $this->values();
+        } else {
+            return $this->all();
+        }
     }
 }

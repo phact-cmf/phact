@@ -352,6 +352,16 @@ class HttpRequest extends Request
         return $this->_url;
     }
 
+
+    /**
+     * Returns part of the request URL that is before the question mark.
+     * @return string part of the request URL that is before the question mark
+     */
+    public function getPath()
+    {
+        return strtok($this->getUrl(), '?');
+    }
+
     /**
      * Resolves the request URI portion for the currently requested URL.
      * This refers to the portion that is after the [[hostInfo]] part. It includes the [[queryString]] part if any.
@@ -388,6 +398,18 @@ class HttpRequest extends Request
     {
         return isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
     }
+
+    /**
+     * Returns array representation part of the request URL that is after the question mark.
+     * @return array part of the request URL that is after the question mark
+     */
+    public function getQueryArray()
+    {
+        $string = $this->getQueryString();
+        parse_str($string, $data);
+        return $data;
+    }
+
     /**
      * Return if the request is sent via secure channel (https).
      * @return boolean if the request is sent via secure channel (https)
