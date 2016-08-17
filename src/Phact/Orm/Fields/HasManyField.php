@@ -13,6 +13,8 @@
  */
 
 namespace Phact\Orm\Fields;
+use Phact\Helpers\Configurator;
+use Phact\Orm\HasManyManager;
 
 /**
  * Class HasManyField
@@ -29,6 +31,8 @@ class HasManyField extends RelationField
     protected $_throughFor;
 
     public $editable = false;
+
+    public $managerClass = HasManyManager::class;
 
     public function setThroughFor($throughFor)
     {
@@ -68,7 +72,7 @@ class HasManyField extends RelationField
 
     public function getAttributeName()
     {
-       return null;
+        return null;
     }
 
     public function getRelationJoins()
@@ -86,5 +90,22 @@ class HasManyField extends RelationField
     public function getIsMany()
     {
         return true;
+    }
+
+    public function getValue($aliasConfig = NULL)
+    {
+        return $this->getManager();
+    }
+
+    public function getManager()
+    {
+        $relationModel = $this->getRelationModel();
+        $manager = new $this->managerClass($relationModel);
+
+        return Configurator::configure($manager, [
+            'to'=>$this->to,
+            'from'=>$this->from,
+            'ownerModel'=>$this->getModel()
+        ]);
     }
 }

@@ -24,9 +24,9 @@ use Phact\Orm\Fields\Field;
 
 /**
  * Class Model
- * 
+ *
  * @method static Manager objects($model = null)
- * 
+ *
  * @package Phact\Orm
  */
 class Model
@@ -179,7 +179,8 @@ class Model
         $this->_oldAttributes[$name] = $attribute;
     }
 
-    public function getAttributes()
+
+    public function getValues()
     {
         $attributes = [];
         $field = $this->getFieldsList();
@@ -187,6 +188,11 @@ class Model
             $attributes[$fieldName] = $this->getFieldValue($fieldName);
         }
         return $attributes;
+    }
+
+    public function getAttributes()
+    {
+        return $this->_attributes;
     }
 
     public function hasAttribute($name)
@@ -266,7 +272,7 @@ class Model
         }
         return static::$_query;
     }
-    
+
     public static function getConnectionName()
     {
         $metaData = static::getMetaData();
@@ -376,11 +382,18 @@ class Model
             $attributeName = $field->getAttributeName();
             $field->setModel($this);
             $field->setAttribute($this->getAttribute($attributeName));
+            $field->setOldAttribute($this->getOldAttribute($attributeName));
             $field->{$eventName}();
             if ($metaEvent) {
                 $field->{$metaEvent}();
             }
+            if ($attributeName) {
+                $this->_setAttribute($attributeName, $field->getAttribute());
+                $this->_setOldAttribute($attributeName, $field->getOldAttribute());
+            }
+
         }
+
     }
 
     public function getChangedAttributes($fields = [])
@@ -418,6 +431,7 @@ class Model
         $data = $this->getChangedAttributes($fields);
         $prepared = $this->getDbPreparedAttributes($data);
 
+
         $query = $this->getQuery();
 
         $pk = $query->insert($this->getTableName(), $prepared);
@@ -425,7 +439,7 @@ class Model
 
         $this->_setAttribute($pkAttribute, $pk);
         $this->_provideEvent('afterInsert');
-        $this->_mergeOldAttributes($prepared);
+        $this->_mergeOldAttributes($data);
 
         return $pk;
     }
@@ -436,12 +450,26 @@ class Model
         $data = $this->getChangedAttributes($fields);
         $prepared = $this->getDbPreparedAttributes($data);
 
+        if ($prepared == []) {
+            $this->_provideEvent('afterUpdate');
+            return true;
+        }
+
         $query = $this->getQuery();
         $result = $query->updateByPk($this->getTableName(), $this->getPkAttribute(), $this->getPk(), $prepared);
 
         $this->_provideEvent('afterUpdate');
-        $this->_mergeOldAttributes($prepared);
+        $this->_mergeOldAttributes($data);
 
+        return $result;
+    }
+
+    public function delete()
+    {
+        $this->_provideEvent('beforeDelete');
+        $query = $this->getQuery();
+        $result = $query->delete($this->getTableName(), $this->getPkAttribute(), $this->getPk());
+        $this->_provideEvent('afterDelete');
         return $result;
     }
 }

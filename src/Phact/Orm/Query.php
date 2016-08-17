@@ -76,4 +76,12 @@ class Query
         $code = $statement->errorCode();
         return $code === "00000";
     }
+
+    public function delete($tableName, $pkName, $pkValue)
+    {
+        $qb = $this->getQueryBuilder();
+        $statement = $qb->table($tableName)->where($pkName, $pkValue)->delete();
+        $code = $statement->errorCode();
+        return $code === "00000";
+    }
 }

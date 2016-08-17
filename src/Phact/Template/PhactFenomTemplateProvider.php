@@ -181,12 +181,19 @@ class PhactFenomTemplateProvider implements ProviderInterface
      */
     public function verify(array $templates)
     {
+
         foreach ($this->_paths as $path) {
             foreach ($templates as $template => $mtime) {
                 $template = $path . DIRECTORY_SEPARATOR . $template;
+
+                if(!file_exists($template)){
+                    continue;
+                }
+
                 if($this->_clear_cache) {
                     clearstatcache(true, $template);
                 }
+
                 if (@filemtime($template) !== $mtime) {
                     return false;
                 }
