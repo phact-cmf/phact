@@ -25,7 +25,7 @@ class FileSystemStorage extends Storage
     /**
      * @var string
      */
-    public $folderName = 'media';
+    public $folderName = 'www.media';
     /**
      * @var string
      */
@@ -71,10 +71,10 @@ class FileSystemStorage extends Storage
     public function getBaseDir()
     {
 
-        $path = Paths::get('www.' . $this->folderName);
+        $path = Paths::get($this->folderName);
 
         if ($path === null || $path === false) {
-            throw new InvalidConfigException("Alias www must be set in config file");
+            throw new InvalidConfigException("Folder name {$path} must be valid path");
         }
         if (is_dir($path) && !is_writable($path)) {
             throw new InvalidConfigException("Directory $path must be writable");
