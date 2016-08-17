@@ -418,9 +418,11 @@ class Model
         $fieldsManager = $this->getFieldsManager();
         foreach ($attributes as $attribute => $value) {
             $field = $fieldsManager->getFieldByAttribute($attribute);
-            $field->setModel($this);
-            $field->setAttribute($value);
-            $prepared[$attribute] = $field->getDbPreparedValue();
+            if (!$field->virtual) {
+                $field->setModel($this);
+                $field->setAttribute($value);
+                $prepared[$attribute] = $field->getDbPreparedValue();
+            }
         }
         return $prepared;
     }
@@ -430,10 +432,8 @@ class Model
         $this->_provideEvent('beforeInsert');
         $data = $this->getChangedAttributes($fields);
         $prepared = $this->getDbPreparedAttributes($data);
-
-
+        
         $query = $this->getQuery();
-
         $pk = $query->insert($this->getTableName(), $prepared);
         $pkAttribute = $this->getPkAttribute();
 

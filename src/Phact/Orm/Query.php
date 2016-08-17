@@ -59,7 +59,6 @@ class Query
 
     public function getQueryBuilder()
     {
-
         return $this->getConnection()->getQueryBuilder();
     }
 

@@ -79,7 +79,7 @@ class QuerySet implements PaginableInterface
      */
     protected $_where = [];
     protected $_relations = [];
-
+    
     /**
      * Limit and offset
      * @var int|null

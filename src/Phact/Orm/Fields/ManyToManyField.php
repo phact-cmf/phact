@@ -13,6 +13,8 @@
  */
 
 namespace Phact\Orm\Fields;
+use Phact\Helpers\Configurator;
+use Phact\Orm\ManyToManyManager;
 
 /**
  * Class HasManyField
@@ -45,7 +47,35 @@ class ManyToManyField extends RelationField
 
     protected $_throughModel;
 
+    /**
+     * @TODO: swap columns
+     * @var bool
+     */
     public $reverse = false;
+
+    /**
+     * Back name
+     * For example:
+     *
+     * Model Author
+     *
+     * 'books' => [
+     *  'class' => ManyToManyField::class,
+     *  'modelClass' => Book::class,
+     *  'back' => 'authors'
+     * ]
+     *
+     * Model Book
+     *
+     * 'authors' => [
+     *  'class' => ManyToManyField::class,
+     *  'modelClass' => Author::class,
+     *  'back' => 'books'
+     * ]
+     *
+     * @var null
+     */
+    public $back = null;
 
     public $onUpdateTo = ForeignField::CASCADE;
     public $onDeleteTo = ForeignField::CASCADE;
@@ -54,7 +84,12 @@ class ManyToManyField extends RelationField
     public $onDeleteFrom = ForeignField::CASCADE;
 
     public $editable = false;
-    
+    public $virtual = true;
+    public $null = true;
+    public $blank = true;
+
+    public $managerClass = ManyToManyManager::class;
+
     public function getFrom()
     {
         return $this->_from;
@@ -120,8 +155,8 @@ class ManyToManyField extends RelationField
         if (!$this->_throughFrom) {
             $model = $this->getOwnerModelClass();
             $modelName = $model::classNameUnderscore();
-            $toName = $this->getFrom();
-            $this->_throughFrom = "{$modelName}_{$toName}";
+            $fromName = $this->getFrom();
+            $this->_throughFrom = "{$modelName}_{$fromName}";
         }
         return $this->_throughFrom;
     }
@@ -142,7 +177,6 @@ class ManyToManyField extends RelationField
             sort($names);
             return implode('_', $names);
         }
-
     }
 
     public function getAdditionalFields()
@@ -161,11 +195,6 @@ class ManyToManyField extends RelationField
         } else {
             return [];
         }
-    }
-
-    public function getAttributeName()
-    {
-       return null;
     }
 
     public function getRelationJoins()
@@ -199,5 +228,63 @@ class ManyToManyField extends RelationField
     public function getIsMany()
     {
         return true;
+    }
+
+    public function getValue($aliasConfig = NULL)
+    {
+        return $this->getManager();
+    }
+
+    /**
+     * @return ManyToManyManager
+     */
+    public function getManager()
+    {
+        $relationModel = $this->getRelationModel();
+        $manager = new $this->managerClass($relationModel);
+
+        $backField = null;
+        $backThroughName = null;
+        $backThroughField = null;
+
+        /** @var $backField self */
+        if ($this->back && ($backField = $relationModel->getField($this->back)) && ($backThroughName = $backField->getThroughName())) {
+            $backThroughField = $backField->getThroughTo();
+        }
+
+        return Configurator::configure($manager, [
+            'backField' => $backField,
+            'backThroughName' => $backThroughName,
+            'backThroughField' => $backThroughField,
+
+            'through' => $this->getThrough(),
+            'throughTable' => $this->getThroughTableName(),
+            'throughFromField' => $this->getThroughFrom(),
+            'throughToField' => $this->getThroughTo(),
+
+            'toField' => $this->getTo(),
+            'fromField' => $this->getFrom(),
+
+            'fieldName' => $this->getName(),
+
+            'ownerModel' => $this->getModel()
+        ]);
+    }
+
+    public function afterSave()
+    {
+        $attribute = $this->getAttribute();
+        if (!is_null($attribute)) {
+            $manager = $this->getManager();
+            $manager->set($attribute);
+            $this->setAttribute(null);
+            $this->setOldAttribute(null);
+        }
+        parent::afterSave();
+    }
+
+    public function getBlankValue()
+    {
+        return null;
     }
 }

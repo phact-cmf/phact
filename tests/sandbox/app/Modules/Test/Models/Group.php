@@ -29,7 +29,8 @@ class Group extends Model
             'persons' => [
                 'class' => ManyToManyField::class,
                 'modelClass' => Person::class,
-                'through' => Membership::class
+                'through' => Membership::class,
+                'back' => 'group'
             ]
         ];
     }

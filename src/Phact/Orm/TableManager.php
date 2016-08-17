@@ -128,7 +128,7 @@ class TableManager
         /** @var Field $field */
         foreach ($fields as $field) {
             $attribute = $field->getAttributeName();
-            if ($attribute) {
+            if ($attribute && !$field->virtual) {
                 $column = $queryLayer->sanitize($attribute);
                 $type = $field->getSqlType();
 
@@ -138,7 +138,7 @@ class TableManager
                     $statement[] = "NOT NULL";
                 } else {
                     $default = "NULL";
-                }
+                }   
 
                 if ($field->default) {
                     if (is_string($field->default)) {

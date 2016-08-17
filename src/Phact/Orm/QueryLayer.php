@@ -168,7 +168,16 @@ class QueryLayer
     public function getRelationTable($relationName)
     {
         $model = $this->getRelationModel($relationName);
-        return $model->getTableName();
+        if ($model) {
+            return $model->getTableName();
+        } else {
+            /** Raw relation */
+            $relation = $this->getQuerySet()->getRelation($relationName);
+            if (isset($relation['joins'][0]['table'])) {
+                return $relation['joins'][0]['table'];
+            }
+        }
+        return null;
     }
 
     public function relationColumnAlias($column, $addTablePrefix = false)
@@ -179,7 +188,12 @@ class QueryLayer
 
     public function relationColumnAttribute($relationName, $attribute)
     {
-        $field = $this->getRelationModel($relationName)->getField($attribute);
+        $model = $this->getRelationModel($relationName);
+        /** Raw relation */
+        if (!$model) {
+            return $attribute;
+        }
+        $field = $model->getField($attribute);
         if ($field) {
             return $field->getAttributeName();
         } else {

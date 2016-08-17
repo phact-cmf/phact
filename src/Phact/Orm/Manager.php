@@ -59,6 +59,11 @@ class Manager
         return $this->getQuerySet()->all();
     }
 
+    public function count()
+    {
+        return $this->getQuerySet()->count();
+    }
+
     public function get()
     {
         return $this->getQuerySet()->get();

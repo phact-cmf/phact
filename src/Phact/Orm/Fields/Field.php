@@ -99,6 +99,12 @@ abstract class Field
     public $hint = '';
 
     /**
+     * Has field attribute in model table
+     * @var bool
+     */
+    public $virtual = false;
+
+    /**
      * @return string
      */
     public function getBlankValue()
@@ -187,7 +193,7 @@ abstract class Field
 
     public function getIsChanged()
     {
-        return $this->_attribute != $this->_oldAttribute;
+        return $this->_attribute !== $this->_oldAttribute;
     }
 
     /**
@@ -275,13 +281,10 @@ abstract class Field
         if ($this->hasDbAttribute()) {
             if (is_null($this->attribute)) {
                 if ($this->null) {
-                    if (!$this->hasModelAttribute()) {
-                        $this->setModelAttribute(null);
-                    }
-                } elseif ($this->blank) {
+                    $this->setAttribute(null);
+                } else {
                     $value = $this->getBlankValue();
                     $this->setAttribute($value);
-                    $this->setModelAttribute($value);
                 }
             }
         }
