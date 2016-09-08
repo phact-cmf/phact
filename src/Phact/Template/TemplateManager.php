@@ -98,8 +98,14 @@ class TemplateManager
             return !array_key_exists($variable, $array);
         });
 
+        $this->_renderer->addAccessorSmart("app", "app", Fenom::ACCESSOR_PROPERTY);
+        $this->_renderer->app = Phact::app();
+
         $this->_renderer->addAccessorSmart("request", "request", Fenom::ACCESSOR_PROPERTY);
         $this->_renderer->request = Phact::app()->request;
+
+        $this->_renderer->addAccessorSmart("user", "user", Fenom::ACCESSOR_PROPERTY);
+        $this->_renderer->user = Phact::app()->getUser();
 
         $this->_renderer->addModifier('class', function($object) {
             if (is_object($object)) {
