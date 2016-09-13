@@ -27,7 +27,7 @@ class TemplateLibrary
     public static function load($renderer)
     {
         $reflection = new ReflectionClass(static::class);
-        $methods = $reflection->getMethods(ReflectionMethod::IS_STATIC);
+        $methods = $reflection->getMethods(ReflectionMethod::IS_STATIC | ReflectionMethod::IS_PUBLIC);
         $kinds = ['function', 'modifier', 'compiler'];
 
         static::$excludedMethods = array_merge(self::$excludedMethods, self::$excludedMethodsInternal);
