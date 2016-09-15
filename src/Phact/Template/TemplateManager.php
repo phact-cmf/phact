@@ -126,13 +126,14 @@ class TemplateManager
         $classes = [];
         foreach ($activeModules as $module) {
             $path = implode(DIRECTORY_SEPARATOR, [$modulesPath, $module, $this->librariesFolder]);
-
-            foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename)
-            {
-                // filter out "." and ".."
-                if ($filename->isDir()) continue;
-                $name = $filename->getBasename('.php');
-                $classes[] = implode('\\', ['Modules', $module, $this->librariesFolder, $name]);
+            if (is_dir($path)) {
+                foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename)
+                {
+                    // filter out "." and ".."
+                    if ($filename->isDir()) continue;
+                    $name = $filename->getBasename('.php');
+                    $classes[] = implode('\\', ['Modules', $module, $this->librariesFolder, $name]);
+                }
             }
         }
         foreach ($classes as $class) {
