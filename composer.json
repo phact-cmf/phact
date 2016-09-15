@@ -21,7 +21,8 @@
       "Phact\\Validators\\": "src/Phact/Validators",
       "Phact\\Module\\": "src/Phact/Module",
       "Phact\\Interfaces\\": "src/Phact/Interfaces",
-      "Phact\\Pagination\\": "src/Phact/Pagination"
+      "Phact\\Pagination\\": "src/Phact/Pagination",
+      "Phact\\Commands\\": "src/Phact/Commands"
     },
     "files": [
       "src/dump.php"
