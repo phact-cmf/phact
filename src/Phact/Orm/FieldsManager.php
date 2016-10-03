@@ -44,7 +44,7 @@ class FieldsManager
     public static function getInstance($modelClass)
     {
         if (isset(self::$_instances[$modelClass])) {
-             return self::$_instances[$modelClass];
+            return self::$_instances[$modelClass];
         }
         return null;
     }
@@ -232,6 +232,28 @@ class FieldsManager
         }
     }
 
+    public function fetchField(Model $model, $name)
+    {
+        if ($this->has($name)) {
+            $field = $this->getField($name);
+            $field->cleanAttribute();
+            $field->cleanOldAttribute();
+
+            $field->setModel($model);
+            $attribute = $model->getAttribute($name);
+            $oldAttribute = $model->getOldAttribute($name);
+
+            $field->setAttribute($attribute);
+            $field->setOldAttribute($oldAttribute);
+
+            return $field;
+        } else {
+            throw new UnknownPropertyException(strtr("Getting value of unknown field: {field}", [
+                '{field}' => $name
+            ]));
+        }
+    }
+
     /**
      * @param $model
      * @param $name
@@ -239,13 +261,11 @@ class FieldsManager
      * @return mixed
      * @throws UnknownPropertyException
      */
-    public function getFieldValue($model, $name, $attribute)
+    public function getFieldValue($model, $name)
     {
         if ($this->has($name)) {
-            $field = $this->getField($name);
+            $field = $this->fetchField($model, $name);
             $alias = $this->getAliasConfig($name);
-            $field->setModel($model);
-            $field->setAttribute($attribute);
             return $field->getValue($alias);
         } else {
             throw new UnknownPropertyException(strtr("Getting value of unknown field: {field}", [
@@ -257,6 +277,7 @@ class FieldsManager
     /**
      * @param $model
      * @param $name
+     * @param $attribute
      * @param $value
      * @return mixed Attribute of field
      * @throws UnknownPropertyException
@@ -264,10 +285,8 @@ class FieldsManager
     public function setFieldValue($model, $name, $value)
     {
         if ($this->has($name)) {
-            $field = $this->getField($name);
+            $field = $this->fetchField($model, $name);
             $alias = $this->getAliasConfig($name);
-            $field->cleanAttribute();
-            $field->setModel($model);
             $field->setValue($value, $alias);
             return $field->getAttribute();
         } else {

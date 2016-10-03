@@ -231,6 +231,11 @@ abstract class Field
         $this->_attribute = null;
     }
 
+    public function cleanOldAttribute()
+    {
+        $this->_oldAttribute = null;
+    }
+
     /**
      * Get attribute prepared for model attributes
      *
