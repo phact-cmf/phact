@@ -17,9 +17,12 @@ namespace Phact\Module;
 
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
+use ReflectionClass;
 
 abstract class Module
 {
+    protected static $_path;
+
     use ClassNames, SmartProperties;
 
     public static function onApplicationInit()
@@ -34,8 +37,27 @@ abstract class Module
     {
     }
 
-    public function getVerboseName()
+    public static function getVerboseName()
     {
-        return str_replace('Module', '', self::classNameShort());
+        return static::getName();
+    }
+
+    public static function getName()
+    {
+        return str_replace('Module', '', static::classNameShort());
+    }
+
+    public static function getPath()
+    {
+        if (!static::$_path) {
+            $rc = new ReflectionClass(static::class);
+            static::$_path = dirname($rc->getFileName());
+        }
+        return static::$_path;
+    }
+
+    public static function getAdminMenu()
+    {
+        return [];
     }
 }

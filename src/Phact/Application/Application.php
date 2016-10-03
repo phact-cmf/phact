@@ -131,6 +131,11 @@ class Application
         return array_keys($this->_modulesConfig);
     }
 
+    public function getModulesConfig()
+    {
+        return $this->_modulesConfig;
+    }
+
     protected function _provideModuleEvent($event, $args = [])
     {
         foreach ($this->_modulesConfig as $name => $config) {

@@ -397,7 +397,6 @@ class Router
      */
     public function appendRoute($item, $namespace = '', $route = '/')
     {
-
         $methods = isset($item['methods']) ? $item['methods'] : ["GET", "POST"];
         $method = implode('|', $methods);
         $name = isset($item['name']) ? $item['name'] : '';
@@ -405,7 +404,7 @@ class Router
             $name = $namespace . ':' . $name;
         }
         $path = isset($item['route']) ? $item['route'] : '';
-        if ($route && $path) {
+        if ($route || $path) {
             $path = $route . $path;
         }
         $target = isset($item['target']) ? $item['target'] : null;
