@@ -53,6 +53,23 @@ class QuerySetTest extends DatabaseTest
         $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` INNER JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`name` = 'Test' AND `test_note`.`id` >= 10 AND `test_note_thesis`.`id` <= 5 AND ((`test_note`.`id` = 20) OR (`test_note`.`name` = 'Layla'))", $sql);
     }
 
+    public function testExclude()
+    {
+        $qs = Note::objects()->getQuerySet();
+        $qs->exclude(['name' => 'Test']);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE NOT ((`test_note`.`name` = 'Test'))", $sql);
+    }
+
+    public function testExcludeFilter()
+    {
+        $qs = Note::objects()->getQuerySet();
+        $qs->filter(['name' => 'Actual']);
+        $qs->exclude(['name' => 'Test']);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE (((`test_note`.`name` = 'Actual')) AND (NOT ((`test_note`.`name` = 'Test'))))", $sql);
+    }
+
     public function testExpressions()
     {
         $qs = Note::objects()->getQuerySet();

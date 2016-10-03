@@ -84,7 +84,7 @@ class Manager
      */
     public function exclude($exclude = [])
     {
-        return $this->getQuerySet()->filter($exclude);
+        return $this->getQuerySet()->exclude($exclude);
     }
 
     /**

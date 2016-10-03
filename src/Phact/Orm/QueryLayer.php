@@ -467,6 +467,9 @@ class QueryLayer
         if (!is_array($conditions) || isset($conditions['relation'])) {
             $conditions = [$conditions];
         }
+        if (isset($conditions[0]) && in_array($conditions[0], ['not', 'and', 'or'])) {
+            $operator = array_shift($conditions);
+        }
         foreach ($conditions as $key => $condition) {
             if (is_array($condition) && isset($condition['relation'])) {
                 $lookupManager = $this->getQuerySet()->getLookupManager();
@@ -481,30 +484,19 @@ class QueryLayer
                 $method = 'where';
                 if ($operator == 'or') {
                     $method = 'orWhere';
+                } elseif ($operator == 'not') {
+                    $method = 'whereNot';
                 }
                 $query->{$method}($expression);
             } elseif (is_array($condition)) {
-                $nextOperator = 'and';
-                if (isset($condition[0]) && in_array($condition[0], ['not', 'and', 'or'])) {
-                    $nextOperator = array_shift($condition);
-                }
                 $method = 'where';
-                if ($nextOperator == 'not') {
-                    $nextOperator = 'and';
-                    if ($operator == 'and') {
-                        $method = 'whereNot';
-                    } else {
-                        $method = 'orWhereNot';
-                    }
-                } else {
-                    if ($operator == 'and') {
-                        $method = 'where';
-                    } else {
-                        $method = 'orWhere';
-                    }
+                if ($operator == 'or') {
+                    $method = 'orWhere';
+                } elseif ($operator == 'not') {
+                    $method = 'whereNot';
                 }
-                $query->{$method}(function($q) use ($condition, $nextOperator) {
-                    $this->buildConditions($q, $condition, $nextOperator);
+                $query->{$method}(function($q) use ($condition) {
+                    $this->buildConditions($q, $condition, 'and');
                 });
             }
         }
