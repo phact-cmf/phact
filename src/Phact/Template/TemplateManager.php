@@ -19,6 +19,8 @@ use Fenom;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class TemplateManager
 {
@@ -34,6 +36,7 @@ class TemplateManager
     public $autoEscape = true;
 
     public $templateFolder = 'templates';
+    public $librariesFolder = 'TemplateLibraries';
     public $cacheFolder = 'templates_cache';
 
     public function init()
@@ -52,9 +55,12 @@ class TemplateManager
             'auto_escape' => $this->autoEscape
         ]);
         $this->extendRenderer();
+        $this->loadLibraries();
     }
 
     /**
+     * @extension modifier
+     * @name info
      * @return Fenom
      */
     public function getRenderer()
@@ -92,8 +98,14 @@ class TemplateManager
             return !array_key_exists($variable, $array);
         });
 
+        $this->_renderer->addAccessorSmart("app", "app", Fenom::ACCESSOR_PROPERTY);
+        $this->_renderer->app = Phact::app();
+
         $this->_renderer->addAccessorSmart("request", "request", Fenom::ACCESSOR_PROPERTY);
         $this->_renderer->request = Phact::app()->request;
+
+        $this->_renderer->addAccessorSmart("user", "user", Fenom::ACCESSOR_PROPERTY);
+        $this->_renderer->user = Phact::app()->getUser();
 
         $this->_renderer->addModifier('class', function($object) {
             if (is_object($object)) {
@@ -105,5 +117,29 @@ class TemplateManager
         $this->_renderer->addFunction('url', function($params) {
             return Phact::app()->router->url($params['route'], isset($params['params']) ? $params['params'] : [] );
         });
+    }
+
+    public function loadLibraries()
+    {
+        $modulesPath = Paths::get('Modules');
+        $activeModules = Phact::app()->getModulesList();
+        $classes = [];
+        foreach ($activeModules as $module) {
+            $path = implode(DIRECTORY_SEPARATOR, [$modulesPath, $module, $this->librariesFolder]);
+            if (is_dir($path)) {
+                foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename)
+                {
+                    // filter out "." and ".."
+                    if ($filename->isDir()) continue;
+                    $name = $filename->getBasename('.php');
+                    $classes[] = implode('\\', ['Modules', $module, $this->librariesFolder, $name]);
+                }
+            }
+        }
+        foreach ($classes as $class) {
+            if (class_exists($class) && is_a($class, TemplateLibrary::class, true)) {
+                $class::load($this->getRenderer());
+            }
+        }
     }
 }

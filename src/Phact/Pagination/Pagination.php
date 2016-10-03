@@ -21,6 +21,7 @@ use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Manager;
 use Phact\Orm\QuerySet;
+use Phact\Template\Renderer;
 use Traversable;
 
 /**
@@ -32,7 +33,7 @@ use Traversable;
  */
 class Pagination
 {
-    use SmartProperties;
+    use SmartProperties, Renderer;
 
     /**
      * @var array|PaginableInterface
@@ -322,5 +323,12 @@ class Pagination
         } else {
             return [];
         }
+    }
+
+    public function render($template = 'pagination/default.tpl')
+    {
+        return $this->renderTemplate($template, [
+            'pagination' => $this
+        ]);
     }
 }

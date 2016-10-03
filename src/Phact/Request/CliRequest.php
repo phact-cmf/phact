@@ -18,4 +18,30 @@ use Phact\Helpers\SmartProperties;
 
 class CliRequest extends Request
 {
+    public function parse()
+    {
+        $args = [];
+        if (isset($_SERVER['argv'])) {
+            $args = $_SERVER['argv'];
+        }
+
+        $module = null;
+        $command = null;
+        $action = 'handle';
+        $arguments = [];
+
+        foreach ($args as $key => $arg) {
+            if ($key == 1) {
+                $module = $arg;
+            } elseif ($key == 2) {
+                $command = $arg;
+            } elseif ($key == 3) {
+                $action = $arg;
+            }  elseif ($key > 3) {
+                $arguments[] = $arg;
+            }
+        }
+
+        return [$module, $command, $action, $arguments];
+    }
 }

@@ -14,6 +14,7 @@
 
 namespace Phact\Application;
 
+use Exception;
 use Phact\Controller\Controller;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Exceptions\NotFoundHttpException;
@@ -22,6 +23,7 @@ use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
 use Phact\Interfaces\AuthInterface;
 use Phact\Main\ComponentsLibrary;
+use Phact\Request\CliRequest;
 use Phact\Request\HttpRequest;
 
 /**
@@ -131,6 +133,11 @@ class Application
         return array_keys($this->_modulesConfig);
     }
 
+    public function getModulesConfig()
+    {
+        return $this->_modulesConfig;
+    }
+
     protected function _provideModuleEvent($event, $args = [])
     {
         foreach ($this->_modulesConfig as $name => $config) {
@@ -237,5 +244,25 @@ class Application
 
     public function handleCliRequest()
     {
+        /** @var CliRequest $request */
+        $request = $this->request;
+        list($module, $command, $action, $arguments) = $request->parse();
+        if ($module && $command) {
+            $module = ucfirst($module);
+            $command = ucfirst($command);
+            $class = '\\Modules\\' . $module . '\\Commands\\' . $command . 'Command';
+            if (class_exists($class)) {
+                $command = new $class();
+                if (method_exists($command, $action)) {
+                    $command->{$action}($arguments);
+                } else {
+                    throw new Exception("Method '{$action}' of class '{$class}' does not exist");
+                }
+            } else {
+                throw new Exception("Class '{$class}' does not exist");
+            }
+        } else {
+            echo "Please, describe module and command names like this: php index.php Module Command" . PHP_EOL;
+        }
     }
 }
