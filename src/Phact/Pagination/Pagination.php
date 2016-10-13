@@ -64,6 +64,8 @@ class Pagination
 
     public $pageSizeKeyTemplate = 'Pagination_Size_{id}';
 
+    public $pageSizes = [10, 20, 50];
+    
     public function __construct($provider, $options = [])
     {
         if (!($provider instanceof PaginableInterface) && !(is_array($provider))) {

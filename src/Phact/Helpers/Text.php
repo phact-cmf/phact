@@ -51,4 +51,19 @@ class Text
         }
         return $text;
     }
+
+    public static function startsWith($haystack, $needle)
+    {
+        $length = mb_strlen($needle, 'UTF-8');
+        return (mb_substr($haystack, 0, $length, 'UTF-8') === $needle);
+    }
+
+    public static function endsWith($haystack, $needle)
+    {
+        $length = mb_strlen($needle, 'UTF-8');
+        if ($length == 0) {
+            return true;
+        }
+        return (mb_substr($haystack, -$length, null, 'UTF-8') === $needle);
+    }
 }

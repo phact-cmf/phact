@@ -52,16 +52,6 @@ class Model
         return $tableName;
     }
 
-    public static function getModuleName()
-    {
-        $class = get_called_class();
-        $classParts = explode('\\', $class);
-        if ($classParts[0] == 'Modules' && isset($classParts[1])) {
-            return $classParts[1];
-        }
-        return null;
-    }
-
     /**
      * @return FieldsManager
      */
@@ -471,5 +461,10 @@ class Model
         $result = $query->delete($this->getTableName(), $this->getPkAttribute(), $this->getPk());
         $this->_provideEvent('afterDelete');
         return $result;
+    }
+
+    public function __toString()
+    {
+        return static::classNameShort();
     }
 }

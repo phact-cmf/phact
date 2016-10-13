@@ -28,7 +28,7 @@ class TemplateLibrary
     {
         $reflection = new ReflectionClass(static::class);
         $methods = $reflection->getMethods(ReflectionMethod::IS_STATIC | ReflectionMethod::IS_PUBLIC);
-        $kinds = ['function', 'modifier', 'compiler'];
+        $kinds = ['function', 'functionSmart', 'modifier', 'compiler', 'accessorCallback', 'accessorCall'];
 
         static::$excludedMethods = array_merge(self::$excludedMethods, self::$excludedMethodsInternal);
 
@@ -86,16 +86,27 @@ class TemplateLibrary
      */
     public static function addExtension($renderer, $methodName, $name, $kind)
     {
+        $renderer->addAccessorSmart("fetch", "fetch", Fenom::ACCESSOR_METHOD);
+
         $callable = [static::class, $methodName];
         switch ($kind) {
             case 'function':
                 $renderer->addFunction($name, $callable);
+                break;
+            case 'functionSmart':
+                $renderer->addFunctionSmart($name, $callable);
                 break;
             case 'modifier':
                 $renderer->addModifier($name, $callable);
                 break;
             case 'compiler':
                 $renderer->addCompiler($name, $callable);
+                break;
+            case 'accessorCallback':
+                $renderer->addAccessorCallback($name, $callable);
+                break;
+            case 'accessorCall':
+                $renderer->addAccessorSmart($name, implode('::', $callable), $renderer::ACCESSOR_CALL);
                 break;
         }
     }

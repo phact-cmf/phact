@@ -34,4 +34,14 @@ trait ClassNames
     {
         return Text::camelCaseToUnderscores(static::classNameShort());
     }
+
+    public static function getModuleName()
+    {
+        $class = get_called_class();
+        $classParts = explode('\\', $class);
+        if ($classParts[0] == 'Modules' && isset($classParts[1])) {
+            return $classParts[1];
+        }
+        return null;
+    }
 }

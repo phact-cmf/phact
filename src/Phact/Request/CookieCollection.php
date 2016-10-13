@@ -44,7 +44,7 @@ class CookieCollection implements ArrayAccess, Countable
     {
         if ($this->has($key)) {
             unset($_COOKIE[$key]);
-            setcookie($key, "", time()-3600);
+            setcookie($key, "", time()-3600, '/');
         }
     }
 
@@ -52,7 +52,7 @@ class CookieCollection implements ArrayAccess, Countable
     {
         foreach (array_keys($_COOKIE) as $key) {
             unset($_COOKIE[$key]);
-            setcookie($key, "", time()-3600);
+            setcookie($key, "", time()-3600, '/');
         }
     }
 
