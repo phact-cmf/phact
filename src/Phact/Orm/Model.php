@@ -208,7 +208,9 @@ class Model
      */
     public function setAttribute($attributeName, $attribute)
     {
+
         $this->setFieldValue($attributeName, $attribute);
+
     }
 
     public function setAttributes($attributes)
@@ -273,12 +275,7 @@ class Model
     {
         $manager = $this->getFieldsManager();
         if ($manager->has($field)) {
-            $attributeName = $manager->getFieldAttributeName($field);
-            $attribute = null;
-            if ($attributeName) {
-                $attribute = $this->getAttribute($attributeName);
-            }
-            return $manager->getFieldValue($this, $field, $attribute);
+            return $manager->getFieldValue($this, $field);
         }
         return null;
     }
@@ -287,8 +284,11 @@ class Model
     {
         $manager = $this->getFieldsManager();
         if ($manager->has($field)) {
+
             $attributeName = $manager->getFieldAttributeName($field);
+
             $attribute = $manager->setFieldValue($this, $field, $value);
+
             if ($attributeName) {
                 $this->_setAttribute($attributeName, $attribute);
             }
@@ -362,11 +362,13 @@ class Model
             throw new InvalidArgumentException("Invalid event name. Event name must be one of this: " . implode(', ', $events));
         }
         $metaEvent = null;
+
         if (in_array($eventName, ['beforeInsert', 'beforeUpdate'])) {
             $metaEvent = 'beforeSave';
         } elseif (in_array($eventName, ['afterInsert', 'afterUpdate'])) {
             $metaEvent = 'afterSave';
         }
+
         $fields = $this->getFieldsManager()->getFields();
         foreach ($fields as $name => $field) {
             $attributeName = $field->getAttributeName();
@@ -384,6 +386,9 @@ class Model
 
         }
 
+        if(method_exists($this, $metaEvent)){
+            $this->{$metaEvent}();
+        }
     }
 
     public function getChangedAttributes($fields = [])
@@ -422,7 +427,7 @@ class Model
         $this->_provideEvent('beforeInsert');
         $data = $this->getChangedAttributes($fields);
         $prepared = $this->getDbPreparedAttributes($data);
-        
+
         $query = $this->getQuery();
         $pk = $query->insert($this->getTableName(), $prepared);
         $pkAttribute = $this->getPkAttribute();
@@ -465,6 +470,16 @@ class Model
 
     public function __toString()
     {
-        return static::classNameShort();
+        return (string) static::classNameShort();
+    }
+
+    public function beforeSave()
+    {
+
+    }
+
+    public function afterSave()
+    {
+
     }
 }
