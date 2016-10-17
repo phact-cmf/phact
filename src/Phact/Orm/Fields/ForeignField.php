@@ -142,4 +142,12 @@ class ForeignField extends RelationField
         $field = $relationModel->getField($to);
         return $field->getSqlType();
     }
+
+    public function dbPrepareValue($value)
+    {
+        if ($value instanceof Model) {
+            $value = $value->pk;
+        }
+        return $value ? (int) $value : null;
+    }
 }

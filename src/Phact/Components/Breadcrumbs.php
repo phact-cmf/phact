@@ -64,11 +64,9 @@ class Breadcrumbs
             $url = Phact::app()->router->url($url, $params);
         }
         $item = [
-            'name' => $name
+            'name' => $name,
+            'url' => $url
         ];
-        if ($url) {
-            $item['url'] = $url;
-        }
         $this->_lists[$this->_active][] = $item;
     }
 

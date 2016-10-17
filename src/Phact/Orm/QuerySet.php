@@ -163,6 +163,9 @@ class QuerySet implements PaginableInterface
         return $this->getQueryLayer()->all(true);
     }
 
+    /**
+     * @return null|Model
+     */
     public function get()
     {
         $row = $this->getQueryLayer()->get();
@@ -331,6 +334,10 @@ class QuerySet implements PaginableInterface
         return $this->_groupBy;
     }
 
+    /**
+     * @param $limit
+     * @return QuerySet
+     */
     public function limit($limit)
     {
         $this->_limit = $limit;
