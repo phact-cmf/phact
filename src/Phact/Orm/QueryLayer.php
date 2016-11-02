@@ -287,6 +287,7 @@ class QueryLayer
         }
         if ($buildGroup) {
             $this->buildGroup($query, $qs->getGroupBy());
+            $this->buildHaving($query, $qs->getHaving());
         }
         if ($buildLimitOffset) {
             $this->buildLimitOffset($query, $qs->getLimit(), $qs->getOffset());
@@ -360,6 +361,9 @@ class QueryLayer
         $updateData = [];
         foreach ($data as $attribute => $value) {
             $column = $this->relationColumnAlias($attribute);
+            if ($value instanceof Expression) {
+                $value = $this->convertExpression($value);
+            }
             $updateData[$column] = $value;
         }
         if ($sql) {
@@ -534,6 +538,19 @@ class QueryLayer
             } elseif (is_string($item)) {
                 $query->groupBy($item);
             }
+        }
+    }
+
+    /**
+     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $having Expression
+     * @return array
+     */
+    public function buildHaving($query, $having)
+    {
+        if ($having instanceof Expression) {
+            $value = $this->convertExpression($having);
+            $query->having($value);
         }
     }
 

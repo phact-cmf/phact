@@ -71,7 +71,7 @@ class QuerySet implements PaginableInterface
      */
     protected $_groupBy = [];
 
-    protected $_select;
+    protected $_select = [];
 
     /**
      * Built filter and exclude
@@ -79,7 +79,12 @@ class QuerySet implements PaginableInterface
      */
     protected $_where = [];
     protected $_relations = [];
-    
+
+    /**
+     * @var Expression|null
+     */
+    protected $_having = null;
+
     /**
      * Limit and offset
      * @var int|null
@@ -213,6 +218,11 @@ class QuerySet implements PaginableInterface
 
     public function update($data = [])
     {
+        foreach ($data as $key => $item) {
+            if ($item instanceof Expression) {
+                $this->handleExpression($item);
+            }
+        }
         return $this->getQueryLayer()->update($data);
     }
 
@@ -332,6 +342,17 @@ class QuerySet implements PaginableInterface
     public function getGroupBy()
     {
         return $this->_groupBy;
+    }
+
+    public function having(Expression $expression)
+    {
+        $this->_having = $expression;
+        return $this->nextQuerySet();
+    }
+
+    public function getHaving()
+    {
+        return $this->_having;
     }
 
     /**
