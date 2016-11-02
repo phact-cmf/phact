@@ -31,7 +31,7 @@
   },
   "require": {
     "php": ">=5.4",
-    "phact-cmf/pixie": ">=2.0.1",
+    "phact-cmf/pixie": ">=2.0.2",
     "fenom/fenom": ">=2.11.1"
   },
   "authors": [
