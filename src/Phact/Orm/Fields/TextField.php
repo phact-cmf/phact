@@ -15,10 +15,19 @@
 namespace Phact\Orm\Fields;
 
 
+use Phact\Form\Fields\TextAreaField;
+
 class TextField extends CharField
 {
     public function getSqlType()
     {
         return "TEXT";
+    }
+
+    public function getFormField()
+    {
+        return $this->setUpFormField([
+            'class' => TextAreaField::class
+        ]);
     }
 }
