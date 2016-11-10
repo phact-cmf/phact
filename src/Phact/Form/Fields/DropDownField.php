@@ -16,5 +16,12 @@ namespace Phact\Form\Fields;
 
 class DropDownField extends Field
 {
+    /**
+     * @var string
+     */
+    public $inputTemplate = 'forms/field/dropdown/input.tpl';
 
+    public $disabled = [];
+
+    public $emptyText = null;
 }
