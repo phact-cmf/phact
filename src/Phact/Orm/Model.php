@@ -338,7 +338,8 @@ class Model
 
     public function getIsNew()
     {
-        return empty($this->_oldAttributes);
+        $pk = $this->getPkAttribute();
+        return !!$pk;
     }
 
     public function save($fields = [])
