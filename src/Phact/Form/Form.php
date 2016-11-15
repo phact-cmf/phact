@@ -13,6 +13,7 @@
  */
 
 namespace Phact\Form;
+
 use Phact\Form\Fields\Field;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\Configurator;
@@ -212,10 +213,17 @@ abstract class Form
 
     }
     
-    public function render($template = 'forms/default.tpl')
+    public function render($template = null, $fields = [])
     {
+        if (!$template) {
+            $template = 'forms/default.tpl';
+        }
+        if (!$fields) {
+            $fields = array_keys($this->getInitFields());
+        }
         return $this->renderTemplate($template, [
-            'form' => $this
+            'form' => $this,
+            'fields' => $fields
         ]);
     }
 }

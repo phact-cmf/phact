@@ -17,6 +17,7 @@ namespace Phact\Form\Fields;
 
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Form\Form;
+use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Template\Renderer;
@@ -35,7 +36,7 @@ use Phact\Validators\Validator;
  */
 abstract class Field
 {
-    use SmartProperties, Renderer;
+    use SmartProperties, Renderer, ClassNames;
 
     /**
      * @var string
