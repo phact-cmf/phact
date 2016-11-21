@@ -23,7 +23,8 @@
       "Phact\\Interfaces\\": "src/Phact/Interfaces",
       "Phact\\Pagination\\": "src/Phact/Pagination",
       "Phact\\Commands\\": "src/Phact/Commands",
-      "Phact\\Components\\": "src/Phact/Components"
+      "Phact\\Components\\": "src/Phact/Components",
+      "Phact\\Storage\\": "src/Phact/Storage"
     },
     "files": [
       "src/dump.php"

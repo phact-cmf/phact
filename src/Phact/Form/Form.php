@@ -79,9 +79,10 @@ abstract class Form
             foreach ($this->getFieldsConfigs() as $name => $fieldConfig) {
                 if (!in_array($name, $this->exclude)) {
                     /** @var Field $field */
-                    $field = Configurator::create($fieldConfig);
-                    $field->setName($name);
-                    $field->setForm($this);
+                    $field = Configurator::create(array_merge($fieldConfig, [
+                        'form' => $this,
+                        'name' => $name
+                    ]));
                     $this->_initFields[$name] = $field;
                 }
             }

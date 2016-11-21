@@ -29,4 +29,12 @@ class LocalFile extends File
         }
         $this->type = $mime;
     }
+
+    /**
+     * @return string base file name
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
 }
