@@ -381,6 +381,20 @@ abstract class Field
     }
 
     /**
+     * Getting display representations of value
+     * @param null $default
+     * @return mixed|null
+     */
+    public function getChoiceDisplay($default = null)
+    {
+        $attribute = $this->getAttribute();
+        if ($this->choices && isset($this->choices[$attribute])) {
+            return $this->choices[$attribute];
+        }
+        return $default;
+    }
+
+    /**
      * Setting up form field
      *
      * @param array $config

@@ -298,6 +298,14 @@ class Model
     public function __get($name)
     {
         $manager = $this->getFieldsManager();
+        if (Text::endsWith($name, '__display')) {
+            $start = mb_strpos($name, '__display', 0, 'UTF-8');
+            $name = mb_substr($name, 0, $start, 'UTF-8');
+
+            if ($manager->has($name) && ($field = $this->getField($name))) {
+                return $field->getChoiceDisplay();
+            }
+        }
         if ($manager->has($name)) {
             return $this->getFieldValue($name);
         } else {
