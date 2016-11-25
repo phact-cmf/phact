@@ -240,12 +240,16 @@ class FieldsManager
             $field->cleanOldAttribute();
 
             $field->setModel($model);
-            $attribute = $model->getAttribute($name);
-            $oldAttribute = $model->getOldAttribute($name);
 
-            $field->setAttribute($attribute);
-            $field->setOldAttribute($oldAttribute);
+            $attributeName = $field->getAttributeName();
 
+            if ($attributeName) {
+                $attribute = $model->getAttribute($attributeName);
+                $oldAttribute = $model->getOldAttribute($attributeName);
+
+                $field->setAttribute($attribute);
+                $field->setOldAttribute($oldAttribute);
+            }
             return $field;
         } else {
             throw new UnknownPropertyException(strtr("Getting value of unknown field: {field}", [

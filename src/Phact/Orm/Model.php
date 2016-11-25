@@ -286,7 +286,6 @@ class Model
         if ($manager->has($field)) {
 
             $attributeName = $manager->getFieldAttributeName($field);
-
             $attribute = $manager->setFieldValue($this, $field, $value);
 
             if ($attributeName) {
