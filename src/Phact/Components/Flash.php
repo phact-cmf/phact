@@ -55,7 +55,7 @@ class Flash
 
     public function getMessages()
     {
-        return Phact::app()->request->session->get(self::SESSION_KEY, []);
+        return array_merge(Phact::app()->request->session->get(self::SESSION_KEY, []), []);
     }
 
     public function setMessages($messages = [])

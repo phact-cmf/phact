@@ -284,14 +284,7 @@ abstract class Field
     public function setDefaultDbValue()
     {
         if ($this->hasDbAttribute()) {
-            if (is_null($this->attribute)) {
-                if ($this->null) {
-                    $this->setAttribute(null);
-                } else {
-                    $value = $this->getBlankValue();
-                    $this->setAttribute($value);
-                }
-            }
+            $this->setAttribute($this->getSafeValue());
         }
     }
 
@@ -424,5 +417,17 @@ abstract class Field
             'value' => $this->default,
             'choices' => $this->choices
         ], $config);
+    }
+
+    public function getSafeValue()
+    {
+        if (is_null($this->_attribute) && !$this->null) {
+            if (!is_null($this->default)) {
+                return $this->default;
+            } else {
+                return $this->getBlankValue();
+            }
+        }
+        return $this->_attribute;
     }
 }

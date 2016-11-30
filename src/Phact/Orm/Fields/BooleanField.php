@@ -20,9 +20,14 @@ class BooleanField extends IntField
     public $length = 1;
     public $unsigned = true;
 
+    public function setAttribute($value)
+    {
+        parent::setAttribute($value);
+    }
+
     public function getValue($aliasConfig = null)
     {
-        return $this->_attribute ? true : false;
+        return is_null($this->_attribute) ? null : (bool) $this->_attribute;
     }
 
     public function dbPrepareValue($value)
