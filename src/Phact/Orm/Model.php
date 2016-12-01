@@ -39,6 +39,13 @@ class Model
     protected $_attributes = [];
     protected $_oldAttributes = [];
 
+    public function __construct($attributes = [])
+    {
+        if (!empty($attributes)) {
+            $this->setAttributes($attributes);
+        }
+    }
+
     public static function getTableName()
     {
         $class = get_called_class();
