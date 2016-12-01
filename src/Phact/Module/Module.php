@@ -21,7 +21,7 @@ use ReflectionClass;
 
 abstract class Module
 {
-    protected static $_path;
+    protected static $_paths = [];
 
     use ClassNames, SmartProperties;
 
@@ -49,11 +49,12 @@ abstract class Module
 
     public static function getPath()
     {
-        if (!static::$_path) {
-            $rc = new ReflectionClass(static::class);
-            static::$_path = dirname($rc->getFileName());
+        $class = static::class;
+        if (!isset(static::$_paths[$class])) {
+            $rc = new ReflectionClass($class);
+            static::$_paths[$class] = dirname($rc->getFileName());
         }
-        return static::$_path;
+        return static::$_paths[$class];
     }
 
     public static function getAdminMenu()
