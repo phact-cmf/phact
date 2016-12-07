@@ -56,4 +56,14 @@ abstract class File implements FileInterface
     {
         return $this->path;
     }
+
+    public function getSize()
+    {
+        return $this->size;
+    }
+    
+    public function getName()
+    {
+        return $this->name;
+    }
 }

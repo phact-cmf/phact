@@ -39,4 +39,11 @@ class BooleanField extends IntField
     {
         return "TINYINT({$this->length})";
     }
+
+    public function getFormField()
+    {
+        return $this->setUpFormField([
+            'class' => \Phact\Form\Fields\CheckboxField::class
+        ]);
+    }
 }

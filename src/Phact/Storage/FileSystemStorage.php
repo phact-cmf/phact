@@ -123,7 +123,7 @@ class FileSystemStorage extends Storage
     public function getSize($name)
     {
         $path = $this->getPath($name);
-        if (!is_file($path) || is_readable($path)) {
+        if (!is_file($path) || !is_readable($path)) {
             return null;
         }
         return filesize($this->getPath($name));

@@ -14,7 +14,7 @@ use Phact\Helpers\FileHelper;
 use Phact\Main\Phact;
 use Phact\Storage\Files\StorageFile;
 use Phact\Storage\Files\UploadedFile;
-use Phact\Storage\StorageInterface;
+use Phact\Storage\Storage;
 use Phact\Storage\StorageManager;
 use Phact\Validators\UploadFileValidator;
 
@@ -57,12 +57,10 @@ class FileField extends Field
      */
     public function setValue($value)
     {
-
         /** Filed from instance */
         if ($value instanceof StorageFile) {
             $this->_value = $value;
         }
-
         /**
          * Filed from $_FILES
          */
@@ -81,8 +79,6 @@ class FileField extends Field
 
     public function setFileValue($value)
     {
-        $value = current($value);
-
         if (is_array($value) && UploadFileValidator::checkUploadSuccessCode($value)) {
             $this->_value = new UploadedFile($value);
         }
@@ -105,7 +101,6 @@ class FileField extends Field
         if ($this->getIsRequired()) {
             $canClear = false;
         }
-
 
         if ($this->getForm() instanceof ModelForm) {
             /** @var ModelForm $form */
@@ -137,7 +132,7 @@ class FileField extends Field
         if ($value instanceof StorageFile) {
             /** @var StorageManager $storageManager */
             $storageManager = Phact::app()->storage;
-            /** @var StorageInterface $storage */
+            /** @var Storage $storage */
             $storage = $storageManager->getStorage($value->storage);
             return $storage->getUrl($value->getPath());
         }
@@ -155,6 +150,4 @@ class FileField extends Field
         }
         return null;
     }
-
-
 }

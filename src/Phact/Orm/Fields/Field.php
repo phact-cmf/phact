@@ -411,7 +411,7 @@ abstract class Field
 
         return array_merge([
             'class' => $class,
-            'required' => !$this->null && !$this->blank,
+            'required' => !$this->null && !$this->blank && is_null($this->default),
             'label' => $this->label,
             'hint' => $this->hint,
             'value' => $this->default,

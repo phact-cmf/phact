@@ -24,4 +24,8 @@ interface FileInterface
      */
     public function getContent();
 
+    /**
+     * @return int|null file size
+     */
+    public function getSize();
 }

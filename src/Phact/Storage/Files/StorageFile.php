@@ -99,4 +99,11 @@ class StorageFile implements FileInterface
         return false;
     }
 
+    /**
+     * @return int|null file size
+     */
+    public function getSize()
+    {
+        return $this->getStorageSystem()->getSize($this->getPath());
+    }
 }

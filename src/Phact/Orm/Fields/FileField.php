@@ -103,6 +103,17 @@ class FileField extends CharField
     }
 
     /**
+     * @return string extension of file
+     */
+    public function getSize()
+    {
+        if (is_a($this->attribute, FileInterface::class)) {
+            return $this->getStorage()->getSize($this->attribute->getPath());
+        }
+        return null;
+    }
+
+    /**
      * @return null|bool if success delete
      */
     public function delete()
@@ -291,6 +302,4 @@ class FileField extends CharField
             'class' => \Phact\Form\Fields\FileField::class
         ]);
     }
-
-
 }

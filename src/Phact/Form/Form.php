@@ -117,13 +117,64 @@ abstract class Form
     public function fill($data, $files = [])
     {
         $name = $this->getName();
+        $filled = false;
+        if ($this->hasFiles($files)) {
+            $preparedFiles = $this->prepareFiles($files[$name]);
+            $this->setAttributes($preparedFiles);
+            $filled = true;
+        }
         if (isset($data[$name])) {
             $this->setAttributes($data[$name]);
-            return true;
+            $filled = true;
         }
-        return false;
+        return $filled;
     }
 
+    public function prepareFiles($_files = [])
+    {
+        $files = [];
+        foreach (array_keys($_files) as $keyProp => $prop) {
+            $propValue = $_files[$prop];
+            foreach ($propValue as $key => $value) {
+                $value = (!is_array($value)) ? (array)$value : $value;
+                foreach ($value as $keyValue => $val) {
+                    $files[$key][$prop] = $val;
+                }
+            }
+        }
+        return $files;
+    }
+
+    public function hasFiles($files)
+    {
+        $has = true;
+
+        if (empty($files)) {
+            $has = false;
+        }
+
+        if ($has && !isset($files[$this->getName()])) {
+            $has = false;
+        }
+
+        if($has){
+            $filesData = $files[$this->getName()];
+
+            if (isset($filesData['error'])) {
+                $has = false;
+                $errors = $filesData['error'];
+                foreach ($errors as $error) {
+                    if ($error != UPLOAD_ERR_NO_FILE) {
+                        $has = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $has;
+    }
+    
     public function setAttributes($attributes)
     {
         foreach ($attributes as $name => $value)

@@ -14,20 +14,26 @@ abstract class Storage
     protected $_name;
 
     /**
-     * @param $name
+     * @param $path
      * @return mixed
      */
     abstract public function getPath($path);
 
     /**
-     * @param $name
+     * @param $path
      * @return mixed
      */
     abstract public function getExtension($path);
 
 
     /**
-     * @param $name
+     * @param $path
+     * @return int|null
+     */
+    abstract public function getSize($path);
+
+    /**
+     * @param $path
      * @return mixed
      */
     abstract public function delete($path);
