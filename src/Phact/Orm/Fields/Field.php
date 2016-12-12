@@ -388,6 +388,15 @@ abstract class Field
     }
 
     /**
+     * Is required form field value
+     * @return bool
+     */
+    public function getIsRequired()
+    {
+        return !$this->null && !$this->blank && is_null($this->default);
+    }
+
+    /**
      * Setting up form field
      *
      * @param array $config
@@ -411,7 +420,7 @@ abstract class Field
 
         return array_merge([
             'class' => $class,
-            'required' => !$this->null && !$this->blank && is_null($this->default),
+            'required' => $this->getIsRequired(),
             'label' => $this->label,
             'hint' => $this->hint,
             'value' => $this->default,
