@@ -18,7 +18,7 @@ use Phact\Validators\ImageValidator;
 class ImageField extends FileField
 {
 
-    public $inputTemplate = 'forms/field/image.tpl';
+    public $inputTemplate = 'forms/field/image/input.tpl';
 
     public $sizeShowValue = null;
     public $accept = ['image/*'];

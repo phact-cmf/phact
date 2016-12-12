@@ -32,7 +32,7 @@ class FileField extends Field
      */
     public $maxSize;
 
-    public $inputTemplate = 'forms/field/file.tpl';
+    public $inputTemplate = 'forms/field/file/input.tpl';
 
 
     public function setDefaultValidators()
