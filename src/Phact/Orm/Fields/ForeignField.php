@@ -14,6 +14,7 @@
 
 namespace Phact\Orm\Fields;
 
+use Phact\Form\Fields\DropDownField;
 use Phact\Orm\Model;
 
 /**
@@ -149,5 +150,21 @@ class ForeignField extends RelationField
             $value = $value->pk;
         }
         return $value ? (int) $value : null;
+    }
+
+    public function setUpFormField($config = [])
+    {
+        $config['class'] = DropDownField::class;
+        $choices = [];
+        if (!$this->getIsRequired()) {
+            $choices[''] = '';
+        }
+        $class = $this->modelClass;
+        $objects = $class::objects()->all();
+        foreach ($objects as $object) {
+            $choices[$object->pk] = (string) $object;
+        }
+        $config['choices'] = $choices;
+        return parent::setUpFormField($config);
     }
 }
