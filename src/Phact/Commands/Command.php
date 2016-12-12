@@ -60,5 +60,13 @@ abstract class Command
         return $colored_string;
     }
 
+    /**
+     * Description for help
+     */
+    public function getDescription()
+    {
+        return '';
+    }
+
     abstract public function handle($arguments = []);
 }

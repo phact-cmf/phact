@@ -262,7 +262,16 @@ class Application
                 throw new Exception("Class '{$class}' does not exist");
             }
         } else {
-            echo "Please, describe module and command names like this: php index.php Module Command" . PHP_EOL;
+            $data = $request->getCommandsList();
+            echo 'List of available commands' . PHP_EOL . PHP_EOL;
+            foreach ($data as $name => $commands) {
+                echo 'Module: ' . $name . PHP_EOL;
+                foreach ($commands as $command => $description) {
+                    echo $command . ($description ? ' - '. $description : '') . PHP_EOL;
+                }
+                echo PHP_EOL;
+            }
+            echo  'Usage example:' . PHP_EOL . 'php index.php Base Db';
         }
     }
 }
