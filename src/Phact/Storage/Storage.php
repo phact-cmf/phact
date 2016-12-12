@@ -49,6 +49,17 @@ abstract class Storage
      */
     abstract public function getUrl($path);
 
+    /**
+     * Retrieves the list of files and directories from storage py path
+     * @param $path
+     */
+    abstract public function dir($path);
+
+    /**
+     * Make directory
+     * @param $path
+     */
+    abstract public function mkDir($path);
 
     /**
      * @param $name string

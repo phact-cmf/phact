@@ -9,11 +9,13 @@
 namespace Phact\Storage;
 
 
+use DirectoryIterator;
 use FilesystemIterator;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\FileHelper;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
+use Phact\Helpers\Text;
 use Phact\Storage\Files\File;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -315,5 +317,34 @@ class FileSystemStorage extends Storage
     public function getAbsolutePath($path)
     {
         return $this->basePath . DIRECTORY_SEPARATOR . $path;
+    }
+
+    public function dir($path)
+    {
+        $path = $this->getPath($path);
+        $folderStructure = [
+            'directories' => [],
+            'files' => []
+        ];
+
+        foreach (new DirectoryIterator($path) as $iteratedPath) {
+            if (!$iteratedPath->isDot() && !Text::startsWith(basename($iteratedPath->getPathname()), '.')) {
+                $key = $iteratedPath->isDir() ? 'directories' : 'files';
+                $path = str_replace($this->basePath . DIRECTORY_SEPARATOR, '', $iteratedPath->getPathname());
+                $folderStructure[$key][] = [
+                    'path' => $path,
+                    'url' => $this->getUrl($path),
+                    'name' => basename($path)
+                ];
+            }
+        }
+
+        return $folderStructure;
+    }
+
+    public function mkDir($path)
+    {
+        $path = $this->basePath . DIRECTORY_SEPARATOR . $path;
+        return file_exists($path) ? false : mkdir($path);
     }
 }
