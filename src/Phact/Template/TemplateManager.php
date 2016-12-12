@@ -115,7 +115,16 @@ class TemplateManager
         });
 
         $this->_renderer->addFunction('url', function($params) {
-            return Phact::app()->router->url($params['route'], isset($params['params']) ? $params['params'] : [] );
+            $route = isset($params['route']) ? $params['route'] : null;
+            if (!$route) {
+                $route = isset($params[0]) ? $params[0] : null;
+            }
+
+            $attributes = isset($params['params']) ? $params['params'] : [];
+            if (!$attributes) {
+                $attributes = isset($params[1]) ? $params[1] : [];
+            }
+            return Phact::app()->router->url($route, $attributes);
         });
     }
 
