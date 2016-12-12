@@ -26,6 +26,7 @@ class TableManager
     public $defaultEngine = 'InnoDB';
     public $defaultCharset = 'utf8';
     public $checkExists = true;
+    public $processFk = false;
 
     const DROP_CASCADE = 1;
     const DROP_RESTRICT = 2;
@@ -37,7 +38,9 @@ class TableManager
         foreach ($models as $model) {
             $this->createModelTable($model);
         }
-        $this->createForeignKeys($models);
+        if ($this->processFk) {
+            $this->createForeignKeys($models);
+        }
     }
 
     public function drop($models = [], $mode = self::DROP_CASCADE)
@@ -49,6 +52,7 @@ class TableManager
 
     /**
      * @param $model Model
+     * @return mixed
      */
     public function createModelTable($model)
     {
@@ -71,6 +75,7 @@ class TableManager
         $query = "CREATE TABLE {$exists} {$tableNameSafe} ({$fields}) ENGINE={$engine} DEFAULT CHARSET={$charset}";
         list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
         $this->createM2MTables($model);
+        return $result;
     }
 
     /**
