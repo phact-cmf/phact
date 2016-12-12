@@ -16,5 +16,5 @@ namespace Phact\Form\Fields;
 
 class PasswordField extends CharField
 {
-    public $inputTemplate = 'forms/field/password.tpl';
+    public $inputTemplate = 'forms/field/password/input.tpl';
 }
