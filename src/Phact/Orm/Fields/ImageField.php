@@ -20,6 +20,7 @@ use Imagine\Image\Metadata\DefaultMetadataReader;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Storage\Files\FileInterface;
 use Phact\Storage\Files\StorageFile;
+use Phact\Storage\Storage;
 
 
 class ImageField extends FileField
@@ -116,7 +117,14 @@ class ImageField extends FileField
 
     public function sizeUrl($prefix)
     {
+        /** @var StorageFile $storageFile */
+        $storageFile = $this->attribute;
+        $prefixName = $prefix.'_'.$storageFile->getName();
+        $basePath = dirname($storageFile->getPath());
+        /** @var Storage $storage */
+        $storage = $this->getStorage();
 
+        return $storage->getUrl($basePath.DIRECTORY_SEPARATOR.$prefixName);
     }
 
     public function afterSave()
