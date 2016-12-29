@@ -106,4 +106,9 @@ class StorageFile implements FileInterface
     {
         return $this->getStorageSystem()->getSize($this->getPath());
     }
+
+    public function __toString()
+    {
+        return (string) $this->path;
+    }
 }
