@@ -192,6 +192,9 @@ class FileField extends CharField
      */
     public function setValue($value, $aliasConfig = NULL)
     {
+        if (is_null($value)) {
+            $this->attribute = null;
+        }
 
         if ($value instanceof StorageFile) {
             if (!$value->equalsTo($this->attribute)) {
@@ -207,8 +210,7 @@ class FileField extends CharField
         if ($value instanceof File) {
             $this->attribute = $this->saveFile($value);
         }
-
-
+        
         return $this->attribute;
 
     }

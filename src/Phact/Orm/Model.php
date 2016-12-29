@@ -215,9 +215,7 @@ class Model
      */
     public function setAttribute($attributeName, $attribute)
     {
-
         $this->setFieldValue($attributeName, $attribute);
-
     }
 
     public function setAttributes($attributes)
