@@ -14,6 +14,8 @@
 
 namespace Phact\Form\Fields;
 
+use Phact\Orm\Model;
+
 class DropDownField extends Field
 {
     /**
@@ -24,4 +26,13 @@ class DropDownField extends Field
     public $disabled = [];
 
     public $emptyText = null;
+
+    public function setValue($value)
+    {
+        if ($value instanceof Model) {
+            $value = $value->id;
+        }
+        $this->_value = $value;
+        return $this;
+    }
 }
