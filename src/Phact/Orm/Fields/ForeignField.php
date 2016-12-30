@@ -165,6 +165,9 @@ class ForeignField extends RelationField
             $choices[$object->pk] = (string) $object;
         }
         $config['choices'] = $choices;
+        if (!isset($config['value']) && ($value = $this->attribute)) {
+            $config['value'] = $value;
+        }
         return parent::setUpFormField($config);
     }
 }
