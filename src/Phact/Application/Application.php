@@ -213,8 +213,8 @@ class Application
     public function getUser()
     {
         /** @var AuthInterface $auth */
-        if ($auth = $this->getComponent('auth')) {
-            return $auth->getUser();
+        if ($this->hasComponent('auth')) {
+            return $this->getComponent('auth')->getUser();
         }
         return null;
     }

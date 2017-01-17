@@ -16,6 +16,7 @@ namespace Phact\Orm\Fields;
 
 use Phact\Form\Fields\DropDownField;
 use Phact\Orm\Model;
+use Phact\Orm\QuerySet;
 
 /**
  * Class ForeignField
@@ -38,6 +39,12 @@ class ForeignField extends RelationField
 
     public $onUpdate = self::CASCADE;
     public $onDelete = self::CASCADE;
+
+    /** s
+     * Attribute of related model that contains name
+     * @var string|null
+     */
+    public $nameAttribute = null;
 
     public function getFrom()
     {
@@ -160,9 +167,15 @@ class ForeignField extends RelationField
             $choices[''] = '';
         }
         $class = $this->modelClass;
-        $objects = $class::objects()->all();
-        foreach ($objects as $object) {
-            $choices[$object->pk] = (string) $object;
+        /** @var QuerySet $qs */
+        $qs = $class::objects()->getQuerySet();
+        if ($this->nameAttribute) {
+            $choices = array_merge($choices, $qs->choices('pk', $this->nameAttribute));
+        } else {
+            $objects = $qs->all();
+            foreach ($objects as $object) {
+                $choices[$object->pk] = (string) $object;
+            }
         }
         $config['choices'] = $choices;
         return parent::setUpFormField($config);

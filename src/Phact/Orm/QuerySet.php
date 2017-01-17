@@ -18,6 +18,10 @@ use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 use Phact\Orm\Aggregations\Aggregation;
 use Phact\Orm\Aggregations\Count;
+use Phact\Orm\Aggregations\Max;
+use Phact\Orm\Aggregations\Min;
+use Phact\Orm\Aggregations\Avg;
+use Phact\Orm\Aggregations\Sum;
 use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Fields\RelationField;
 use Phact\Pagination\PaginableInterface;
@@ -249,6 +253,46 @@ class QuerySet implements PaginableInterface
     public function countSql()
     {
         return $this->aggregateSql(new Count());
+    }
+
+    public function max($attribute)
+    {
+        return $this->aggregate(new Max($attribute));
+    }
+
+    public function maxSql($attribute)
+    {
+        return $this->aggregateSql(new Max($attribute));
+    }
+
+    public function min($attribute)
+    {
+        return $this->aggregate(new Min($attribute));
+    }
+
+    public function minSql($attribute)
+    {
+        return $this->aggregateSql(new Min($attribute));
+    }
+
+    public function avg($attribute)
+    {
+        return $this->aggregate(new Avg($attribute));
+    }
+
+    public function avgSql($attribute)
+    {
+        return $this->aggregateSql(new Avg($attribute));
+    }
+
+    public function sum($attribute)
+    {
+        return $this->aggregate(new Sum($attribute));
+    }
+
+    public function sumSql($attribute)
+    {
+        return $this->aggregateSql(new Sum($attribute));
     }
 
     public function choices($key, $value)

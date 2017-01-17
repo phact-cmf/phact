@@ -64,6 +64,26 @@ class Manager
         return $this->getQuerySet()->count();
     }
 
+    public function sum($attribute)
+    {
+        return $this->getQuerySet()->sum($attribute);
+    }
+
+    public function max($attribute)
+    {
+        return $this->getQuerySet()->max($attribute);
+    }
+
+    public function avg($attribute)
+    {
+        return $this->getQuerySet()->avg($attribute);
+    }
+
+    public function min($attribute)
+    {
+        return $this->getQuerySet()->min($attribute);
+    }
+
     public function get()
     {
         return $this->getQuerySet()->get();

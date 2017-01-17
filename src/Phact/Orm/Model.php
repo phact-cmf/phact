@@ -420,6 +420,18 @@ class Model
         return $changed;
     }
 
+    public function getChangedAttribute($attribute)
+    {
+        $attributes = $this->getChangedAttributes();
+        return isset($attributes[$attribute]) ? $attributes[$attribute] : null;
+    }
+
+    public function getIsChangedAttribute($attribute)
+    {
+        $attributes = $this->getChangedAttributes();
+        return array_key_exists($attribute, $attributes) ? true : false;
+    }
+
     public function getDbPreparedAttributes($attributes = [])
     {
         $prepared = [];
@@ -433,6 +445,12 @@ class Model
             }
         }
         return $prepared;
+    }
+
+    public function getDbPreparedAttribute($attribute)
+    {
+        $attributes = $this->getDbPreparedAttributes();
+        return isset($attributes[$attribute]) ? $attributes[$attribute] : null;
     }
 
     public function insert($fields = [])
