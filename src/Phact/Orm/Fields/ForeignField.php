@@ -107,6 +107,9 @@ class ForeignField extends RelationField
         if (!is_string($value) && !is_int($value) && !is_null($value)) {
             throw new \InvalidArgumentException("Raw value for ForeignField must be a string, int or null");
         }
+        if ($value === '') {
+            $value = null;
+        }
         $this->_attribute = $value;
     }
 
