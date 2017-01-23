@@ -14,7 +14,6 @@
 
 namespace Phact\Orm\Fields;
 
-
 use Phact\Form\Fields\DropDownField;
 use Phact\Orm\QuerySet;
 
@@ -31,7 +30,7 @@ class TreeForeignField extends ForeignField
 
         $filter = [];
         $model = $this->getModel();
-        if ($model->className() == $class) {
+        if ($model && $model->className() == $class && !$model->getIsNew()) {
             $filter = [
                 'lft__gte' => $model->lft,
                 'rgt__lte' => $model->rgt,
@@ -41,10 +40,10 @@ class TreeForeignField extends ForeignField
         /** @var QuerySet $qs */
         $qs = $class::objects()->filter($filter)->order(['root', 'lft']);
         if ($this->nameAttribute) {
-            $values = $qs->values(['pk', 'depth', $this->nameAttribute]);
+            $values = $qs->values(['id', 'depth', $this->nameAttribute]);
             foreach ($values as $item) {
                 $depth = $item['depth'] - 1;
-                $choices[$item['pk']] = ($depth ? str_repeat("..", $depth) . " " : '') . $item[$this->nameAttribute];
+                $choices[$item['id']] = ($depth ? str_repeat("..", $depth) . " " : '') . $item[$this->nameAttribute];
             }
         } else {
             $objects = $qs->all();
@@ -53,8 +52,7 @@ class TreeForeignField extends ForeignField
                 $choices[$object->pk] = ($depth ? str_repeat("..", $depth) . " " : '') . (string) $object;
             }
         }
-
         $config['choices'] = $choices;
-        return parent::setUpFormField($config);
+        return Field::setUpFormField($config);
     }
 }

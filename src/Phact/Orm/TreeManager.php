@@ -30,49 +30,41 @@ class TreeManager extends Manager
 
     public function descendants($includeSelf = false, $depth = null)
     {
-        $this->getQuerySet()->descendants($includeSelf, $depth);
-        return $this;
+        return $this->getQuerySet()->descendants($includeSelf, $depth);
     }
 
     public function children($includeSelf = false)
     {
-        $this->getQuerySet()->children($includeSelf);
-        return $this;
+        return $this->getQuerySet()->children($includeSelf);
     }
 
     public function ancestors($includeSelf = false, $depth = null)
     {
-        $this->getQuerySet()->ancestors($includeSelf, $depth);
-        return $this;
+        return $this->getQuerySet()->ancestors($includeSelf, $depth);
     }
 
     public function parents($includeSelf = false)
     {
-        $this->getQuerySet()->parents($includeSelf);
-        return $this;
+        return $this->getQuerySet()->parents($includeSelf);
     }
 
     public function roots()
     {
-        $this->getQuerySet()->roots();
-        return $this;
+        return $this->getQuerySet()->roots();
     }
 
     public function parent()
     {
-        $this->getQuerySet()->parent();
-        return $this;
+        return $this->getQuerySet()->parent();
     }
 
     public function prev()
     {
-        $this->getQuerySet()->prev();
-        return $this;
+        return $this->getQuerySet()->prev();
     }
 
     public function next()
     {
-        $this->getQuerySet()->next();
-        return $this;
+        return $this->getQuerySet()->next();
     }
 }

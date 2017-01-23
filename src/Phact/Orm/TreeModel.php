@@ -18,10 +18,13 @@ namespace Phact\Orm;
 use Exception;
 use Phact\Orm\Fields\ForeignField;
 use Phact\Orm\Fields\IntField;
+use Phact\Orm\Fields\TreeForeignField;
 
 /**
  * Class TreeModel
  * @package Phact\Orm
+ *
+ * @method static TreeManager objects($model = null)
  *
  * @property int lft
  * @property int rgt
@@ -31,13 +34,17 @@ use Phact\Orm\Fields\IntField;
  */
 abstract class TreeModel extends Model
 {
+    public static $nameAttribute = null;
+
     public static function getFields()
     {
         return [
             'parent' => [
-                'class' => ForeignField::class,
+                'class' => TreeForeignField::class,
                 'modelClass' => static::class,
-                'null' => true
+                'null' => true,
+                'nameAttribute' => static::$nameAttribute,
+                'label' => 'Parent'
             ],
             'lft' => [
                 'class' => IntField::class,
@@ -72,7 +79,7 @@ abstract class TreeModel extends Model
         parent::beforeSave();
         if ($this->getIsNew()) {
             if ($this->parent) {
-                $this->setAsFirstOf($this->parent);
+                $this->setAsLastOf($this->parent);
             } else {
                 $this->makeRoot();
             }
@@ -130,6 +137,14 @@ abstract class TreeModel extends Model
         }
     }
 
+    /**
+     * Set (move/add) current not before target node
+     *
+     *
+     * @param $target
+     * @return bool|TreeModel
+     * @throws Exception
+     */
     public function setBefore($target)
     {
         if ($this->getIsNew()) {
@@ -140,12 +155,19 @@ abstract class TreeModel extends Model
 
     }
 
+    /**
+     * Set (move/add) current not after target node
+     *
+     * @param $target
+     * @return bool|TreeModel
+     * @throws Exception
+     */
     public function setAfter($target)
     {
         if ($this->getIsNew()) {
-            return $this->addNode($target, $target->lft, 0);
+            return $this->addNode($target, $target->rgt + 1, 0);
         } else {
-            return $this->moveNode($target, $target->lft, 0);
+            return $this->moveNode($target, $target->rgt + 1, 0);
         }
     }
 
@@ -272,14 +294,6 @@ abstract class TreeModel extends Model
         $depthDelta = $target->depth - $this->depth + $depthUp;
 
         if ($this->root !== $target->root) {
-            if (defined("TEST_CONST")) {
-                var_dump($target);
-                var_dump("KEY", $key);
-                var_dump("DEPTH UP", $depthUp);
-                var_dump("DEPTH DELTA", $depthDelta);
-                var_dump("LEFT", $left);
-                var_dump("RIGHT", $right);
-            }
             foreach (['lft', 'rgt'] as $attribute) {
                 $this->objects()
                     ->filter([$attribute . '__gte' => $key, 'root' => $target->root])
@@ -287,9 +301,6 @@ abstract class TreeModel extends Model
             }
 
             $delta = $key - $left;
-            if (defined("TEST_CONST")) {
-                var_dump($this->objects()->filter(['lft__gte' => $left, 'rgt__lte' => $right, 'root' => $this->root])->all());
-            }
             $this->objects()
                 ->filter(['lft__gte' => $left, 'rgt__lte' => $right, 'root' => $this->root])
                 ->update([

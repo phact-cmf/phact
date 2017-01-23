@@ -27,8 +27,8 @@ class EmailValidator extends Validator
 
     public function validate($value)
     {
-        if ($value) {
-            return !!filter_var($value, FILTER_VALIDATE_EMAIL);
+        if ($value && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            return $this->message;
         }
         return true;
     }

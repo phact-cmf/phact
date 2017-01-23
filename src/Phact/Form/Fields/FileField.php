@@ -48,6 +48,7 @@ class FileField extends Field
         if ($value instanceof StorageFile) {
             return $value->getPath();
         }
+        return null;
     }
 
     /**

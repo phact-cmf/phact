@@ -39,6 +39,8 @@ class Model
     protected $_attributes = [];
     protected $_oldAttributes = [];
 
+    protected $_isNew = false;
+
     public function __construct($attributes = [])
     {
         if (!empty($attributes)) {
@@ -102,7 +104,12 @@ class Model
      */
     public function getInitFields()
     {
-        return $this->getFieldsManager()->getFields();
+        $fields = [];
+        $names = $this->getFieldsManager()->getFieldsList();
+        foreach ($names as $name) {
+            $fields[$name] = $this->getField($name);
+        }
+        return $fields;
     }
 
     public function getPk()
@@ -351,6 +358,9 @@ class Model
     public function getIsNew()
     {
         $pk = $this->getPk();
+        if ($this->_isNew) {
+            return true;
+        }
         return !$pk;
     }
 
@@ -455,6 +465,7 @@ class Model
 
     public function insert($fields = [])
     {
+        $this->_isNew = true;
         $this->_provideEvent('beforeInsert');
         $data = $this->getChangedAttributes($fields);
         $prepared = $this->getDbPreparedAttributes($data);
@@ -466,7 +477,7 @@ class Model
         $this->_setAttribute($pkAttribute, $pk);
         $this->_provideEvent('afterInsert');
         $this->_mergeOldAttributes($data);
-
+        $this->_isNew = false;
         return $pk;
     }
 

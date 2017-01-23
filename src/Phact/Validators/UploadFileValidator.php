@@ -8,7 +8,6 @@
 
 namespace Phact\Validators;
 
-
 use Phact\Helpers\FileHelper;
 use Phact\Storage\Files\UploadedFile;
 

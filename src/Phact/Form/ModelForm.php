@@ -97,10 +97,10 @@ class ModelForm extends Form
     public function setInstanceValues()
     {
         $instance = $this->getInstance();
-        $fields = $instance->getInitFields();
-        foreach ($fields as $name => $field) {
+        $fields = $instance->getFieldsList();
+        foreach ($fields as $name) {
             $formField = $this->getField($name);
-            $value = $field->getValue();
+            $value = $instance->getField($name)->getValue();
             if ($formField && !is_null($value)) {
                 $formField->setValue($value);
             }

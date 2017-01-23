@@ -170,7 +170,7 @@ class ForeignField extends RelationField
         /** @var QuerySet $qs */
         $qs = $class::objects()->getQuerySet();
         if ($this->nameAttribute) {
-            $choices = array_merge($choices, $qs->choices('pk', $this->nameAttribute));
+            $choices = $choices + $qs->choices('pk', $this->nameAttribute);
         } else {
             $objects = $qs->all();
             foreach ($objects as $object) {
