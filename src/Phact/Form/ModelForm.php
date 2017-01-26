@@ -115,13 +115,21 @@ class ModelForm extends Form
     {
     }
 
-    public function save()
+    public function setInstanceAttributes($attributes)
+    {
+        $instance = $this->getInstance();
+        $instance->setAttributes($attributes);
+        return $this;
+    }
+
+    public function save($safeAttributes = [])
     {
         $instance = $this->getInstance();
         $attributes = $this->getAttributes();
 
         $this->beforeSetModelAttributes();
-        $instance->setAttributes($attributes);
+        $this->setInstanceAttributes($attributes);
+        $this->setInstanceAttributes($safeAttributes);
         $this->afterSetModelAttributes();
 
         return $instance->save();

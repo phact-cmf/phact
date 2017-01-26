@@ -162,7 +162,7 @@ class Router
         // prepend base path to route url again
         $url = $this->_basePath . $route;
 
-
+        $usedParams = [];
         if (preg_match_all('`(/|\.|)\{([^:\}]*+)(?::([^:\}]*+))?\}(\?|)`', $route, $matches, PREG_SET_ORDER)) {
 
             $counter = 0;
@@ -182,13 +182,19 @@ class Router
                 } else {
                     throw new InvalidArgumentException('Incorrect params of route');
                 }
+                $usedParams[] = $param;
                 $counter++;
             }
-
-
         }
 
-        return $url;
+        $query = [];
+        foreach ($params as $param => $value) {
+            if (is_string($param) && !in_array($param, $usedParams)) {
+                $query[$param] = $value;
+            }
+        }
+
+        return $url . ($query ? '?' . http_build_query($query) : '');
     }
 
     /**

@@ -204,6 +204,11 @@ class Model
         return array_key_exists($name, $this->_attributes);
     }
 
+    public function hasField($name)
+    {
+        return $this->getFieldsManager()->hasField($name);
+    }
+
     /**
      * Use setAttribute to safe set attribute value
      * @param $attributeName
