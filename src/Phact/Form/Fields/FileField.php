@@ -58,6 +58,11 @@ class FileField extends Field
      */
     public function setValue($value)
     {
+        /** Filed from instance as field */
+        if ($value instanceof \Phact\Orm\Fields\FileField) {
+            $value = $value->attribute;
+        }
+
         /** Filed from instance */
         if ($value instanceof StorageFile) {
             $this->_value = $value;
