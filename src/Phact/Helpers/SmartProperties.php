@@ -26,7 +26,7 @@ trait SmartProperties
 
     public function __set($name, $value)
     {
-        $this->__smartSet($name, $value);
+        return $this->__smartSet($name, $value);
     }
 
     public function __smartGet($name)
