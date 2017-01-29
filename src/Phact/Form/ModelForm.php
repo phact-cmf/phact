@@ -101,7 +101,7 @@ class ModelForm extends Form
         foreach ($fields as $name) {
             $formField = $this->getField($name);
             $value = $instance->getField($name)->getValue();
-            if ($formField && !is_null($value)) {
+            if ($formField) {
                 $formField->setValue($value);
             }
         }
