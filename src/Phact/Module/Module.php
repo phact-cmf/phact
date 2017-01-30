@@ -15,8 +15,10 @@
 namespace Phact\Module;
 
 
+use Phact\Form\ModelForm;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
+use Phact\Orm\Model;
 use ReflectionClass;
 
 abstract class Module
@@ -60,5 +62,37 @@ abstract class Module
     public static function getAdminMenu()
     {
         return [];
+    }
+
+    /**
+     * @return Model|null
+     */
+    public static function getSettingsModel()
+    {
+        return null;
+    }
+
+    public static function getSettingsForm()
+    {
+        return new ModelForm();
+    }
+
+    public function getSettings()
+    {
+        $model = $this->getSettingsModel();
+        if (!$model) {
+            return null;
+        }
+        $settings = $model->objects()->get();
+        if (!$settings) {
+            $settings = $model;
+        }
+        return $settings;
+    }
+
+    public function getSetting($name)
+    {
+        $settings = $this->getSettings();
+        return $settings->{$name};
     }
 }

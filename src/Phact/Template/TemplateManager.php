@@ -107,6 +107,8 @@ class TemplateManager
         $this->_renderer->addAccessorSmart("user", "user", Fenom::ACCESSOR_PROPERTY);
         $this->_renderer->user = Phact::app()->getUser();
 
+        $this->_renderer->addAccessorSmart("setting", "Phact\\Main\\Phact::app()->settings->get", Fenom::ACCESSOR_CALL);
+
         $this->_renderer->addModifier('class', function($object) {
             if (is_object($object)) {
                 return get_class($object);
