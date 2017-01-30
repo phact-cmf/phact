@@ -137,7 +137,7 @@ class ManyToManyField extends RelationField
     public function getThroughTo()
     {
         if (!$this->_throughTo) {
-            $class = $this->modelClass;
+            $class = $this->getRelationModelClass();
             $modelName = $class::classNameUnderscore();
             $toName = $this->getTo();
             $this->_throughTo = "{$modelName}_{$toName}";
@@ -172,7 +172,7 @@ class ManyToManyField extends RelationField
             return $through::getTableName();
         } else {
             $model = $this->getOwnerModelClass();
-            $modelClass = $this->modelClass;
+            $modelClass = $this->getRelationModelClass();
             $names = [$model::getTableName(), $modelClass::getTableName()];
             sort($names);
             return implode('_', $names);
@@ -199,7 +199,7 @@ class ManyToManyField extends RelationField
 
     public function getRelationJoins()
     {
-        $relationModelClass = $this->modelClass;
+        $relationModelClass = $this->getRelationModelClass();
         if ($throughName = $this->getThroughName()) {
             return [
                 $throughName,

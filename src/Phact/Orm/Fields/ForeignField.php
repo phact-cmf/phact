@@ -115,8 +115,8 @@ class ForeignField extends RelationField
 
     public function setObjectValue($value)
     {
-        if (!is_a($value, $this->modelClass)) {
-            throw new \InvalidArgumentException("Object value for ForeignField must be instance of {$this->modelClass}");
+        if (!is_a($value, $this->getRelationModelClass())) {
+            throw new \InvalidArgumentException("Object value for ForeignField must be instance of {$this->getRelationModelClass()}");
         }
         $this->_attribute = $value->{$this->to};
     }
@@ -124,7 +124,7 @@ class ForeignField extends RelationField
     protected function fetchModel()
     {
         $value = $this->_attribute;
-        $class = $this->modelClass;
+        $class = $this->getRelationModelClass();
         if (!is_object($value)) {
             return $class::objects()->filter([$this->getTo() => $value])->limit(1)->get();
         } else {
@@ -134,7 +134,7 @@ class ForeignField extends RelationField
 
     public function getRelationJoins()
     {
-        $relationModelClass = $this->modelClass;
+        $relationModelClass = $this->getRelationModelClass();
         return [
             [
                 'table' => $relationModelClass::getTableName(),
@@ -147,7 +147,7 @@ class ForeignField extends RelationField
     public function getSqlType()
     {
         $to = $this->getTo();
-        $relationModelClass = $this->modelClass;
+        $relationModelClass = $this->getRelationModelClass();
         /** @var Model $relationModel */
         $relationModel = new $relationModelClass();
         $field = $relationModel->getField($to);
@@ -169,7 +169,7 @@ class ForeignField extends RelationField
         if (!$this->getIsRequired()) {
             $choices[''] = '';
         }
-        $class = $this->modelClass;
+        $class = $this->getRelationModelClass();
         /** @var QuerySet $qs */
         $qs = $class::objects()->getQuerySet();
         if ($this->nameAttribute) {

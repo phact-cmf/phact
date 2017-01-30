@@ -39,9 +39,10 @@ class ErrorHandler
 
     public function setHandlers()
     {
-        ini_set('display_errors', false);
-        set_error_handler([$this, 'handleError']);
+        ini_set('display_errors', 0);
         set_exception_handler([$this, 'handleException']);
+        set_error_handler([$this, 'handleError']);
+        register_shutdown_function([$this, 'handleFatal']);
     }
 
     public function unsetHandlers()
@@ -50,12 +51,24 @@ class ErrorHandler
         restore_exception_handler();
     }
 
-    public function handleError($code, $message, $file, $line)
+    public function handleFatal()
     {
-        throw new ErrorException($message, $code, $code, $file, $line);
+        $error = error_get_last();
+        if( $error !== NULL) {
+            $this->handleError($error["type"], $error["message"], $error["file"], $error["line"]);
+        }
     }
 
-    public function handleException($exception)
+    public function handleError($code, $message, $file, $line)
+    {
+        $this->handleException(new ErrorException($message, $code, $code, $file, $line), [[
+            'line' => $line,
+            'file' => $file,
+            'trace' => null
+        ]]);
+    }
+
+    public function handleException($exception, $traceRaw = null)
     {
         $this->unsetHandlers();
 
@@ -69,17 +82,24 @@ class ErrorHandler
         }
 
         try {
-            $this->renderException($exception, $code);
+            if (ob_get_length()) ob_clean();
+            $this->renderException($exception, $code, $traceRaw);
         } catch (Exception $e) {
             if ($this->debug) {
-                debug_print_backtrace();
+                echo PHP_EOL;
+                echo debug_print_backtrace();
             } else {
                 echo 'Internal server error';
             }
         }
     }
 
-    public function renderException(Exception $exception, $code)
+    /**
+     * @param $exception Exception
+     * @param $code
+     * @param null $traceRaw
+     */
+    public function renderException($exception, $code, $traceRaw = null)
     {
         $template = $this->errorTemplate;
         if ($this->debug) {
@@ -87,37 +107,41 @@ class ErrorHandler
         }
 
         $trace = [];
-        $traceRaw = $exception->getTrace();
+        $traceRaw = $traceRaw ?: $exception->getTrace();
         $closestLines = 5;
         $basePath = realpath(Paths::get('base'));
 
         foreach ($traceRaw as $traceItem) {
-            $line = $traceItem['line'];
-            $startLine = $line - $closestLines;
-            $endLine = $line + $closestLines;
-            if ($startLine < 0) {
-                $endLine += abs($startLine);
-                $startLine = 0;
+            if (isset($traceItem['line'])) {
+                $line = $traceItem['line'];
+                $startLine = $line - $closestLines;
+                $endLine = $line + $closestLines;
+                if ($startLine < 0) {
+                    $endLine += abs($startLine);
+                    $startLine = 0;
+                }
+                $itemLines = [];
+                $fileName = $traceItem['file'];
+                try {
+                    if (file_exists($fileName) && ($lines = @file($fileName))) {
+                        $itemLines = array_slice($lines, $startLine, $endLine - $startLine, true);
+                    } else {
+                        continue;
+                    }
+                } catch (Exception $e) {
+
+                }
+
+                $fileName = Text::removePrefix($basePath, $fileName);
+
+                $trace[] = [
+                    'fileName' => $fileName,
+                    'trace' => $traceItem,
+                    'startLine' => $startLine,
+                    'endLine' => $endLine,
+                    'itemLines' => $itemLines
+                ];
             }
-            $itemLines = [];
-            $fileName = $traceItem['file'];
-
-            try {
-                $lines = @file($fileName);
-                $itemLines = array_slice($lines, $startLine, $endLine - $startLine, true);
-            } catch (Exception $e) {
-
-            }
-
-            $fileName = Text::removePrefix($basePath, $fileName);
-
-            $trace[] = [
-                'fileName' => $fileName,
-                'trace' => $traceItem,
-                'startLine' => $startLine,
-                'endLine' => $endLine,
-                'itemLines' => $itemLines
-            ];
         }
 
         echo self::renderTemplate($template, [
