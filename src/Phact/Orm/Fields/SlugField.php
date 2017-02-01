@@ -85,14 +85,15 @@ class SlugField extends CharField
             $source = $model->getFieldValue($this->source);
             $slug = $this->_slugify->slugify($source);
             if ($this->unique) {
-                $slug = $this->unique($slug, 0, $model);
+                $slug = $this->unique($slug, 0);
             }
             $this->setValue($slug);
         }
     }
 
-    public function unique($rawUrl, $counter = 0, $model)
+    public function unique($rawUrl, $counter)
     {
+        $model = $this->getModel();
         $url = $rawUrl;
         if ($counter > 0) {
             $url .= $this->separator . $counter;
@@ -104,7 +105,7 @@ class SlugField extends CharField
         }
         if ($qs->count() > 0) {
             $counter++;
-            return $this->unique($rawUrl, $counter, $pk);
+            return $this->unique($rawUrl, $counter);
         }
         return $url;
     }
