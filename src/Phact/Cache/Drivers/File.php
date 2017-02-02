@@ -50,7 +50,10 @@ class File extends CacheDriver
         $this->gc();
         $cacheFile = $this->getFileName($key);
         if ($this->directoryLevel > 0) {
-            @mkdir(dirname($cacheFile), $this->mode, true);
+            $dir = dirname($cacheFile);
+            if (!is_dir($dir)) {
+                @mkdir($dir, $this->mode, true);
+            }
         }
         if (@file_put_contents($cacheFile, $data, LOCK_EX) !== false) {
             if ($timeout <= 0) {
@@ -108,7 +111,7 @@ class File extends CacheDriver
     {
         return @touch($fullPath, $timeout);
     }
-    
+
     protected function isExpire($fullPath)
     {
         return @filemtime($fullPath) < time();

@@ -27,7 +27,7 @@ abstract class CacheDriver
     public function get($key, $default = null)
     {
         $value = $this->getValue($this->buildKey($key));
-        return is_null($value) ? $default : $value;
+        return is_null($value) ? $default : $this->unserialize($value);
     }
 
     public function set($key, $value, $timeout = null)
