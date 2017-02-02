@@ -35,6 +35,7 @@ use Phact\Request\HttpRequest;
  * @property \Phact\Request\Session $session Session
  * @property \Phact\Template\TemplateManager $template Template manager
  * @property \Phact\Interfaces\AuthInterface $auth Authorization component
+ * @property \Phact\Cache\Cache $cache Cache component
  * @property $user
  * 
  * @package Phact\Application

@@ -32,7 +32,7 @@ class File extends CacheDriver
     protected function getValue($key)
     {
         $filePath = $this->getFileName($key);
-        if (@filemtime($filePath) > time()) {
+        if (is_file($filePath) && @filemtime($filePath) > time()) {
             $fp = @fopen($filePath, 'r');
             if ($fp !== false) {
                 @flock($fp, LOCK_SH);

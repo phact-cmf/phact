@@ -16,6 +16,8 @@ namespace Phact\Template;
 
 
 use Fenom;
+use Fenom\Tag;
+use Fenom\Tokenizer;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
@@ -128,6 +130,44 @@ class TemplateManager
             }
             return Phact::app()->router->url($route, $attributes);
         });
+
+        if (Phact::app()->hasComponent('cache')) {
+            $this->_renderer->addBlockFunction("__internal_cache", function ($params, $content) {
+                if (count($params) == 2) {
+                    Phact::app()->cache->set($params[0], $content, $params[1]);
+                }
+                return $content;
+            });
+
+            $this->_renderer->addBlockCompiler("cache", function ($tokenizer, Tag $tag) {
+                $params = $tag->tpl->parseParams($tokenizer);
+                if (count($params) == 2) {
+                    $tag['params'] = $params;
+                } else {
+                    $tag['params'] = null;
+                }
+                return '';
+            }, function ($tokenizer, Tag $tag) {
+                $body = $tag->getContent();
+                $params = $tag['params'];
+                if ($params) {
+                    $result = '
+                        <?php if ($cacheResult = Phact\Main\Phact::app()->cache->get('. $params[0] .')) {
+                            echo $cacheResult;
+                        } else { ob_start(); ?> '. $body.'
+                            <?php  $info = $tpl->getStorage()->getTag("__internal_cache");
+                                echo call_user_func_array(
+                                    $info["function"], array( array( "0" => '. $params[0] . ', "1" => '. $params[1].' ), 
+                                    ob_get_clean(),  $tpl, &$var
+                                    )
+                                ); ?>
+                        <?php } ?>
+                    ';
+                    $tag->replaceContent($result);
+                }
+                return;
+            });
+        }
     }
 
     public function loadLibraries()
