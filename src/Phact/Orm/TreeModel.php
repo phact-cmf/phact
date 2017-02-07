@@ -122,18 +122,18 @@ abstract class TreeModel extends Model
     public function setAsFirstOf($target)
     {
         if ($this->getIsNew()) {
-            return $this->addNode($target, $target->rgt, 1);
+            return $this->addNode($target, $target->lft + 1, 1);
         } else {
-            return $this->moveNode($target, $target->lft + 1, 1);
+            return $this->moveNode($target, $target->rgt, 1);
         }
     }
 
     public function setAsLastOf($target)
     {
         if ($this->getIsNew()) {
-            return $this->addNode($target, $target->lft + 1, 1);
+            return $this->addNode($target, $target->rgt, 1);
         } else {
-            return $this->moveNode($target, $target->rgt, 1);
+            return $this->moveNode($target, $target->lft + 1, 1);
         }
     }
 
