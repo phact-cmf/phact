@@ -15,10 +15,18 @@
 namespace Phact\Orm\Fields;
 
 use Cocur\Slugify\Slugify;
+use Phact\Orm\Expression;
 use Phact\Orm\QuerySet;
+use Phact\Orm\TreeModel;
 
 class SlugField extends CharField
 {
+    /**
+     * Tree
+     * @var bool
+     */
+    public $tree;
+
     /**
      * Unique value
      * @var bool
@@ -71,6 +79,15 @@ class SlugField extends CharField
             $attributes['regexp'] = $this->regexp;
         }
         $this->_slugify = new Slugify($attributes);
+
+    }
+
+    public function setOwnerModelClass($modelClass)
+    {
+        if (is_null($this->tree) && is_a($modelClass, TreeModel::class, true)) {
+            $this->tree = true;
+        }
+        parent::setOwnerModelClass($modelClass);
     }
 
     public function getIsRequired()
@@ -80,15 +97,41 @@ class SlugField extends CharField
 
     public function beforeSave()
     {
-        if (!$this->blank && !$this->null && !$this->attribute) {
-            $model = $this->getModel();
-            $source = $model->getFieldValue($this->source);
-            $slug = $this->_slugify->slugify($source);
-            if ($this->unique) {
-                $slug = $this->unique($slug, 0);
+        $model = $this->getModel();
+        if ($this->tree && !$model->getIsNew()) {
+            $slug = $this->attribute ?: $this->buildSlug();
+            $oldSlug = $model->getOldAttribute($this->name);
+            if ($slug != $oldSlug) {
+                $model->objects()->filter([
+                    'lft__gt' => $model->getOldAttribute('lft'),
+                    'rgt__lt' => $model->getOldAttribute('rgt'),
+                    'root' => $model->getOldAttribute('root')
+                ])->update([
+                    $this->name => new Expression("REPLACE({" . $this->name . "}, ?, ?)", [$oldSlug, $slug])
+                ]);
+                $this->setValue($slug);
             }
-            $this->setValue($slug);
+        } else {
+            if (!$this->blank && !$this->null && !$this->attribute) {
+                $slug = $this->buildSlug();
+                $this->setValue($slug);
+            }
         }
+    }
+
+    public function buildSlug()
+    {
+        $model = $this->getModel();
+        $source = $model->getFieldValue($this->source);
+        $slug = $this->_slugify->slugify($source);
+        if ($this->tree && $model->parent) {
+            /** @var TreeModel $model */
+            $slug = $model->parent->{$this->name} . '/' . $slug;
+        }
+        if ($this->unique) {
+            $slug = $this->unique($slug, 0);
+        }
+        return $slug;
     }
 
     public function unique($rawUrl, $counter)

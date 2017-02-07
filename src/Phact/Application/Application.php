@@ -224,23 +224,28 @@ class Application
         /** @var HttpRequest $request */
         $request = $this->request;
         $router = $this->router;
-        $match = $router->match($request->getUrl(), $request->getMethod());
-        if (empty($match)) {
-            throw new NotFoundHttpException("Page not found");
-        }
+        $matches = $router->match($request->getUrl(), $request->getMethod());
+        foreach ($matches as $match) {
+            if (is_array($match['target']) && isset($match['target'][0])) {
+                $controllerClass = $match['target'][0];
+                $action = isset($match['target'][1]) ? $match['target'][1] : null;
+                $params = $match['params'];
 
-        if (is_array($match['target']) && isset($match['target'][0])) {
-            $controllerClass = $match['target'][0];
-            $action = isset($match['target'][1]) ? $match['target'][1] : null;
-            $params = $match['params'];
-
-            /** @var Controller $controller */
-            $controller = new $controllerClass($this->request);
-            $controller->run($action, $params);
-        } elseif (is_callable($match['target'])) {
-            $fn = $match['target'];
-            $fn($this->request, $match['params']);
+                /** @var Controller $controller */
+                $controller = new $controllerClass($this->request);
+                $matched = $controller->run($action, $params);
+                if ($matched !== false) {
+                    return true;
+                }
+            } elseif (is_callable($match['target'])) {
+                $fn = $match['target'];
+                $matched = $fn($this->request, $match['params']);
+                if ($matched !== false) {
+                    return true;
+                }
+            }
         }
+        throw new NotFoundHttpException("Page not found");
     }
 
     public function handleCliRequest()

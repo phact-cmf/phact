@@ -59,7 +59,7 @@ class Controller
         }
         $this->beforeAction($action, $params);
         if (method_exists($this, $action)) {
-            $this->runAction($action, $params);
+            return $this->runAction($action, $params);
         } else {
             $class = self::class;
             throw new InvalidConfigException("There is no action {$action} in controller {$class}");
@@ -88,11 +88,10 @@ class Controller
                     throw new InvalidConfigException("Param {$name} for action {$action} in controller {$class} must be defined. Please, check your routes.");
                 }
             }
-            $method->invokeArgs($this, $ps);
+            return $method->invokeArgs($this, $ps);
         } else {
-            $this->{$action}();
+            return $this->{$action}();
         }
-        return true;
     }
 
     /**

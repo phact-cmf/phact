@@ -229,6 +229,7 @@ class Router
             $requestMethod = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
         }
 
+        $matches = [];
         foreach ($this->_routes as $handler) {
             list($method, $_route, $target, $name) = $handler;
 
@@ -290,14 +291,14 @@ class Router
                     }
                 }
 
-                return array(
+                $matches[] = array(
                     'target' => $target,
                     'params' => $params,
                     'name' => $name
                 );
             }
         }
-        return false;
+        return $matches;
     }
 
     /**
