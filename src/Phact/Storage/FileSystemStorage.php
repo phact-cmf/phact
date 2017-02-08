@@ -218,6 +218,9 @@ class FileSystemStorage extends Storage
      */
     public function delete($path)
     {
+        if (!$path) {
+            return false;
+        }
         $path = (is_file($path) || is_dir($path)) ? $path : $this->getPath($path);
 
         if (is_file($path)) {

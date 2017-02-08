@@ -226,6 +226,7 @@ class ImageField extends FileField
     /**
      * @param ImageInterface $image
      * @param $sizeParams
+     * @return Box|BoxInterface
      */
     protected function getSizeBox(ImageInterface $image, $sizeParams)
     {
@@ -310,4 +311,20 @@ class ImageField extends FileField
     }
 
 
+    public function getDimensions()
+    {
+        if (is_a($this->attribute, FileInterface::class)) {
+            $path = $this->getStorage()->getPath($this->attribute->getPath());
+            if ($path && is_file($path)) {
+                $size = getimagesize($path);
+                if ($size) {
+                    return [
+                        'width' => $size[0],
+                        'height' => $size[1]
+                    ];
+                }
+            }
+        }
+        return null;
+    }
 }

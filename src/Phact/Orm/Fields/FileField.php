@@ -168,7 +168,9 @@ class FileField extends CharField
         $old = $this->getOldAttribute();
         if (is_a($old, FileInterface::class)) {
             $path = $old->getPath();
-            $this->getStorage()->delete($path);
+            if ($path) {
+                $this->getStorage()->delete($path);
+            }
         }
     }
 
