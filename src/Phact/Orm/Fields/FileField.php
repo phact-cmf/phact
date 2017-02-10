@@ -180,7 +180,7 @@ class FileField extends CharField
      */
     protected function attributePrepareValue($value)
     {
-        if (!is_null($value)) {
+        if (!is_null($value) && $value) {
             $value = new StorageFile($value, $this->storage);
         }
         return $value;
@@ -194,7 +194,7 @@ class FileField extends CharField
      */
     public function setValue($value, $aliasConfig = NULL)
     {
-        if (is_null($value)) {
+        if (is_null($value) || !$value) {
             $this->attribute = null;
         }
 
@@ -214,7 +214,6 @@ class FileField extends CharField
         }
         
         return $this->attribute;
-
     }
 
     /**
