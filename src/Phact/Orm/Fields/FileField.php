@@ -103,6 +103,17 @@ class FileField extends CharField
         return null;
     }
 
+    /**
+     * @return string|null basename of file
+     */
+    public function getPathBasename()
+    {
+        if (is_a($this->attribute, FileInterface::class)) {
+            $path = $this->getStorage()->getPath($this->attribute->path);
+            return FileHelper::mbPathinfo($path, PATHINFO_BASENAME);
+        }
+        return null;
+    }
 
     /**
      * @return string extension of file
