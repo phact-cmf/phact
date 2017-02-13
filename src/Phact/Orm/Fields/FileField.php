@@ -15,6 +15,7 @@
 namespace Phact\Orm\Fields;
 
 use Phact\Exceptions\InvalidAttributeException;
+use Phact\Helpers\FileHelper;
 use Phact\Main\Phact;
 use Phact\Storage\Files\StorageFile;
 use Phact\Storage\Files\File;
@@ -90,6 +91,29 @@ class FileField extends CharField
         return null;
     }
 
+    /**
+     * @return string|null file name
+     */
+    public function getPathFilename()
+    {
+        if (is_a($this->attribute, FileInterface::class)) {
+            $path = $this->getStorage()->getPath($this->attribute->path);
+            return FileHelper::mbPathinfo($path, PATHINFO_FILENAME);
+        }
+        return null;
+    }
+
+    /**
+     * @return string|null basename of file
+     */
+    public function getPathBasename()
+    {
+        if (is_a($this->attribute, FileInterface::class)) {
+            $path = $this->getStorage()->getPath($this->attribute->path);
+            return FileHelper::mbPathinfo($path, PATHINFO_BASENAME);
+        }
+        return null;
+    }
 
     /**
      * @return string extension of file
@@ -180,7 +204,7 @@ class FileField extends CharField
      */
     protected function attributePrepareValue($value)
     {
-        if (!is_null($value)) {
+        if (!is_null($value) && $value) {
             $value = new StorageFile($value, $this->storage);
         }
         return $value;
@@ -194,7 +218,7 @@ class FileField extends CharField
      */
     public function setValue($value, $aliasConfig = NULL)
     {
-        if (is_null($value)) {
+        if (is_null($value) || !$value) {
             $this->attribute = null;
         }
 
@@ -214,7 +238,6 @@ class FileField extends CharField
         }
         
         return $this->attribute;
-
     }
 
     /**

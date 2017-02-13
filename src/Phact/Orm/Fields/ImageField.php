@@ -32,12 +32,11 @@ class ImageField extends FileField
      * [
      *      'thumb' => [
      *          300,200,
-     *          'method' => 'adaptiveResize'
+     *          'method' => 'cover'
      *      ]
      * ]
      *
-     * There are 3 methods resize(THUMBNAIL_INSET), adaptiveResize(THUMBNAIL_OUTBOUND),
-     * adaptiveResizeFromTop(THUMBNAIL_OUTBOUND from top)
+     * There are 2 methods: cover and contain
      *
      * @var array
      */
