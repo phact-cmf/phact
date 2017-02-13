@@ -25,7 +25,9 @@ class TableManager
 {
     public $defaultEngine = 'InnoDB';
     public $defaultCharset = 'utf8';
+
     public $checkExists = true;
+    public $addFields = true;
     public $processFk = false;
 
     const DROP_CASCADE = 1;
@@ -74,8 +76,42 @@ class TableManager
 
         $query = "CREATE TABLE {$exists} {$tableNameSafe} ({$fields}) ENGINE={$engine} DEFAULT CHARSET={$charset}";
         list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
+        $this->addColumns($queryLayer, $tableNameSafe, $fieldsStatements);
+
         $this->createM2MTables($model);
         return $result;
+    }
+
+    public function addColumns($queryLayer, $tableNameSafe, $fieldsStatements)
+    {
+        $query = "SHOW COLUMNS FROM {$tableNameSafe}";
+        list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
+        $columnsRaw = $result->fetchAll();
+        $columnsList = array_map(function($item) {
+            return isset($item['Field']) ? $item['Field'] : null;
+        }, $columnsRaw);
+
+        $statements = [];
+        $previous = null;
+        foreach ($fieldsStatements as $name => $statement) {
+            if (!in_array($name, $columnsList)) {
+                $statements[] = [
+                    'raw' => $statement,
+                    'previous' => $previous ? $queryLayer->sanitize($previous) : null
+                ];
+            }
+            $previous = $name;
+        }
+
+        if ($statements) {
+            $fields = implode(', ', array_map(function($statement) {
+                return "ADD COLUMN " . $statement['raw'] . " " . ($statement['previous'] ? "AFTER {$statement['previous']}" : "FIRST");
+            }, $statements));
+            $query = "ALTER TABLE {$tableNameSafe} $fields";
+            list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
+            return $result;
+        }
+        return null;
     }
 
     /**
@@ -167,7 +203,7 @@ class TableManager
                     $statement[] = "PRIMARY KEY";
                 }
 
-                $statements[] = implode(' ', $statement);
+                $statements[$attribute] = implode(' ', $statement);
             }
         }
         return $statements;
