@@ -20,7 +20,7 @@ class EmailValidator extends Validator
     public function __construct($message = null)
     {
         if (!$message) {
-            $message = 'E-mail is invalid';
+            $message = 'Некорректный e-mail';
         }
         $this->message = $message;
     }

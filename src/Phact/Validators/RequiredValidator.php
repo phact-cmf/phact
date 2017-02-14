@@ -20,7 +20,7 @@ class RequiredValidator extends Validator
     public function __construct($message = null)
     {
         if (!$message) {
-            $message = 'This field is required';
+            $message = 'Обязательно для заполнения';
         }
         $this->message = $message;
     }

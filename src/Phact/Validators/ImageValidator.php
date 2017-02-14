@@ -22,7 +22,7 @@ class ImageValidator extends UploadFileValidator
 
             $size = @getimagesize($value->path);
             if($size == false){
-                $messages[] = 'File format must be valid image';
+                $messages[] = 'Файл не является изображением';
             }
         }
         return empty($messages) ? true : $messages;
