@@ -17,6 +17,17 @@ class UploadedFile extends File
         $this->error = $data['error'];
     }
 
+    public function getExt()
+    {
+        if ($this->ext === null) {
+            $this->ext = pathinfo($this->name, PATHINFO_EXTENSION);
+            if (strlen($this->ext) != 0 && strpos($this->ext, '.') === 0) {
+                unset($this->ext[0]);
+            }
+        }
+        return $this->ext;
+    }
+
     /**
      * @return string base file name
      */
