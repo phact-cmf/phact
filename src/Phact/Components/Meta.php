@@ -14,10 +14,11 @@
 
 namespace Phact\Components;
 
+use Exception;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 
-class Seo
+class Meta
 {
     use SmartProperties;
 
@@ -25,7 +26,7 @@ class Seo
 
     protected $_description = null;
 
-    protected $_keywords = null;
+    protected $_canonical;
 
     public function setTitle($title)
     {
@@ -47,13 +48,27 @@ class Seo
         return $this->_description;
     }
 
-    public function setKeywords($description)
+    public function getCanonical()
     {
-        $this->_description = $description;
+        return $this->_canonical;
     }
 
-    public function getKeywords()
+    public function setCanonical($canonical)
     {
-        return $this->_description;
+        $this->_canonical = $canonical;
+    }
+
+    public function getData()
+    {
+        $data = [];
+        foreach (['title', 'description', 'canonical'] as $name) {
+            $data[$name] = $this->{$name};
+        }
+        return $data;
+    }
+
+    public function useTemplate($key, $params = [])
+    {
+        throw new Exception("Not implemented");
     }
 }

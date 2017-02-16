@@ -114,16 +114,25 @@ class ImageField extends FileField
         }
     }
 
-    public function sizeUrl($prefix)
+    public function sizeCleanPath($prefix)
     {
         /** @var StorageFile $storageFile */
         $storageFile = $this->attribute;
         $prefixName = $prefix.'_'.$storageFile->getName();
         $basePath = dirname($storageFile->getPath());
-        /** @var Storage $storage */
-        $storage = $this->getStorage();
+        return $basePath.DIRECTORY_SEPARATOR.$prefixName;
+    }
 
-        return $storage->getUrl($basePath.DIRECTORY_SEPARATOR.$prefixName);
+    public function sizeUrl($prefix)
+    {
+        $path = $this->sizeCleanPath($prefix);
+        return $this->getStorage()->getUrl($path);
+    }
+
+    public function sizePath($prefix)
+    {
+        $path = $this->sizeCleanPath($prefix);
+        return $this->getStorage()->getPath($path);
     }
 
     public function afterSave()
@@ -310,10 +319,14 @@ class ImageField extends FileField
     }
 
 
-    public function getDimensions()
+    public function getDimensions($prefix = null)
     {
         if (is_a($this->attribute, FileInterface::class)) {
-            $path = $this->getStorage()->getPath($this->attribute->getPath());
+            if (!$prefix) {
+                $path = $this->getStorage()->getPath($this->attribute->getPath());
+            } else {
+                $path = $this->sizePath($prefix);
+            }
             if ($path && is_file($path)) {
                 $size = getimagesize($path);
                 if ($size) {

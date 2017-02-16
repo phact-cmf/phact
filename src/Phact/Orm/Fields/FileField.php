@@ -329,4 +329,9 @@ class FileField extends CharField
             'class' => \Phact\Form\Fields\FileField::class
         ]);
     }
+
+    public function __toString()
+    {
+        return $this->getUrl();
+    }
 }
