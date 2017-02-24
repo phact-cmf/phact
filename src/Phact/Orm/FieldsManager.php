@@ -29,7 +29,7 @@ class FieldsManager
     protected $_aliases = [];
     protected $_className;
 
-    protected static $_instances;
+    protected static $_instances = [];
 
     public static function hasInstance($modelClass)
     {
@@ -158,12 +158,9 @@ class FieldsManager
     public function getField($name)
     {
         if ($this->hasField($name)) {
-            $field = $this->_fields[$name];
-            return $field;
-        } elseif ($this->hasAlias($name)) {
-            $alias = $this->getAlias($name);
-            $name = $alias['field'];
             return $this->_fields[$name];
+        } elseif ($alias = $this->getAlias($name)) {
+            return $this->_fields[$alias['field']];
         } else {
             throw new UnknownPropertyException(strtr("Getting unknown field: {field}", [
                 '{field}' => $name
@@ -302,12 +299,12 @@ class FieldsManager
 
     public function hasField($name)
     {
-        return array_key_exists($name, $this->_fields);
+        return isset($this->_fields[$name]);
     }
 
     public function hasAlias($name)
     {
-        return array_key_exists($name, $this->_aliases);
+        return isset($this->_aliases[$name]);
     }
 
     public function has($name)

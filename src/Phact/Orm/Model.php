@@ -66,17 +66,18 @@ class Model implements Serializable
      */
     public static function getFieldsManager()
     {
-        $metaData = static::getMetaData();
-        $fieldsManagerClass = FieldsManager::class;
-        if (isset($metaData['fieldsManager'])) {
-            $fieldsManagerClass = $metaData['fieldsManager'];
-            unset($metaData['fieldsManager']);
-        }
+        /** @var FieldsManager $fieldsManagerClass */
+        $fieldsManagerClass = static::getFieldsManagerClass();
         $class = get_called_class();
         if (!$fieldsManagerClass::hasInstance($class)) {
-            $fieldsManagerClass::makeInstance($class, static::getFields(), $metaData);
+            $fieldsManagerClass::makeInstance($class, static::getFields(), static::getMetaData());
         }
         return $fieldsManagerClass::getInstance($class);
+    }
+
+    public static function getFieldsManagerClass()
+    {
+        return FieldsManager::class;
     }
 
     public function getFieldsList()
@@ -314,7 +315,7 @@ class Model implements Serializable
     public function __get($name)
     {
         $manager = $this->getFieldsManager();
-        if (Text::endsWith($name, '__display')) {
+        if (substr($name, -9, null) == '__display') {
             $start = mb_strpos($name, '__display', 0, 'UTF-8');
             $name = mb_substr($name, 0, $start, 'UTF-8');
 

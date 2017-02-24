@@ -68,18 +68,20 @@ class SlugField extends CharField
      */
     protected $_slugify = null;
 
-    public function init()
+    public function getSlugify()
     {
-        $attributes = [
-            'rulesets' => $this->rulesets,
-            'lowercase' => $this->lowercase,
-            'separator' => $this->separator
-        ];
-        if ($this->regexp) {
-            $attributes['regexp'] = $this->regexp;
+        if (!$this->_slugify) {
+            $attributes = [
+                'rulesets' => $this->rulesets,
+                'lowercase' => $this->lowercase,
+                'separator' => $this->separator
+            ];
+            if ($this->regexp) {
+                $attributes['regexp'] = $this->regexp;
+            }
+            $this->_slugify = new Slugify($attributes);
         }
-        $this->_slugify = new Slugify($attributes);
-
+        return $this->_slugify;
     }
 
     public function setOwnerModelClass($modelClass)
@@ -123,7 +125,7 @@ class SlugField extends CharField
     {
         $model = $this->getModel();
         $source = $model->getFieldValue($this->source);
-        $slug = $this->_slugify->slugify($source);
+        $slug = $this->getSlugify()->slugify($source);
         if ($this->tree && $model->parent) {
             /** @var TreeModel $model */
             $slug = $model->parent->{$this->name} . '/' . $slug;

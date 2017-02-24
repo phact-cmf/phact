@@ -152,7 +152,7 @@ abstract class Field
      */
     public function getAttributeName()
     {
-        return $this->name;
+        return $this->_name;
     }
 
     /**
