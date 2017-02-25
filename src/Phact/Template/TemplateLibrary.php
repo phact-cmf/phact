@@ -22,11 +22,13 @@ use ReflectionMethod;
 class TemplateLibrary
 {
     public static $excludedMethods = [];
-    public static $excludedMethodsInternal = ['load', 'getExtensionName', 'getPrefix', 'getModuleName', 'addExtension'];
+    public static $excludedMethodsInternal = ['getExtensions', 'getExtensionName', 'getPrefix', 'getModuleName', 'addExtension'];
 
-    public static function load($renderer)
+    public static function getExtensions()
     {
-        $reflection = new ReflectionClass(static::class);
+        $extensions = [];
+        $class = static::class;
+        $reflection = new ReflectionClass($class);
         $methods = $reflection->getMethods(ReflectionMethod::IS_STATIC | ReflectionMethod::IS_PUBLIC);
         $kinds = ['function', 'functionSmart', 'modifier', 'compiler', 'accessorProperty', 'accessorFunction'];
 
@@ -52,9 +54,15 @@ class TemplateLibrary
                 if (!$name) {
                     $name = static::getExtensionName($method->name);
                 }
-                static::addExtension($renderer, $method->name, $name, $kind);
+                $extensions[] = [
+                    'method' => $method->name,
+                    'name' => $name,
+                    'kind' => $kind,
+                    'class' => $class
+                ];
             }
         }
+        return $extensions;
     }
 
     public static function getExtensionName($methodName = null)
@@ -76,36 +84,5 @@ class TemplateLibrary
             return $classParts[1];
         }
         return null;
-    }
-
-    /**
-     * @param $renderer Fenom
-     * @param $methodName
-     * @param $name
-     * @param $kind
-     */
-    public static function addExtension($renderer, $methodName, $name, $kind)
-    {
-        $callable = [static::class, $methodName];
-        switch ($kind) {
-            case 'function':
-                $renderer->addFunction($name, $callable);
-                break;
-            case 'functionSmart':
-                $renderer->addFunctionSmart($name, $callable);
-                break;
-            case 'modifier':
-                $renderer->addModifier($name, $callable);
-                break;
-            case 'compiler':
-                $renderer->addCompiler($name, $callable);
-                break;
-            case 'accessorProperty':
-                $renderer->addAccessorCallback($name, $callable);
-                break;
-            case 'accessorFunction':
-                $renderer->addAccessorSmart($name, implode('::', $callable), $renderer::ACCESSOR_CALL);
-                break;
-        }
     }
 }

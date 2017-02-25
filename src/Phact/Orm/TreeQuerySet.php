@@ -27,9 +27,9 @@ class TreeQuerySet extends QuerySet
     public function descendants($includeSelf = false, $depth = null)
     {
         $this->filter([
-            'lft__gte' => $this->model->lft,
-            'rgt__lte' => $this->model->rgt,
-            'root' => $this->model->root
+            'lft__gte' => $this->model->getAttribute('lft'),
+            'rgt__lte' => $this->model->getAttribute('rgt'),
+            'root' => $this->model->getAttribute('root')
         ])->order(['lft']);
 
         if ($includeSelf === false) {
@@ -40,7 +40,7 @@ class TreeQuerySet extends QuerySet
 
         if (!is_null($depth)) {
             $this->filter([
-                'depth__lte' => $this->model->depth + $depth
+                'depth__lte' => $this->model->getAttribute('depth') + $depth
             ]);
         }
 
@@ -68,9 +68,9 @@ class TreeQuerySet extends QuerySet
     public function ancestors($includeSelf = false, $depth = null)
     {
         $qs = $this->filter([
-            'lft__lte' => $this->model->lft,
-            'rgt__gte' => $this->model->rgt,
-            'root' => $this->model->root
+            'lft__lte' => $this->model->getAttribute('lft'),
+            'rgt__gte' => $this->model->getAttribute('rgt'),
+            'root' => $this->model->getAttribute('root')
         ])->order(['-lft']);
 
         if ($includeSelf === false) {
@@ -80,7 +80,7 @@ class TreeQuerySet extends QuerySet
         }
 
         if (!is_null($depth)) {
-            $qs = $qs->filter(['level__lte' => $this->model->level - $depth]);
+            $qs = $qs->filter(['depth__lte' => $this->model->getAttribute('depth') - $depth]);
         }
 
         return $qs;
@@ -108,26 +108,26 @@ class TreeQuerySet extends QuerySet
     public function parent()
     {
         return $this->filter([
-            'lft__lt' => $this->model->lft,
-            'rgt__gt' => $this->model->rgt,
-            'level' => $this->model->level - 1,
-            'root' => $this->model->root
+            'lft__lt' => $this->model->getAttribute('lft'),
+            'rgt__gt' => $this->model->getAttribute('rgt'),
+            'depth' => $this->model->getAttribute('depth') - 1,
+            'root' => $this->model->getAttribute('root')
         ]);
     }
 
     public function prev()
     {
         return $this->filter([
-            'rgt' => $this->model->lft - 1,
-            'root' => $this->model->root,
+            'rgt' => $this->model->getAttribute('lft') - 1,
+            'root' => $this->model->getAttribute('root'),
         ]);
     }
 
     public function next()
     {
         return $this->filter([
-            'lft' => $this->model->rgt + 1,
-            'root' => $this->model->root,
+            'lft' => $this->model->getAttribute('rgt') + 1,
+            'root' => $this->model->getAttribute('root'),
         ]);
     }
     

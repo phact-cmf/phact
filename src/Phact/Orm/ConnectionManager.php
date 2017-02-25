@@ -22,10 +22,21 @@ class ConnectionManager
 {
     use SmartProperties;
 
+    protected $_settings;
     protected $_connections;
     protected $_connectionsConfig;
 
     public $defaultConnection = 'default';
+
+    public function setSettings($settings)
+    {
+        $this->_settings = $settings;
+    }
+
+    public function getCacheFieldsTimeout()
+    {
+        return isset($this->_settings['cacheFieldsTimeout']) ? $this->_settings['cacheFieldsTimeout'] : null;
+    }
 
     public function setConnections($config = [])
     {

@@ -17,6 +17,7 @@ namespace Phact\Orm;
 
 use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
+use Phact\Main\Phact;
 use Phact\Orm\Fields\AutoField;
 
 class FieldsManager
@@ -29,24 +30,19 @@ class FieldsManager
     protected $_aliases = [];
     protected $_className;
 
-    protected static $_instances = [];
-
-    public static function hasInstance($modelClass)
-    {
-        return isset(self::$_instances[$modelClass]);
-    }
 
     public static function makeInstance($modelClass, $fields, $metaData = [])
     {
-        self::$_instances[$modelClass] = new self($modelClass, $fields, $metaData);
-    }
-
-    public static function getInstance($modelClass)
-    {
-        if (isset(self::$_instances[$modelClass])) {
-            return self::$_instances[$modelClass];
+        $cacheTimeout = Phact::app()->db->getCacheFieldsTimeout();
+        $key = 'PHACT__FIELDS_MANAGER_' . $modelClass;
+        $manager = is_null($cacheTimeout) ? null : Phact::app()->cache->get($key);
+        if (!$manager) {
+            $manager = new self($modelClass, $fields, $metaData);
+            if (!is_null($cacheTimeout)) {
+                Phact::app()->cache->set($key, $manager, $cacheTimeout);
+            }
         }
-        return null;
+        return $manager;
     }
 
     public function __construct($modelClass, $fields, $metaData = [])
@@ -157,7 +153,7 @@ class FieldsManager
      */
     public function getField($name)
     {
-        if ($this->hasField($name)) {
+        if (isset($this->_fields[$name])) {
             return $this->_fields[$name];
         } elseif ($alias = $this->getAlias($name)) {
             return $this->_fields[$alias['field']];
@@ -192,11 +188,7 @@ class FieldsManager
      */
     public function getAlias($name)
     {
-        $alias = null;
-        if ($this->hasAlias($name)) {
-            return $this->_aliases[$name];
-        }
-        return null;
+        return isset($this->_aliases[$name]) ? $this->_aliases[$name] : null;
     }
 
     /**
@@ -205,11 +197,10 @@ class FieldsManager
      */
     public function getAliasConfig($name)
     {
-        $alias = $this->getAlias($name);
-        if ($alias) {
-            return $alias['config'];
+        if (isset($this->_aliases[$name])) {
+            return $this->_aliases[$name]['config'];
         }
-        return $alias;
+        return null;
     }
 
     /**
@@ -231,21 +222,13 @@ class FieldsManager
 
     public function fetchField(Model $model, $name)
     {
-        if ($this->has($name)) {
-            $field = $this->getField($name);
-            $field->cleanAttribute();
-            $field->cleanOldAttribute();
-
+        if ($field = $this->getField($name)) {
+            $field->clean();
             $field->setModel($model);
-
             $attributeName = $field->getAttributeName();
-
             if ($attributeName) {
-                $attribute = $model->getAttribute($attributeName);
-                $oldAttribute = $model->getOldAttribute($attributeName);
-
-                $field->setAttribute($attribute);
-                $field->setOldAttribute($oldAttribute);
+                $field->setAttribute($model->getAttribute($attributeName));
+                $field->setOldAttribute($model->getOldAttribute($attributeName));
             }
             return $field;
         } else {
@@ -258,14 +241,13 @@ class FieldsManager
     /**
      * @param $model
      * @param $name
-     * @param $attribute
      * @return mixed
      * @throws UnknownPropertyException
      */
     public function getFieldValue($model, $name)
     {
-        if ($this->has($name)) {
-            $field = $this->fetchField($model, $name);
+        print_r('### ' . $model::className() .' -- ' . $name . PHP_EOL);
+        if ($field = $this->fetchField($model, $name)) {
             $alias = $this->getAliasConfig($name);
             return $field->getValue($alias);
         } else {

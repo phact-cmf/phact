@@ -185,7 +185,7 @@ abstract class Field
     {
         $this->_oldAttribute = $value;
     }
-
+    
     public function getOldAttribute()
     {
         return $this->_oldAttribute;
@@ -224,6 +224,12 @@ abstract class Field
     public function getAttribute()
     {
         return $this->_attribute;
+    }
+
+    public function clean()
+    {
+        $this->_attribute = null;
+        $this->_oldAttribute = null;
     }
 
     public function cleanAttribute()

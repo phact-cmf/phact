@@ -33,8 +33,9 @@ class Model implements Serializable
 {
     use SmartProperties, ClassNames;
 
-    static $_fieldsManager;
+    static $_fieldsManagers = [];
     static $_query;
+    static $_tableNames = [];
 
     protected $_attributes = [];
     protected $_oldAttributes = [];
@@ -51,14 +52,16 @@ class Model implements Serializable
     public static function getTableName()
     {
         $class = get_called_class();
-        $classParts = explode('\\', $class);
-        $name = array_pop($classParts);
-        $moduleName = static::getModuleName();
-        $tableName = Text::camelCaseToUnderscores($name);
-        if ($moduleName) {
-            $tableName = Text::camelCaseToUnderscores($moduleName) . '_' . $tableName;
+        if (!isset(self::$_tableNames[$class])) {
+            $classParts = explode('\\', $class);
+            $name = array_pop($classParts);
+            $moduleName = static::getModuleName();
+            if ($moduleName) {
+                $name = $moduleName . $name;
+            }
+            self::$_tableNames[$class] = Text::camelCaseToUnderscores($name);
         }
-        return $tableName;
+        return self::$_tableNames[$class];
     }
 
     /**
@@ -69,10 +72,10 @@ class Model implements Serializable
         /** @var FieldsManager $fieldsManagerClass */
         $fieldsManagerClass = static::getFieldsManagerClass();
         $class = get_called_class();
-        if (!$fieldsManagerClass::hasInstance($class)) {
-            $fieldsManagerClass::makeInstance($class, static::getFields(), static::getMetaData());
+        if (!isset(self::$_fieldsManagers[$class])) {
+            self::$_fieldsManagers[$class] = $fieldsManagerClass::makeInstance($class, static::getFields(), static::getMetaData());
         }
-        return $fieldsManagerClass::getInstance($class);
+        return self::$_fieldsManagers[$class];
     }
 
     public static function getFieldsManagerClass()
@@ -121,16 +124,13 @@ class Model implements Serializable
 
     public function getField($name)
     {
-        $manager = $this->getFieldsManager();
         if ($name == 'pk') {
             $name = $this->getPkAttribute();
         }
-        if ($manager->has($name)) {
-            $field = $manager->getField($name);
+        if ($field = $this->getFieldsManager()->getField($name)) {
+            $field->clean();
             $field->setModel($this);
-
-            $attributeName = $field->getAttributeName();
-            if ($attributeName) {
+            if ($attributeName = $field->getAttributeName()) {
                 $field->setAttribute($this->getAttribute($attributeName));
                 $field->setOldAttribute($this->getOldAttribute($attributeName));
             }
@@ -165,7 +165,7 @@ class Model implements Serializable
 
     public function getAttribute($name)
     {
-        if (array_key_exists($name, $this->_attributes)) {
+        if (isset($this->_attributes[$name])) {
             return $this->_attributes[$name];
         }
         return null;
@@ -173,7 +173,7 @@ class Model implements Serializable
 
     public function getOldAttribute($name)
     {
-        if (array_key_exists($name, $this->_oldAttributes)) {
+        if (isset($this->_oldAttributes[$name])) {
             return $this->_oldAttributes[$name];
         }
         return null;
@@ -202,7 +202,7 @@ class Model implements Serializable
 
     public function hasAttribute($name)
     {
-        return array_key_exists($name, $this->_attributes);
+        return isset($this->_attributes[$name]);
     }
 
     public function hasField($name)
@@ -243,18 +243,16 @@ class Model implements Serializable
 
     public function setDbData($data)
     {
+        $manager = $this->getFieldsManager();
         foreach ($data as $name => $value) {
-            $field = $this->getField($name);
-            if ($field) {
+            if ($field = $manager->getField($name)) {
+                $field->setModel($this);
                 $field->setFromDbValue($value);
                 $attributeName = $field->getAttributeName();
 
                 if ($attributeName) {
-                    $attribute = $field->getAttribute();
-                    $oldAttribute = $field->getOldAttribute();
-
-                    $this->_setAttribute($attributeName, $attribute);
-                    $this->_setOldAttribute($attributeName, $oldAttribute);
+                    $this->_setAttribute($attributeName, $field->getAttribute());
+                    $this->_setOldAttribute($attributeName, $field->getOldAttribute());
                 }
             }
         }
@@ -291,11 +289,7 @@ class Model implements Serializable
 
     public function getFieldValue($field)
     {
-        $manager = $this->getFieldsManager();
-        if ($manager->has($field)) {
-            return $manager->getFieldValue($this, $field);
-        }
-        return null;
+        return $this->getFieldsManager()->getFieldValue($this, $field);
     }
 
     public function setFieldValue($field, $value)

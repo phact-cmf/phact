@@ -6,6 +6,7 @@ use Exception;
 use InvalidArgumentException;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
+use Phact\Main\Phact;
 use Traversable;
 
 class Router
@@ -38,6 +39,11 @@ class Router
     public $pathRoutes;
 
     /**
+     * @var int Cache timeout
+     */
+    public $cacheTimeout;
+
+    /**
      * @var array Array of default match types (regex helpers)
      */
     protected $_matchTypes = array(
@@ -52,8 +58,27 @@ class Router
 
     public function init()
     {
-        if ($this->pathRoutes) {
-            $this->collectFromFile($this->pathRoutes);
+        $routes = null;
+        $cacheKey = 'PHACT__ROUTER';
+        if (!is_null($this->cacheTimeout)) {
+            $routes = Phact::app()->cache->get($cacheKey);
+            if ($routes) {
+                $this->_namedRoutes = $routes['named'];
+                $this->_routes = $routes['all'];
+            }
+        }
+
+        if (!$routes) {
+            if ($this->pathRoutes) {
+                $this->collectFromFile($this->pathRoutes);
+            }
+            if (!is_null($this->cacheTimeout)) {
+                $routes = [
+                    'named' => $this->_namedRoutes,
+                    'all' => $this->_routes
+                ];
+                Phact::app()->cache->set($cacheKey, $routes, $this->cacheTimeout);
+            }
         }
     }
 

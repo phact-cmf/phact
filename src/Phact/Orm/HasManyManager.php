@@ -28,7 +28,7 @@ class HasManyManager extends RelationManager
     public function getQuerySet()
     {
         $qs = parent::getQuerySet();
-        $qs->filter([$this->to => $this->ownerModel->{$this->from}]);
+        $qs->filter([$this->to => $this->ownerModel->getAttribute($this->from)]);
         return $qs;
     }
 
