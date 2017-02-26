@@ -105,11 +105,21 @@ abstract class Field
     public $virtual = false;
 
     /**
+     * @var bool
+     */
+    public $rawAccess = false;
+
+    /**
      * @return string
      */
     public function getBlankValue()
     {
         return '';
+    }
+
+    public function rawAccessValue($value)
+    {
+        return $value;
     }
 
     public function setOwnerModelClass($modelClass)
@@ -185,7 +195,7 @@ abstract class Field
     {
         $this->_oldAttribute = $value;
     }
-    
+
     public function getOldAttribute()
     {
         return $this->_oldAttribute;
@@ -347,7 +357,7 @@ abstract class Field
      * @param $value
      * @return mixed
      */
-    protected function dbPrepareValue($value)
+    public function dbPrepareValue($value)
     {
         return $value;
     }
@@ -359,7 +369,7 @@ abstract class Field
      * @param $value
      * @return mixed
      */
-    protected function attributePrepareValue($value)
+    public function attributePrepareValue($value)
     {
         return $value;
     }

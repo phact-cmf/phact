@@ -17,6 +17,7 @@ namespace Phact\Orm\Fields;
 
 class FloatField extends NumericField
 {
+    public $rawAccess = true;
     /**
      * Total number of digits
      * @var int
@@ -29,9 +30,19 @@ class FloatField extends NumericField
      */
     public $scale = 2;
 
+    public function rawAccessValue($value)
+    {
+        return is_null($value) ? null : (float) $value;
+    }
+
+    public function attributePrepareValue($value)
+    {
+        return $this->rawAccessValue($value);
+    }
+
     public function getValue($aliasConfig = null)
     {
-        return is_null($this->_attribute) ? null : (float) $this->_attribute;
+        return $this->rawAccessValue($this->_attribute);
     }
 
     public function dbPrepareValue($value)

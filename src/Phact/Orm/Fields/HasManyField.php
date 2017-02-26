@@ -103,8 +103,8 @@ class HasManyField extends RelationField
         $manager = new $this->managerClass($relationModel);
 
         return Configurator::configure($manager, [
-            'to'=>$this->to,
-            'from'=>$this->from,
+            'to'=>$this->getTo(),
+            'from'=>$this->getFrom(),
             'ownerModel'=>$this->getModel()
         ]);
     }

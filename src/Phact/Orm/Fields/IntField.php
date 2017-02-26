@@ -18,10 +18,22 @@ namespace Phact\Orm\Fields;
 class IntField extends NumericField
 {
     public $length = 11;
-    
+
+    public $rawAccess = true;
+
+    public function rawAccessValue($value)
+    {
+        return is_null($value) ? null : (int) $value;
+    }
+
+    public function attributePrepareValue($value)
+    {
+        return $this->rawAccessValue($value);
+    }
+
     public function getValue($aliasConfig = null)
     {
-        return is_null($this->_attribute) ? null : (int) $this->_attribute;
+        return $this->rawAccessValue($this->_attribute);
     }
 
     public function dbPrepareValue($value)

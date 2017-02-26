@@ -52,7 +52,7 @@ class ForeignField extends RelationField
             return $this->_from;
         }
         $name = $this->getName();
-        $to = $this->to;
+        $to = $this->getTo();
         return "{$name}_{$to}";
     }
 

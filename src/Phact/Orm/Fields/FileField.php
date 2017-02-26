@@ -26,6 +26,8 @@ use Phact\Storage\StorageManager;
 
 class FileField extends CharField
 {
+
+    public $rawAccess = false;
     /**
      * @var bool, encrypt filename to md5 hash
      */
@@ -53,7 +55,6 @@ class FileField extends CharField
     /** @var  string upload directory for field */
     protected $_uploadDir;
 
-
     /**
      * @return Storage
      * @throws \Phact\Exceptions\InvalidConfigException
@@ -74,8 +75,8 @@ class FileField extends CharField
      */
     public function getUrl()
     {
-        if (is_a($this->attribute, FileInterface::class)) {
-            return $this->getStorage()->getUrl($this->attribute->path);
+        if (is_a($this->getAttribute(), FileInterface::class)) {
+            return $this->getStorage()->getUrl($this->getAttribute()->path);
         }
         return null;
     }
@@ -85,8 +86,8 @@ class FileField extends CharField
      */
     public function getPath()
     {
-        if (is_a($this->attribute, FileInterface::class)) {
-            return $this->getStorage()->getPath($this->attribute->path);
+        if (is_a($this->getAttribute(), FileInterface::class)) {
+            return $this->getStorage()->getPath($this->getAttribute()->path);
         }
         return null;
     }
@@ -96,8 +97,8 @@ class FileField extends CharField
      */
     public function getPathFilename()
     {
-        if (is_a($this->attribute, FileInterface::class)) {
-            $path = $this->getStorage()->getPath($this->attribute->path);
+        if (is_a($this->getAttribute(), FileInterface::class)) {
+            $path = $this->getStorage()->getPath($this->getAttribute()->path);
             return FileHelper::mbPathinfo($path, PATHINFO_FILENAME);
         }
         return null;
@@ -108,8 +109,8 @@ class FileField extends CharField
      */
     public function getPathBasename()
     {
-        if (is_a($this->attribute, FileInterface::class)) {
-            $path = $this->getStorage()->getPath($this->attribute->path);
+        if (is_a($this->getAttribute(), FileInterface::class)) {
+            $path = $this->getStorage()->getPath($this->getAttribute()->path);
             return FileHelper::mbPathinfo($path, PATHINFO_BASENAME);
         }
         return null;
@@ -120,8 +121,8 @@ class FileField extends CharField
      */
     public function getExtension()
     {
-        if (is_a($this->attribute, FileInterface::class)) {
-            return $this->getStorage()->getExtension($this->attribute->getPath());
+        if (is_a($this->getAttribute(), FileInterface::class)) {
+            return $this->getStorage()->getExtension($this->getAttribute()->getPath());
         }
         return null;
     }
@@ -131,8 +132,8 @@ class FileField extends CharField
      */
     public function getSize()
     {
-        if (is_a($this->attribute, FileInterface::class)) {
-            return $this->getStorage()->getSize($this->attribute->getPath());
+        if (is_a($this->getAttribute(), FileInterface::class)) {
+            return $this->getStorage()->getSize($this->getAttribute()->getPath());
         }
         return null;
     }
@@ -142,8 +143,8 @@ class FileField extends CharField
      */
     public function delete()
     {
-        if (is_a($this->attribute, FileInterface::class)) {
-            return $this->getStorage()->delete($this->attribute->getPath());
+        if (is_a($this->getAttribute(), FileInterface::class)) {
+            return $this->getStorage()->delete($this->getAttribute()->getPath());
         }
         return null;
     }
@@ -202,7 +203,7 @@ class FileField extends CharField
      * @param $value string db value
      * @return null|StorageFile
      */
-    protected function attributePrepareValue($value)
+    public function attributePrepareValue($value)
     {
         if (!is_null($value) && $value) {
             $value = new StorageFile($value, $this->storage);
@@ -223,7 +224,7 @@ class FileField extends CharField
         }
 
         if ($value instanceof StorageFile) {
-            if (!$value->equalsTo($this->attribute)) {
+            if (!$value->equalsTo($this->getAttribute())) {
                 $this->attribute = $this->saveStorageFile($value);
             }
         }
@@ -237,7 +238,7 @@ class FileField extends CharField
             $this->attribute = $this->saveFile($value);
         }
         
-        return $this->attribute;
+        return $this->getAttribute();
     }
 
     /**
@@ -289,7 +290,7 @@ class FileField extends CharField
         $uploadDir = $this->getUploadDir();
         $name = $this->getFileName($file);
         $path = $this->getStorage()->save($uploadDir . $name, $file->getContent());
-        return ($path) ? new StorageFile($path, $this->storage) : false;
+        return ($path) ? new StorageFile($path, $this->getStorage()) : false;
     }
 
     /**
@@ -314,9 +315,9 @@ class FileField extends CharField
 
     public function afterSave()
     {
-        if (is_null($this->attribute)) {
+        if (is_null($this->getAttribute())) {
             $this->deleteOld();
-        } elseif ($this->oldAttribute instanceof StorageFile && !$this->oldAttribute->equalsTo($this->attribute)) {
+        } elseif ($this->getOldAttribute() instanceof StorageFile && !$this->getOldAttribute()->equalsTo($this->getAttribute())) {
             $this->deleteOld();
         }
 

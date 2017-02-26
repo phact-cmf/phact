@@ -19,6 +19,7 @@ use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Main\Phact;
 use Phact\Orm\Fields\AutoField;
+use Phact\Orm\Fields\Field;
 
 class FieldsManager
 {
@@ -223,14 +224,7 @@ class FieldsManager
     public function fetchField(Model $model, $name)
     {
         if ($field = $this->getField($name)) {
-            $field->clean();
-            $field->setModel($model);
-            $attributeName = $field->getAttributeName();
-            if ($attributeName) {
-                $field->setAttribute($model->getAttribute($attributeName));
-                $field->setOldAttribute($model->getOldAttribute($attributeName));
-            }
-            return $field;
+            return $this->prepareField($field, $model, $name);
         } else {
             throw new UnknownPropertyException(strtr("Getting value of unknown field: {field}", [
                 '{field}' => $name
@@ -238,16 +232,31 @@ class FieldsManager
         }
     }
 
+    public function prepareField(Field $field, Model $model, $name)
+    {
+        $field->clean();
+        $field->setModel($model);
+        $attributeName = $field->getAttributeName();
+        if ($attributeName) {
+            $field->setAttribute($model->getAttribute($attributeName));
+            $field->setOldAttribute($model->getOldAttribute($attributeName));
+        }
+        return $field;
+    }
+
     /**
-     * @param $model
+     * @param $model Model
      * @param $name
      * @return mixed
      * @throws UnknownPropertyException
      */
     public function getFieldValue($model, $name)
     {
-        print_r('### ' . $model::className() .' -- ' . $name . PHP_EOL);
-        if ($field = $this->fetchField($model, $name)) {
+        $field = $this->getField($name);
+        if ($field->rawAccess && ($attributeName = $field->getAttributeName())) {
+            return $field->rawAccessValue($model->getAttribute($attributeName));
+        }
+        if ($field = $this->prepareField($field, $model, $name)) {
             $alias = $this->getAliasConfig($name);
             return $field->getValue($alias);
         } else {
@@ -291,6 +300,6 @@ class FieldsManager
 
     public function has($name)
     {
-        return $this->hasField($name) || $this->hasAlias($name);
+        return isset($this->_fields[$name]) || isset($this->_aliases[$name]);
     }
 }

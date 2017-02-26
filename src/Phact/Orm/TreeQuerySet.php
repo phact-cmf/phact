@@ -27,20 +27,20 @@ class TreeQuerySet extends QuerySet
     public function descendants($includeSelf = false, $depth = null)
     {
         $this->filter([
-            'lft__gte' => $this->model->getAttribute('lft'),
-            'rgt__lte' => $this->model->getAttribute('rgt'),
-            'root' => $this->model->getAttribute('root')
+            'lft__gte' => $this->getModel()->getAttribute('lft'),
+            'rgt__lte' => $this->getModel()->getAttribute('rgt'),
+            'root' => $this->getModel()->getAttribute('root')
         ])->order(['lft']);
 
         if ($includeSelf === false) {
             $this->exclude([
-                'pk' => $this->model->pk
+                'pk' => $this->getModel()->pk
             ]);
         }
 
         if (!is_null($depth)) {
             $this->filter([
-                'depth__lte' => $this->model->getAttribute('depth') + $depth
+                'depth__lte' => $this->getModel()->getAttribute('depth') + $depth
             ]);
         }
 
@@ -68,19 +68,19 @@ class TreeQuerySet extends QuerySet
     public function ancestors($includeSelf = false, $depth = null)
     {
         $qs = $this->filter([
-            'lft__lte' => $this->model->getAttribute('lft'),
-            'rgt__gte' => $this->model->getAttribute('rgt'),
-            'root' => $this->model->getAttribute('root')
+            'lft__lte' => $this->getModel()->getAttribute('lft'),
+            'rgt__gte' => $this->getModel()->getAttribute('rgt'),
+            'root' => $this->getModel()->getAttribute('root')
         ])->order(['-lft']);
 
         if ($includeSelf === false) {
             $this->exclude([
-                'pk' => $this->model->pk
+                'pk' => $this->getModel()->pk
             ]);
         }
 
         if (!is_null($depth)) {
-            $qs = $qs->filter(['depth__lte' => $this->model->getAttribute('depth') - $depth]);
+            $qs = $qs->filter(['depth__lte' => $this->getModel()->getAttribute('depth') - $depth]);
         }
 
         return $qs;
@@ -108,26 +108,26 @@ class TreeQuerySet extends QuerySet
     public function parent()
     {
         return $this->filter([
-            'lft__lt' => $this->model->getAttribute('lft'),
-            'rgt__gt' => $this->model->getAttribute('rgt'),
-            'depth' => $this->model->getAttribute('depth') - 1,
-            'root' => $this->model->getAttribute('root')
+            'lft__lt' => $this->getModel()->getAttribute('lft'),
+            'rgt__gt' => $this->getModel()->getAttribute('rgt'),
+            'depth' => $this->getModel()->getAttribute('depth') - 1,
+            'root' => $this->getModel()->getAttribute('root')
         ]);
     }
 
     public function prev()
     {
         return $this->filter([
-            'rgt' => $this->model->getAttribute('lft') - 1,
-            'root' => $this->model->getAttribute('root'),
+            'rgt' => $this->getModel()->getAttribute('lft') - 1,
+            'root' => $this->getModel()->getAttribute('root'),
         ]);
     }
 
     public function next()
     {
         return $this->filter([
-            'lft' => $this->model->getAttribute('rgt') + 1,
-            'root' => $this->model->getAttribute('root'),
+            'lft' => $this->getModel()->getAttribute('rgt') + 1,
+            'root' => $this->getModel()->getAttribute('root'),
         ]);
     }
     

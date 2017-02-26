@@ -18,6 +18,8 @@ use DateTime;
 
 class DateField extends Field
 {
+    public $rawAccess = true;
+
     public $format = 'Y-m-d';
 
     /**
@@ -39,9 +41,14 @@ class DateField extends Field
         return '0000-00-00';
     }
 
+    public function rawAccessValue($value)
+    {
+        return $this->prepareDate($value);
+    }
+
     public function getValue($aliasConfig = null)
     {
-        return $this->prepareDate($this->_attribute);
+        return $this->rawAccessValue($this->_attribute);
     }
 
     public function dbPrepareValue($value)

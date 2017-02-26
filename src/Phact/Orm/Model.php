@@ -246,13 +246,21 @@ class Model implements Serializable
         $manager = $this->getFieldsManager();
         foreach ($data as $name => $value) {
             if ($field = $manager->getField($name)) {
-                $field->setModel($this);
-                $field->setFromDbValue($value);
                 $attributeName = $field->getAttributeName();
+                if ($field->rawAccess) {
+                    $attribute = $field->attributePrepareValue($value);
+                    if ($attributeName) {
+                        $this->_setAttribute($attributeName, $attribute);
+                        $this->_setOldAttribute($attributeName, $attribute);
+                    }
+                } else {
+                    $field->setModel($this);
+                    $field->setFromDbValue($value);
 
-                if ($attributeName) {
-                    $this->_setAttribute($attributeName, $field->getAttribute());
-                    $this->_setOldAttribute($attributeName, $field->getOldAttribute());
+                    if ($attributeName) {
+                        $this->_setAttribute($attributeName, $field->getAttribute());
+                        $this->_setOldAttribute($attributeName, $field->getOldAttribute());
+                    }
                 }
             }
         }

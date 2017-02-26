@@ -145,7 +145,7 @@ class QuerySet implements PaginableInterface
 
     public function createModel($row)
     {
-        $class = $this->model->className();
+        $class = $this->getModel()->className();
         /* @var $model Model */
         $model = new $class;
         $model->setDbData($row);
@@ -442,7 +442,7 @@ class QuerySet implements PaginableInterface
         $searchName = [];
         $nextName = [];
 
-        $model = $this->model;
+        $model = $this->getModel();
 
         foreach ($path as $part) {
             $searchName[] = $part;

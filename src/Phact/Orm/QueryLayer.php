@@ -70,7 +70,7 @@ class QueryLayer
      */
     public function getModel()
     {
-        return $this->querySet->model;
+        return $this->getQuerySet()->getModel();
     }
 
     public function getMetaData()
@@ -111,7 +111,7 @@ class QueryLayer
     {
         $this->_aliases = [];
         $tables = [$this->getTableName() => '__this'];
-        $relations = $this->querySet->getRelations();
+        $relations = $this->getQuerySet()->getRelations();
         foreach ($relations as $relationName => $relation) {
             if (isset($relation['joins']) && is_array($relation['joins'])) {
                 foreach ($relation['joins'] as $join) {
@@ -193,8 +193,7 @@ class QueryLayer
         if (!$model) {
             return $attribute;
         }
-        $field = $model->getField($attribute);
-        if ($field) {
+        if ($field = $model->getFieldsManager()->getField($attribute)) {
             return $field->getAttributeName();
         } else {
             throw new InvalidArgumentException(strtr("Invalid attribute name {attribute} for relation {relation}", [

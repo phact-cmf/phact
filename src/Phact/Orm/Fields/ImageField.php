@@ -117,7 +117,7 @@ class ImageField extends FileField
     public function sizeCleanPath($prefix)
     {
         /** @var StorageFile $storageFile */
-        $storageFile = $this->attribute;
+        $storageFile = $this->getAttribute();
         $prefixName = $prefix.'_'.$storageFile->getName();
         $basePath = dirname($storageFile->getPath());
         return $basePath.DIRECTORY_SEPARATOR.$prefixName;
