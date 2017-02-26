@@ -51,7 +51,7 @@ class Model implements Serializable
 
     public static function getTableName()
     {
-        $class = get_called_class();
+        $class = static::class;
         if (!isset(self::$_tableNames[$class])) {
             $classParts = explode('\\', $class);
             $name = array_pop($classParts);
@@ -70,9 +70,9 @@ class Model implements Serializable
     public static function getFieldsManager()
     {
         /** @var FieldsManager $fieldsManagerClass */
-        $fieldsManagerClass = static::getFieldsManagerClass();
-        $class = get_called_class();
+        $class = static::class;
         if (!isset(self::$_fieldsManagers[$class])) {
+            $fieldsManagerClass = static::getFieldsManagerClass();
             self::$_fieldsManagers[$class] = $fieldsManagerClass::makeInstance($class, static::getFields(), static::getMetaData());
         }
         return self::$_fieldsManagers[$class];
@@ -122,12 +122,17 @@ class Model implements Serializable
         return isset($this->_attributes[$pkAttribute]) ? $this->_attributes[$pkAttribute] : null;
     }
 
-    public function getField($name)
+    public function fetchField($name)
     {
         if ($name == 'pk') {
             $name = $this->getPkAttribute();
         }
-        if ($field = $this->getFieldsManager()->getField($name)) {
+        return $this->getFieldsManager()->getField($name);
+    }
+
+    public function getField($name)
+    {
+        if ($field = $this->fetchField($name)) {
             $field->clean();
             $field->setModel($this);
             if ($attributeName = $field->getAttributeName()) {
@@ -247,19 +252,19 @@ class Model implements Serializable
         foreach ($data as $name => $value) {
             if ($field = $manager->getField($name)) {
                 $attributeName = $field->getAttributeName();
-                if ($field->rawAccess) {
+                if ($field->rawSet) {
                     $attribute = $field->attributePrepareValue($value);
                     if ($attributeName) {
-                        $this->_setAttribute($attributeName, $attribute);
-                        $this->_setOldAttribute($attributeName, $attribute);
+                        $this->_attributes[$attributeName] = $attribute;
+                        $this->_oldAttributes[$attributeName] = $attribute;
                     }
                 } else {
                     $field->setModel($this);
                     $field->setFromDbValue($value);
 
                     if ($attributeName) {
-                        $this->_setAttribute($attributeName, $field->getAttribute());
-                        $this->_setOldAttribute($attributeName, $field->getOldAttribute());
+                        $this->_attributes[$attributeName] = $field->getAttribute();
+                        $this->_oldAttributes[$attributeName] = $field->getOldAttribute();
                     }
                 }
             }

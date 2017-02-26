@@ -17,6 +17,9 @@ namespace Phact\Orm\Fields;
 
 class DecimalField extends NumericField
 {
+    public $rawGet = true;
+
+    public $rawSet = true;
     /**
      * Total number of digits
      * @var int
@@ -29,9 +32,14 @@ class DecimalField extends NumericField
      */
     public $scale = 2;
 
+    public function attributePrepareValue($value)
+    {
+        return isset($value) ? (float) $value : null;
+    }
+
     public function getValue($aliasConfig = null)
     {
-        return is_null($this->_attribute) ? null : (float) $this->_attribute;
+        return $this->_attribute;
     }
 
     public function dbPrepareValue($value)

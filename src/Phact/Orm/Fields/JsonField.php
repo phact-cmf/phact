@@ -16,25 +16,24 @@ namespace Phact\Orm\Fields;
 
 class JsonField extends TextField
 {
-    public function rawAccessValue($value)
+    public $rawGet = true;
+
+    public $rawSet = true;
+
+    public function getValue($aliasConfig = null)
     {
-        if (is_null($value)) {
+        return $this->_attribute;
+    }
+
+    public function attributePrepareValue($value)
+    {
+        if (!isset($value)) {
             return null;
         }
         if (is_string($value)) {
             return json_decode($value, true);
         }
         return $value;
-    }
-
-    public function getValue($aliasConfig = null)
-    {
-        return $this->rawAccessValue($this->_attribute);
-    }
-
-    public function attributePrepareValue($value)
-    {
-        return $this->rawAccessValue($value);
     }
 
     public function dbPrepareValue($value)

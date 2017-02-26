@@ -20,11 +20,6 @@ class BigIntField extends IntField
     public $length = 20;
     public $unsigned = true;
 
-    public function getValue($aliasConfig = null)
-    {
-        return is_null($this->_attribute) ? null : (int) $this->_attribute;
-    }
-
     public function dbPrepareValue($value)
     {
         return (float) $value;

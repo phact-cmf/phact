@@ -26,8 +26,9 @@ use Phact\Storage\StorageManager;
 
 class FileField extends CharField
 {
+    public $rawGet = false;
 
-    public $rawAccess = false;
+    public $rawSet = false;
     /**
      * @var bool, encrypt filename to md5 hash
      */

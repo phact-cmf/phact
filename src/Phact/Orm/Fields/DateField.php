@@ -18,7 +18,9 @@ use DateTime;
 
 class DateField extends Field
 {
-    public $rawAccess = true;
+    public $rawGet = true;
+
+    public $rawSet = true;
 
     public $format = 'Y-m-d';
 
@@ -41,14 +43,14 @@ class DateField extends Field
         return '0000-00-00';
     }
 
-    public function rawAccessValue($value)
+    public function attributePrepareValue($value)
     {
         return $this->prepareDate($value);
     }
 
     public function getValue($aliasConfig = null)
     {
-        return $this->rawAccessValue($this->_attribute);
+        return $this->_attribute;
     }
 
     public function dbPrepareValue($value)

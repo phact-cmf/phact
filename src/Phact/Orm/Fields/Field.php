@@ -107,8 +107,11 @@ abstract class Field
     /**
      * @var bool
      */
-    public $rawAccess = false;
-
+    public $rawSet = false;
+    /**
+     * @var bool
+     */
+    public $rawGet = false;
     /**
      * @return string
      */

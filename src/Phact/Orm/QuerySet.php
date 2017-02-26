@@ -43,6 +43,11 @@ class QuerySet implements PaginableInterface
      */
     protected $_model;
 
+    /**
+     * @var string
+     */
+    protected $_modelClass;
+
     protected $_queryLayer;
     protected $_lookupManager;
 
@@ -120,6 +125,17 @@ class QuerySet implements PaginableInterface
     public function setModel(Model $model)
     {
         $this->_model = $model;
+        $this->setModelClass(get_class($model));
+    }
+
+    public function setModelClass($class)
+    {
+        $this->_modelClass = $class;
+    }
+
+    public function getModelClass()
+    {
+        return $this->_modelClass;
     }
 
     public function getQueryLayer()
@@ -145,9 +161,9 @@ class QuerySet implements PaginableInterface
 
     public function createModel($row)
     {
-        $class = $this->getModel()->className();
+        $modelClass = $this->getModelClass();
         /* @var $model Model */
-        $model = new $class;
+        $model = new $modelClass;
         $model->setDbData($row);
         return $model;
     }

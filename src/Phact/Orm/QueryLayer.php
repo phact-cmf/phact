@@ -193,7 +193,7 @@ class QueryLayer
         if (!$model) {
             return $attribute;
         }
-        if ($field = $model->getFieldsManager()->getField($attribute)) {
+        if ($field = $model->fetchField($attribute)) {
             return $field->getAttributeName();
         } else {
             throw new InvalidArgumentException(strtr("Invalid attribute name {attribute} for relation {relation}", [

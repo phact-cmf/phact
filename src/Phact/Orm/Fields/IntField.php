@@ -19,21 +19,18 @@ class IntField extends NumericField
 {
     public $length = 11;
 
-    public $rawAccess = true;
+    public $rawGet = true;
 
-    public function rawAccessValue($value)
-    {
-        return is_null($value) ? null : (int) $value;
-    }
+    public $rawSet = true;
 
     public function attributePrepareValue($value)
     {
-        return $this->rawAccessValue($value);
+        return isset($value) ? (int) $value : null;
     }
 
     public function getValue($aliasConfig = null)
     {
-        return $this->rawAccessValue($this->_attribute);
+        return $this->_attribute;
     }
 
     public function dbPrepareValue($value)

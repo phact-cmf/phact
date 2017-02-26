@@ -16,23 +16,20 @@ namespace Phact\Orm\Fields;
 
 class CharField extends Field
 {
-    public $rawAccess = true;
+    public $rawSet = true;
+
+    public $rawGet = true;
 
     public $length = 255;
 
-    public function rawAccessValue($value)
-    {
-        return is_null($value) ? null : (string) $value;
-    }
-
     public function attributePrepareValue($value)
     {
-        return $this->rawAccessValue($value);
+        return isset($value) ? (string) $value : null;
     }
 
     public function getValue($aliasConfig = null)
     {
-        return $this->rawAccessValue($this->_attribute);
+        return $this->_attribute;
     }
 
     public function dbPrepareValue($value)

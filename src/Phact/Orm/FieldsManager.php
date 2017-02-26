@@ -253,8 +253,8 @@ class FieldsManager
     public function getFieldValue($model, $name)
     {
         $field = $this->getField($name);
-        if ($field->rawAccess && ($attributeName = $field->getAttributeName())) {
-            return $field->rawAccessValue($model->getAttribute($attributeName));
+        if ($field->rawGet && ($attributeName = $field->getAttributeName())) {
+            return $model->getAttribute($attributeName);
         }
         if ($field = $this->prepareField($field, $model, $name)) {
             $alias = $this->getAliasConfig($name);

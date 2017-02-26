@@ -28,6 +28,8 @@ use Phact\Orm\QuerySet;
  */
 class ForeignField extends RelationField
 {
+    public $rawSet = true;
+
     protected $_to = 'id';
     protected $_from = null;
 
@@ -48,12 +50,12 @@ class ForeignField extends RelationField
 
     public function getFrom()
     {
-        if ($this->_from) {
-            return $this->_from;
+        if (!$this->_from) {
+            $name = $this->getName();
+            $to = $this->getTo();
+            $this->_from = "{$name}_{$to}";
         }
-        $name = $this->getName();
-        $to = $this->getTo();
-        return "{$name}_{$to}";
+        return $this->_from;
     }
 
     public function setFrom($from)
@@ -152,6 +154,11 @@ class ForeignField extends RelationField
         $relationModel = new $relationModelClass();
         $field = $relationModel->getField($to);
         return $field->getSqlType();
+    }
+
+    public function attributePrepareValue($value)
+    {
+        return isset($value) ? (int) $value : null;
     }
 
     public function dbPrepareValue($value)

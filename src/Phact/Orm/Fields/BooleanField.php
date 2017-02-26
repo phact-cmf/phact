@@ -25,14 +25,9 @@ class BooleanField extends IntField
         parent::setAttribute($value);
     }
 
-    public function rawAccessValue($value)
-    {
-        return is_null($value) ? null : (bool) $value;
-    }
-
     public function attributePrepareValue($value)
     {
-        return $this->rawAccessValue($value);
+        return isset($value) ? (bool) $value : null;
     }
 
     public function dbPrepareValue($value)
