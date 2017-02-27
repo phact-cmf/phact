@@ -34,6 +34,8 @@ class QueryLayer
 {
     use SmartProperties;
 
+    static $_columnAliases = [];
+
     protected $_query;
 
     /**
@@ -42,6 +44,9 @@ class QueryLayer
     protected $_querySet;
 
     protected $_aliases;
+
+    /** @var Model */
+    protected $_model;
 
     public function __construct($querySet)
     {
@@ -70,7 +75,10 @@ class QueryLayer
      */
     public function getModel()
     {
-        return $this->getQuerySet()->getModel();
+        if (!$this->_model) {
+            $this->_model = $this->getQuerySet()->getModel();
+        }
+        return $this->_model;
     }
 
     public function getMetaData()
@@ -205,9 +213,13 @@ class QueryLayer
 
     public function columnAlias($relationName, $attribute, $tableName = null, $addTablePrefix = false)
     {
-        $attribute = $this->relationColumnAttribute($relationName, $attribute);
-        $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
-        return $this->column($tableName, $attribute, $addTablePrefix);
+        $key = implode('-', [$this->_model->className(), $relationName, $attribute, $tableName]);
+        if (!isset(static::$_columnAliases[$key])) {
+            $attribute = $this->relationColumnAttribute($relationName, $attribute);
+            $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
+            static::$_columnAliases[$key] = $this->column($tableName, $attribute, $addTablePrefix);
+        }
+        return static::$_columnAliases[$key];
     }
 
     public function column($tableName, $attribute, $addTablePrefix = false)
@@ -449,8 +461,7 @@ class QueryLayer
     public function clearConditions($conditions)
     {
         if (is_array($conditions) && count($conditions) == 1) {
-            $conditions = array_shift($conditions);
-            return $this->clearConditions($conditions);
+            return $this->clearConditions($conditions[0]);
         } else {
             return $conditions;
         }
@@ -562,11 +573,11 @@ class QueryLayer
      */
     public function buildLimitOffset($query, $limit, $offset)
     {
-        if (!is_null($limit)) {
+        if (isset($limit)) {
             $query->limit($limit);
         }
 
-        if (!is_null($offset)) {
+        if (isset($offset)) {
             $query->offset($offset);
         }
     }

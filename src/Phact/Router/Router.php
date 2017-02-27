@@ -43,6 +43,8 @@ class Router
      */
     public $cacheTimeout;
 
+    protected $_matched = [];
+
     /**
      * @var array Array of default match types (regex helpers)
      */
@@ -175,7 +177,6 @@ class Router
      */
     public function url($routeName, array $params = array())
     {
-
         // Check if named route exists
         if (!isset($this->_namedRoutes[$routeName])) {
             throw new \Exception("Route '{$routeName}' does not exist.");
@@ -187,14 +188,18 @@ class Router
         // prepend base path to route url again
         $url = $this->_basePath . $route;
 
+        $matches = isset($this->_matched[$routeName]) ? $this->_matched[$routeName] : null;
+        if (!$matches) {
+            preg_match_all('`(\/|)\{.*?:(.+?)\}(\?|)`', $route, $matches, PREG_SET_ORDER);
+            $this->_matched[$routeName] = $matches;
+        }
         $usedParams = [];
-        if (preg_match_all('`(/|\.|)\{([^:\}]*+)(?::([^:\}]*+))?\}(\?|)`', $route, $matches, PREG_SET_ORDER)) {
-
+        if ($matches) {
             $counter = 0;
             foreach ($matches as $match) {
-                list($block, $pre, $type, $param, $optional) = $match;
-
-                if ($pre) {
+                $param = $match[2];
+                $block = $match[0];
+                if ($match[1]) {
                     $block = substr($block, 1);
                 }
 
@@ -202,8 +207,8 @@ class Router
                     $url = str_replace($block, $params[$param], $url);
                 } elseif (isset($params[$counter])) {
                     $url = str_replace($block, $params[$counter], $url);
-                } elseif ($optional) {
-                    $url = str_replace($pre . $block, '', $url);
+                } elseif ($match[3]) {
+                    $url = str_replace($match[1] . $block, '', $url);
                 } else {
                     throw new InvalidArgumentException('Incorrect params of route');
                 }
@@ -211,7 +216,6 @@ class Router
                 $counter++;
             }
         }
-
         $query = [];
         foreach ($params as $param => $value) {
             if (is_string($param) && !in_array($param, $usedParams)) {

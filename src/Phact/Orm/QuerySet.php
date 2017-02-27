@@ -38,6 +38,8 @@ class QuerySet implements PaginableInterface
 {
     use SmartProperties;
 
+    static $_lookupManager;
+
     /**
      * @var Model
      */
@@ -49,7 +51,6 @@ class QuerySet implements PaginableInterface
     protected $_modelClass;
 
     protected $_queryLayer;
-    protected $_lookupManager;
 
     /**
      * Raw filter
@@ -148,20 +149,20 @@ class QuerySet implements PaginableInterface
      */
     public function getLookupManager()
     {
-        if (!$this->_lookupManager) {
-            $this->_lookupManager = new LookupManager();
+        if (!self::$_lookupManager) {
+            self::$_lookupManager = new LookupManager();
         }
-        return $this->_lookupManager;
+        return self::$_lookupManager;
     }
 
     public function setLookupManager($lookup)
     {
-        $this->_lookup = $lookup;
+        self::$_lookupManager = $lookup;
     }
 
     public function createModel($row)
     {
-        $modelClass = $this->getModelClass();
+        $modelClass = $this->_modelClass;
         /* @var $model Model */
         $model = new $modelClass;
         $model->setDbData($row);
@@ -333,7 +334,7 @@ class QuerySet implements PaginableInterface
         if (!is_array($filter)) {
             throw new InvalidArgumentException('QuerySet::filter() accept only arrays');
         }
-        if (!empty($filter)) {
+        if (isset($filter)) {
             $this->_filter[] = $filter;
         }
         return $this->nextQuerySet();
@@ -519,7 +520,7 @@ class QuerySet implements PaginableInterface
                 'model' => $this->getModel()
             ];
         }
-        if (!$this->hasRelation($name)) {
+        if (!isset($this->_relations[$name])) {
             $this->connectRelation($name);
         }
         return $this->_relations[$name];

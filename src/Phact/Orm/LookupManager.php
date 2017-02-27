@@ -22,7 +22,7 @@ class LookupManager
 {
     public static $defaultLookup = 'exact';
 
-    public function map()
+    public static function map()
     {
         return [
             'exact',
@@ -42,7 +42,7 @@ class LookupManager
 
     public function processCondition($query, $column, $lookup, $value, $operator)
     {
-        if (in_array($lookup, $this->map())) {
+        if (in_array($lookup, static::map())) {
             $method = 'process' . ucfirst($lookup);
             $this->{$method}($query, $column, $value, $operator);
         } else {

@@ -105,11 +105,9 @@ class TemplateManager
         $this->_renderer->addAccessorSmart("app", "app", Fenom::ACCESSOR_PROPERTY);
         $this->_renderer->app = Phact::app();
 
-        $this->_renderer->addAccessorSmart("request", "request", Fenom::ACCESSOR_PROPERTY);
-        $this->_renderer->request = Phact::app()->request;
+        $this->_renderer->addAccessorSmart("request", 'Phact\Main\Phact::app()->request', Fenom::ACCESSOR_VAR);
 
-        $this->_renderer->addAccessorSmart("user", "user", Fenom::ACCESSOR_PROPERTY);
-        $this->_renderer->user = Phact::app()->getUser();
+        $this->_renderer->addAccessorSmart("user", 'Phact\Main\Phact::app()->user', Fenom::ACCESSOR_VAR);
 
         $this->_renderer->addAccessorSmart("setting", "Phact\\Main\\Phact::app()->settings->get", Fenom::ACCESSOR_CALL);
 

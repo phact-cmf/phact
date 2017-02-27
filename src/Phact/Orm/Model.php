@@ -162,8 +162,7 @@ class Model implements Serializable
     public static function objectsManager($model = null)
     {
         if (!$model) {
-            $class = get_called_class();
-            $model = new $class();
+            $model = new static;
         }
         return new Manager($model);
     }
@@ -322,17 +321,17 @@ class Model implements Serializable
     public function __get($name)
     {
         $manager = $this->getFieldsManager();
-        if (substr($name, -9, null) == '__display') {
-            $start = mb_strpos($name, '__display', 0, 'UTF-8');
-            $name = mb_substr($name, 0, $start, 'UTF-8');
-
-            if ($manager->has($name) && ($field = $this->getField($name))) {
-                return $field->getChoiceDisplay();
-            }
-        }
         if ($manager->has($name)) {
             return $this->getFieldValue($name);
         } else {
+            if (substr($name, -9, null) == '__display') {
+                $start = mb_strpos($name, '__display', 0, 'UTF-8');
+                $name = mb_substr($name, 0, $start, 'UTF-8');
+
+                if ($manager->has($name) && ($field = $this->getField($name))) {
+                    return $field->getChoiceDisplay();
+                }
+            }
             return $this->__smartGet($name);
         }
     }

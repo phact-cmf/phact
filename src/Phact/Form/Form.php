@@ -37,6 +37,8 @@ abstract class Form
 
     protected $_initFields;
 
+    protected $_name;
+
     /**
      * Prefix
      * @TODO
@@ -257,7 +259,10 @@ abstract class Form
 
     public function getName()
     {
-        return $this->prefix . self::classNameShort();
+        if (!$this->_name) {
+            $this->_name = $this->prefix . self::classNameShort();
+        }
+        return $this->_name;
     }
 
     public function clean($attributes)

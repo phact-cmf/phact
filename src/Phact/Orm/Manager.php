@@ -50,7 +50,7 @@ class Manager
     public function getQuerySet()
     {
         return Configurator::create($this->querySetClass, [
-            'model' => $this->model
+            'model' => $this->getModel()
         ]);
     }
 

@@ -86,27 +86,22 @@ class Application
         $configs = [];
         foreach ($rawConfig as $key => $module) {
             $name = null;
-            if (is_string($key)) {
-                $name = $key;
-            } elseif (is_string($module)) {
+            $config = [];
+            if (is_string($module)) {
                 $name = $module;
-            }
-
-            if (!$name) {
+            } elseif (is_string($key)) {
+                $name = $key;
+                if (is_array($module)) {
+                    $config = $module;
+                }
+            } else {
                 throw new InvalidConfigException("Unable to configure module {$key}");
             }
 
             $name = ucfirst($name);
             $class = '\\Modules\\' . $name . '\\' . $name . 'Module';
-            $config = [];
-            if (is_array($module)) {
-                $config = $module;
-            }
-            if ($class && $name) {
-                $configs[$name] = array_merge($config, [
-                    'class' => $class
-                ]);
-            }
+            $config['class'] = $class;
+            $configs[$name] = $config;
         }
         return $configs;
     }

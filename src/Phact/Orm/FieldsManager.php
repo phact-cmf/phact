@@ -234,10 +234,8 @@ class FieldsManager
 
     public function prepareField(Field $field, Model $model, $name)
     {
-        $field->clean();
         $field->setModel($model);
-        $attributeName = $field->getAttributeName();
-        if ($attributeName) {
+        if ($attributeName = $field->getAttributeName()) {
             $field->setAttribute($model->getAttribute($attributeName));
             $field->setOldAttribute($model->getOldAttribute($attributeName));
         }

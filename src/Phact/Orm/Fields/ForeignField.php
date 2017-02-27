@@ -128,7 +128,9 @@ class ForeignField extends RelationField
         $value = $this->_attribute;
         $class = $this->getRelationModelClass();
         if (!is_object($value)) {
-            return $class::objects()->filter([$this->getTo() => $value])->limit(1)->get();
+            return $class::objects()->filter([
+                $this->getTo() => $value
+            ])->get();
         } else {
             return $value;
         }

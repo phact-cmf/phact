@@ -20,14 +20,12 @@ trait ClassNames
 {
     public static function className()
     {
-        return get_called_class();
+        return static::class;
     }
 
     public static function classNameShort()
     {
-        $class = get_called_class();
-        $classParts = explode('\\', $class);
-        return array_pop($classParts);
+        return substr(static::class, strrpos(static::class, '\\')+1);
     }
 
     public static function classNameUnderscore()
@@ -37,8 +35,7 @@ trait ClassNames
 
     public static function getModuleName()
     {
-        $class = get_called_class();
-        $classParts = explode('\\', $class);
+        $classParts = explode('\\', static::class);
         if ($classParts[0] == 'Modules' && isset($classParts[1])) {
             return $classParts[1];
         }

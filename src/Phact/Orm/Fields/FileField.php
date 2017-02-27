@@ -28,7 +28,7 @@ class FileField extends CharField
 {
     public $rawGet = false;
 
-    public $rawSet = false;
+    public $rawSet = true;
     /**
      * @var bool, encrypt filename to md5 hash
      */
@@ -206,7 +206,7 @@ class FileField extends CharField
      */
     public function attributePrepareValue($value)
     {
-        if (!is_null($value) && $value) {
+        if ($value) {
             $value = new StorageFile($value, $this->storage);
         }
         return $value;
