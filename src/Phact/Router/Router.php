@@ -175,13 +175,16 @@ class Router
      * @return string The URL of the route with named parameters in place.
      * @throws Exception
      */
-    public function url($routeName, array $params = array())
+    public function url($routeName, $params = array())
     {
         // Check if named route exists
         if (!isset($this->_namedRoutes[$routeName])) {
             throw new \Exception("Route '{$routeName}' does not exist.");
         }
 
+        if (!is_array($params)) {
+            $params = [$params];
+        }
         // Replace named parameters
         $route = $this->_namedRoutes[$routeName];
 
