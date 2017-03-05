@@ -38,6 +38,11 @@ class ConnectionManager
         return isset($this->_settings['cacheFieldsTimeout']) ? $this->_settings['cacheFieldsTimeout'] : null;
     }
 
+    public function getCacheQueriesTimeout()
+    {
+        return isset($this->_settings['cacheQueriesTimeout']) ? $this->_settings['cacheQueriesTimeout'] : null;
+    }
+
     public function setConnections($config = [])
     {
         $this->_connectionsConfig = $config;

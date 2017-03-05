@@ -17,6 +17,7 @@ namespace Phact\Orm;
 
 use Exception;
 use PDO;
+use Phact\Main\Phact;
 
 class QueryBuilder
 {
@@ -36,6 +37,8 @@ class QueryBuilder
 
     protected $_pdoStatement = null;
 
+    protected $_cacheKey = null;
+
     public function __construct($connection = null, $tablePrefix = null)
     {
         $this->_connection = $connection;
@@ -50,6 +53,12 @@ class QueryBuilder
     public function getAdapter()
     {
         return $this->_connection->getAdapter();
+    }
+
+    public function setCacheKey($cacheKey)
+    {
+        $this->_cacheKey = $cacheKey;
+        return $this;
     }
 
     public function table($tables)
@@ -171,13 +180,23 @@ class QueryBuilder
     /**
      * Get all rows
      *
-     * @return \stdClass|null
+     * @param null $builtQuery
+     * @return null|\stdClass
+     * @throws Exception
      */
-    public function get()
+    public function get($builtQuery = null)
     {
         $executionTime = 0;
         if (is_null($this->_pdoStatement)) {
-            list($this->_pdoStatement, $executionTime) = $this->queryStatement('select');
+            if ($builtQuery) {
+                list($sql, $bindings) = $builtQuery;
+            } else {
+                $query = $this->getQuery('select');
+                $this->cacheQuery($query);
+                list($sql, $bindings) = $query;
+            }
+            list($this->_pdoStatement, $executionTime) = $this->statement($sql, $bindings);
+
         }
         $start = microtime(true);
         $result = call_user_func_array(array($this->_pdoStatement, 'fetchAll'), $this->_fetchParameters);
@@ -189,12 +208,14 @@ class QueryBuilder
     /**
      * Get first row
      *
-     * @return \stdClass|null
+     * @param null $rawQuery
+     * @param null $cacheKey
+     * @return null|\stdClass
      */
-    public function first()
+    public function first($rawQuery = null)
     {
         $this->limit(1);
-        $result = $this->get();
+        $result = $this->get($rawQuery);
         return empty($result) ? null : $result[0];
     }
 
@@ -501,5 +522,20 @@ class QueryBuilder
     public function innerJoin($table, $key, $operator = null, $value = null)
     {
         return $this->join($table, $key, $operator, $value, 'inner');
+    }
+
+    public function setCacheQuery($key, $query)
+    {
+        $cacheTimeout = Phact::app()->db->getCacheQueriesTimeout();
+        if (!is_null($cacheTimeout)) {
+            Phact::app()->cache->set($key, $query, $cacheTimeout);
+        }
+    }
+
+    public function cacheQuery($query)
+    {
+        if ($this->_cacheKey) {
+            $this->setCacheQuery($this->_cacheKey, $query);
+        }
     }
 }

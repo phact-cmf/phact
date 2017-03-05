@@ -148,7 +148,7 @@ class QuerySet implements PaginableInterface
 
     public function getQueryLayer()
     {
-        return new QueryLayer($this->nextQuerySet()->build());
+        return new QueryLayer($this->nextQuerySet(), $this->nextQuerySet()->buildKey());
     }
 
     /**
@@ -697,6 +697,17 @@ class QuerySet implements PaginableInterface
         }
 
         return $this;
+    }
+
+    public function buildKey()
+    {
+        return $this->getModelClass() . '#' . md5(serialize(array_merge(
+            $this->_with,
+            [$this->_aggregation],
+            $this->_filter,
+            $this->_exclude,
+            $this->_order
+        )));
     }
 
     /**

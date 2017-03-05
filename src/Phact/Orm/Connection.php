@@ -52,6 +52,9 @@ class Connection
 
     public function getPdo()
     {
+        if (!$this->_pdo) {
+            $this->getAdapter();
+        }
         return $this->_pdo;
     }
 }

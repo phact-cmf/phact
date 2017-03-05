@@ -37,6 +37,8 @@ class QueryLayer
 
     protected $_query;
 
+    protected $_key;
+
     /**
      * @var \Phact\Orm\QuerySet
      */
@@ -47,10 +49,12 @@ class QueryLayer
     /** @var Model */
     protected $_model;
 
-    public function __construct($querySet)
+    protected $_isBuiltQuerySet = false;
+
+    public function __construct($querySet, $key = null)
     {
         $this->_querySet = $querySet;
-        $this->setAliases();
+        $this->_key = $key;
     }
 
     /**
@@ -58,6 +62,11 @@ class QueryLayer
      */
     public function getQuerySet()
     {
+        if (!$this->_isBuiltQuerySet) {
+            $this->_querySet->build();
+            $this->_isBuiltQuerySet = true;
+            $this->setAliases();
+        }
         return $this->_querySet;
     }
 
@@ -75,7 +84,7 @@ class QueryLayer
     public function getModel()
     {
         if (!$this->_model) {
-            $this->_model = $this->getQuerySet()->getModel();
+            $this->_model = $this->_querySet->getModel();
         }
         return $this->_model;
     }
@@ -308,7 +317,15 @@ class QueryLayer
 
     public function all($sql = false)
     {
-        $query = $this->getQueryBuilder();
+        $key = $this->getCacheKey('all');
+        $query = $this->getQueryBuilder()->setCacheKey($key);
+        if ($builtQuery = $this->getCachedQuery('all')) {
+            if ($sql) {
+                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
+            }
+            return $query->get($builtQuery);
+        }
+
         $qs = $this->getQuerySet();
 
         $select = $qs->getSelect();
@@ -331,7 +348,14 @@ class QueryLayer
 
     public function get($sql = false)
     {
-        $query = $this->getQueryBuilder();
+        $query = $this->getQueryBuilder()->setCacheKey($this->getCacheKey('get'));
+        if ($builtQuery = $this->getCachedQuery('get')) {
+            if ($sql) {
+                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
+            }
+            return $query->first($builtQuery);
+        }
+
         $qs = $this->getQuerySet();
 
         $this->buildQuery($query);
@@ -368,7 +392,20 @@ class QueryLayer
 
     public function aggregate(Aggregation $aggregation, $sql = false)
     {
-        $query = $this->getQueryBuilder();
+        $aKey = 'aggregate' . $aggregation::getSql($aggregation->getField());
+        $key = $this->getCacheKey($aKey);
+        $query = $this->getQueryBuilder()->setCacheKey($key);
+        if ($builtQuery = $this->getCachedQuery($aKey)) {
+            if ($sql) {
+                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
+            }
+            $item = $query->first($builtQuery);
+            if (isset($item['aggregation'])) {
+                return $item['aggregation'];
+            }
+            return null;
+        }
+
         $this->buildQuery($query, false);
 
         $field = $aggregation->getField();
@@ -429,7 +466,15 @@ class QueryLayer
 
     public function values($columns = [], $distinct = true, $sql = false)
     {
-        $query = $this->getQueryBuilder();
+        $key = $this->getCacheKey('values');
+        $query = $this->getQueryBuilder()->setCacheKey($key);
+        if ($builtQuery = $this->getCachedQuery('values')) {
+            if ($sql) {
+                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
+            }
+            return $query->get($builtQuery);
+        }
+
         $qs = $this->getQuerySet();
 
         if (!$columns) {
@@ -621,5 +666,17 @@ class QueryLayer
             $value = strtr($value, $replaces);
         }
         return new Raw($value, $expression->getParams());
+    }
+
+    public function getCacheKey($type)
+    {
+        return $this->_key . '#' . $type;
+    }
+
+    public function getCachedQuery($type)
+    {
+        $key = $this->getCacheKey($type);
+        $cacheTimeout = Phact::app()->db->getCacheQueriesTimeout();
+        return is_null($cacheTimeout) ? null : Phact::app()->cache->get($key);
     }
 }
