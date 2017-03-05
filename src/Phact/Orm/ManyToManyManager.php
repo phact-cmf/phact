@@ -201,7 +201,7 @@ class ManyToManyManager extends RelationManager
     }
 
     /**
-     * @return \Pixie\QueryBuilder\QueryBuilderHandler
+     * @return QueryBuilder
      */
     public function getQb()
     {

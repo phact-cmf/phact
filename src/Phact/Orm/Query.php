@@ -16,6 +16,7 @@ namespace Phact\Orm;
 
 
 use Phact\Main\Phact;
+use Phact\Orm\Adapters\Adapter;
 
 class Query
 {
@@ -38,23 +39,12 @@ class Query
         return Phact::app()->db->getConnection($connectionName);
     }
 
-    public function getQueryConnection()
-    {
-        return $this->getConnection()->getQueryConnection();
-    }
-
     /**
-     * @return \Pixie\QueryBuilder\Adapters\BaseAdapter
+     * @return Adapter
      */
     public function getAdapter()
     {
-        if (!$this->_adapter) {
-            $queryConnection = $this->getQueryConnection();
-            $adapter = $queryConnection->getAdapter();
-            $adapterClass = '\\Pixie\\QueryBuilder\\Adapters\\' . ucfirst($adapter);
-            $this->_adapter = new $adapterClass($queryConnection);
-        }
-        return $this->_adapter;
+        return $this->getConnection()->getAdapter();
     }
 
     public function getQueryBuilder()

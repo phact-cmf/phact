@@ -19,8 +19,7 @@ use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Aggregations\Aggregation;
-use Pixie\QueryBuilder\QueryBuilderHandler;
-use Pixie\QueryBuilder\Raw;
+use Phact\Orm\Raw;
 
 /**
  * Class QueryLayer
@@ -102,7 +101,7 @@ class QueryLayer
     public function getQueryBuilder()
     {
         $qb = $this->getQueryBuilderRaw();
-        return $qb->table([$this->getTableName()])->setFetchMode(\PDO::FETCH_ASSOC);
+        return $qb->table([$this->getTableName()]);
     }
 
     public function getQueryAdapter()
@@ -231,8 +230,8 @@ class QueryLayer
     }
 
     /**
-     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
-     * @return \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $query QueryBuilder
+     * @return QueryBuilder
      * @throws Exception
      */
     public function processJoins($query)
@@ -291,7 +290,8 @@ class QueryLayer
         $query = $this->processJoins($query);
 
         if ($buildConditions) {
-            $this->buildConditions($query, $qs->getWhere(), 'and', true);
+            $wheres = $this->buildConditions($query, $qs->getWhere(), 'and', true);
+            $query->setWhere($wheres);
         }
         if ($buildOrder) {
             $this->buildOrder($query, $qs->getOrderBy());
@@ -319,7 +319,7 @@ class QueryLayer
         }
         $this->buildQuery($query);
         if ($sql) {
-            return $query->getQuery()->getRawSql();
+            return $query->getRawQuery();
         }
         $result = $query->get();
         return $result;
@@ -332,7 +332,7 @@ class QueryLayer
         $query->select($this->column($this->getTableName(), '*'));
 
         if ($sql) {
-            return $query->getQuery()->getRawSql();
+            return $query->getRawQuery();
         }
 
         $result = $query->first();
@@ -351,7 +351,7 @@ class QueryLayer
         }
         $query->select(new Raw($aggregation->getSql($field) . ' as aggregation'));
         if ($sql) {
-            return $query->getQuery()->getRawSql();
+            return $query->getRawQuery();
         }
         $item = $query->first();
         if (isset($item['aggregation'])) {
@@ -378,7 +378,7 @@ class QueryLayer
             $updateData[$column] = $value;
         }
         if ($sql) {
-            return $query->getQuery('update', $updateData)->getRawSql();
+            return $query->getRawQuery('update', $updateData);
         }
         $pdoStatement = $query->update($updateData);
         return $pdoStatement->rowCount();
@@ -394,7 +394,7 @@ class QueryLayer
         }
 
         if ($sql) {
-            return $query->getQuery('delete')->getRawSql();
+            return $query->getRawQuery('delete');
         }
         $pdoStatement = $query->delete();
         return $pdoStatement->rowCount();
@@ -430,7 +430,7 @@ class QueryLayer
 
         $this->buildQuery($query);
         if ($sql) {
-            return $query->getQuery()->getRawSql();
+            return $query->getRawQuery();
         }
         $result = $query->get();
         return $result;
@@ -454,7 +454,7 @@ class QueryLayer
         $queryWrapper
             ->from($query->subQuery($query, $this->sanitize($tempTable)))
             ->select($this->column($tempTable, $pkAttribute));
-        $queryUpdate->whereIn($pk, $query->subQuery($queryWrapper));
+        $queryUpdate->where($pk, 'IN', $query->subQuery($queryWrapper));
         return $queryUpdate;
     }
 
@@ -468,13 +468,14 @@ class QueryLayer
     }
 
     /**
-     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $conditions
      * @param string $operator
      * @param bool $clear
      */
     public function buildConditions($query, $conditions, $operator = 'and', $clear = false)
     {
+        $result = [];
         if ($clear) {
             $conditions = $this->clearConditions($conditions);
         }
@@ -492,32 +493,31 @@ class QueryLayer
                 if ($value instanceof Expression) {
                     $value = $this->convertExpression($value);
                 }
-                $lookupManager->processCondition($query, $column, $condition['lookup'], $value, $operator);
+                $result[] = $lookupManager->processCondition($query, $column, $condition['lookup'], $value, $operator);
             } elseif ($condition instanceof Expression) {
                 $expression = $this->convertExpression($condition);
-                $method = 'where';
+                $joiner = 'AND';
                 if ($operator == 'or') {
-                    $method = 'orWhere';
+                    $joiner = 'OR';
                 } elseif ($operator == 'not') {
-                    $method = 'whereNot';
+                    $joiner = 'AND NOT';
                 }
-                $query->{$method}($expression);
+                $result[] = $query->buildWhere($expression, null, null, $joiner);
             } elseif (is_array($condition)) {
-                $method = 'where';
+                $joiner = 'AND';
                 if ($operator == 'or') {
-                    $method = 'orWhere';
+                    $joiner = 'OR';
                 } elseif ($operator == 'not') {
-                    $method = 'whereNot';
+                    $joiner = 'AND NOT';
                 }
-                $query->{$method}(function($q) use ($condition) {
-                    $this->buildConditions($q, $condition, 'and');
-                });
+                $result[] = $query->buildWhere($this->buildConditions($query, $condition, 'and'), null, null, $joiner);
             }
         }
+        return $result;
     }
 
     /**
-     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $order array
      * @return array
      */
@@ -535,7 +535,7 @@ class QueryLayer
     }
 
     /**
-     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $group array
      * @return array
      */
@@ -552,7 +552,7 @@ class QueryLayer
     }
 
     /**
-     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $having Expression
      * @return array
      */
@@ -565,7 +565,7 @@ class QueryLayer
     }
 
     /**
-     * @param $query \Pixie\QueryBuilder\QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $limit int|null
      * @param $offset int|null
      * @return array

@@ -15,9 +15,10 @@
 namespace Phact\Tests;
 
 use Phact\Main\Phact;
+use Phact\Orm\Adapters\Adapter;
 use Phact\Orm\Connection;
 use Phact\Orm\ConnectionManager;
-use Pixie\QueryBuilder\QueryBuilderHandler;
+use Phact\Orm\QueryBuilder;
 
 class ConnectionsTest extends DatabaseTest
 {
@@ -25,12 +26,12 @@ class ConnectionsTest extends DatabaseTest
     {
         $manager = Phact::app()->db;
         $connection = $manager->getConnection();
-        $queryConnection = $connection->getQueryConnection();
+        $adapter = $connection->getAdapter();
         $queryBuilder = $connection->getQueryBuilder();
 
         $this->assertInstanceOf(ConnectionManager::class, $manager);
         $this->assertInstanceOf(Connection::class, $connection);
-        $this->assertInstanceOf(\Pixie\Connection::class, $queryConnection);
-        $this->assertInstanceOf(QueryBuilderHandler::class, $queryBuilder);
+        $this->assertInstanceOf(Adapter::class, $adapter);
+        $this->assertInstanceOf(QueryBuilder::class, $queryBuilder);
     }
 }

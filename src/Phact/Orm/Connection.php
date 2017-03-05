@@ -14,29 +14,44 @@
 
 namespace Phact\Orm;
 
-use Pixie\QueryBuilder\QueryBuilderHandler;
+use Phact\Orm\Adapters\Adapter;
 
 class Connection
 {
     public $driver = 'mysql';
     public $config = [];
 
+    /**
+     * @var \PDO
+     */
+    protected $_pdo;
+
     protected $_queryConnection;
 
     /**
-     * @return \Pixie\Connection
+     * @var Adapter
      */
-    public function getQueryConnection()
+    protected $_adapter;
+    
+    public function getAdapter()
     {
-        if (is_null($this->_queryConnection)) {
-            $this->_queryConnection = new \Pixie\Connection($this->driver, $this->config);
+        if (!$this->_adapter) {
+            $adapter = '\\Phact\\Orm\\Adapters\\' . ucfirst(strtolower($this->driver));
+            /** @var Adapter _adapter */
+            $this->_adapter = new $adapter();
+            $pdo = $this->_adapter->connect($this->config);
+            $this->_pdo = $pdo;
         }
-        return $this->_queryConnection;
+        return $this->_adapter;
     }
 
     public function getQueryBuilder()
     {
-        $connection = $this->getQueryConnection();
-        return new QueryBuilderHandler($connection);
+        return new QueryBuilder($this);
+    }
+
+    public function getPdo()
+    {
+        return $this->_pdo;
     }
 }

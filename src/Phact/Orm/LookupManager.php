@@ -14,9 +14,7 @@
 
 namespace Phact\Orm;
 
-
 use InvalidArgumentException;
-use Pixie\QueryBuilder\QueryBuilderHandler;
 
 class LookupManager
 {
@@ -44,199 +42,146 @@ class LookupManager
     {
         if (in_array($lookup, static::map())) {
             $method = 'process' . ucfirst($lookup);
-            $this->{$method}($query, $column, $value, $operator);
+            return $this->{$method}($query, $column, $value, strtoupper($operator));
         } else {
             throw new InvalidArgumentException("Unknown lookup '$lookup'");
         }
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processExact($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, '=', $value);
+        return $query->buildWhere($column, '=', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processContains($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, 'LIKE', '%' . $value . '%');
+        return $query->buildWhere($column, 'LIKE', '%' . $value . '%', $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processIn($query, $column, $value, $operator)
     {
-        $method = 'whereIn';
-        if ($operator == 'or') {
-            $method = 'orWhereIn';
-        }
-        $query->{$method}($column, $value);
+        return $query->buildWhere($column, 'IN', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processGt($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, '>', $value);
+        return $query->buildWhere($column, '>', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processGte($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, '>=', $value);
+        return $query->buildWhere($column, '>=', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processLt($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, '<', $value);
+        return $query->buildWhere($column, '<', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processLte($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, '<=', $value);
+        return $query->buildWhere($column, '<=', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processStartswith($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, 'LIKE', '%' . $value);
+        return $query->buildWhere($column, 'LIKE', '%' . $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processEndswith($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, 'LIKE', $value . '%');
+        return $query->buildWhere($column, 'LIKE', $value . '%', $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processRange($query, $column, $value, $operator)
     {
-        $method = 'whereBetween';
-        if ($operator == 'or') {
-            $method = 'orWhereBetween';
-        }
-        $query->{$method}($column, $value[0], $value[1]);
+        return $query->buildWhere($column, 'BETWEEN', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processIsnull($query, $column, $value, $operator)
     {
-        $method = 'whereNull';
-        if ($operator == 'and') {
-            if ($value) {
-                $method = 'whereNull';
-            } else {
-                $method = 'orWhereNull';
-            }
-        } else {
-            if ($value) {
-                $method = 'whereNotNull';
-            } else {
-                $method = 'orWhereNotNull';
-            }
+        $prefix = 'NOT';
+        if ($value) {
+            $prefix = 'NOT';
         }
-        $query->{$method}($column);
+        $key = $query->getAdapter()->wrapSanitizer($query->addTablePrefix($column));
+        return $query->buildWhere($query->raw("{$key} IS {$prefix} NULL"), null, null, $operator);
     }
 
     /**
-     * @param $query QueryBuilderHandler
+     * @param $query QueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
      */
     public function processRegex($query, $column, $value, $operator)
     {
-        $method = 'where';
-        if ($operator == 'or') {
-            $method = 'orWhere';
-        }
-        $query->{$method}($column, 'REGEXP', $value);
+        return $query->buildWhere($column, 'REGEXP', $value, $operator);
     }
 }
