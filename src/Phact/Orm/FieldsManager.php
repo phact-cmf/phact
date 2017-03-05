@@ -159,9 +159,7 @@ class FieldsManager
         } elseif ($alias = $this->getAlias($name)) {
             return $this->_fields[$alias['field']];
         } else {
-            throw new UnknownPropertyException(strtr("Getting unknown field: {field}", [
-                '{field}' => $name
-            ]));
+            return null;
         }
     }
 

@@ -39,6 +39,7 @@ class Model implements Serializable
 
     protected $_attributes = [];
     protected $_oldAttributes = [];
+    protected $_withModels = [];
 
     protected $_isNew = false;
 
@@ -245,9 +246,10 @@ class Model implements Serializable
         }
     }
 
-    public function setDbData($data)
+    public function setDbData($data, $relations = [])
     {
         $manager = $this->getFieldsManager();
+        $relationsFields = [];
         foreach ($data as $name => $value) {
             if ($field = $manager->getField($name)) {
                 $attributeName = $field->getAttributeName();
@@ -266,8 +268,34 @@ class Model implements Serializable
                         $this->_oldAttributes[$attributeName] = $field->getOldAttribute();
                     }
                 }
+            } else {
+                foreach ($relations as $relation) {
+                    if (Text::startsWith($name, $relation . '__')) {
+                        if (!isset($relationsFields[$relation])) {
+                            $relationsFields[$relation] = [];
+                        }
+                        $fieldName = str_replace($relation . '__', '', $name);
+                        $relationsFields[$relation][$fieldName] = $value;
+                    }
+                }
             }
         }
+        foreach ($relationsFields as $relation => $dbData) {
+            if ($field = $manager->getField($relation)) {
+                $class = $field->getRelationModelClass();
+                
+                /** @var Model $model */
+                $model = new $class();
+                $model->setDbData($dbData);
+
+                $this->_withModels[$relation] = $model;
+            }
+        }
+    }
+
+    public function getWithModel($name)
+    {
+        return isset($this->_withModels[$name]) ? $this->_withModels[$name] : null;
     }
 
     protected function _mergeOldAttributes($attributes)

@@ -109,6 +109,13 @@ class QuerySet implements PaginableInterface
      */
     protected $_aggregation = null;
 
+    /**
+     * With relations
+     *
+     * @var array
+     */
+
+    protected $_with = [];
 
     /**
      * @return mixed QuerySet
@@ -165,7 +172,7 @@ class QuerySet implements PaginableInterface
         $modelClass = $this->_modelClass;
         /* @var $model Model */
         $model = new $modelClass;
-        $model->setDbData($row);
+        $model->setDbData($row, $this->_with);
         return $model;
     }
 
@@ -629,6 +636,13 @@ class QuerySet implements PaginableInterface
         }
         return $conditions;
     }
+    
+    public function buildWith()
+    {
+        foreach ($this->_with as $relation) {
+            $this->connectRelation($relation);
+        }
+    }
 
     public function buildOrder()
     {
@@ -657,6 +671,9 @@ class QuerySet implements PaginableInterface
 
     public function build()
     {
+        if ($this->_with) {
+            $this->buildWith();
+        }
         if ($this->_aggregation) {
             $this->handleAggregation($this->_aggregation);
         }
@@ -736,6 +753,17 @@ class QuerySet implements PaginableInterface
     public function hasRelations()
     {
         return count($this->_relations) > 0;
+    }
+
+    public function with($with = [])
+    {
+        $this->_with = array_merge($this->_with, $with);
+        return $this;
+    }
+
+    public function getWith()
+    {
+        return $this->_with;
     }
 
     public function setPaginationLimit($limit)

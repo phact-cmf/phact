@@ -287,4 +287,9 @@ class ManyToManyField extends RelationField
     {
         return null;
     }
+
+    public function getAttributeName()
+    {
+        return null;
+    }
 }

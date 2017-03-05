@@ -187,7 +187,7 @@ class Adapter
             $bindings = array_merge($bindings, $updateBindings);
         }
 
-        $sql = $this->concatenateQuery($sqlArray, ' ', false);
+        $sql = $this->concatenateQuery($sqlArray);
 
         return compact('sql', 'bindings');
     }
@@ -367,11 +367,11 @@ class Adapter
      */
     protected function concatenateQuery(array $pieces)
     {
-        $str = '';
+        $items = [];
         foreach ($pieces as $piece) {
-            $str = trim($str) . ' ' . trim($piece);
+            $items[] = trim($piece);
         }
-        return trim($str);
+        return implode(' ', $items);
     }
 
     /**

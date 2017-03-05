@@ -311,7 +311,11 @@ class QueryLayer
         $query = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
 
-        $select = $this->column($this->getTableName(), '*');
+        $select = $qs->getSelect();
+        if (!$select) {
+            $select = $this->defaultSelect();
+        }
+
         if ($qs->getHasManyRelations()) {
             $query->selectDistinct($select);
         } else {
@@ -328,8 +332,16 @@ class QueryLayer
     public function get($sql = false)
     {
         $query = $this->getQueryBuilder();
+        $qs = $this->getQuerySet();
+
         $this->buildQuery($query);
-        $query->select($this->column($this->getTableName(), '*'));
+
+        $select = $qs->getSelect();
+        if (!$select) {
+            $select = $this->defaultSelect();
+        }
+
+        $query->select($select);
 
         if ($sql) {
             return $query->getRawQuery();
@@ -337,6 +349,21 @@ class QueryLayer
 
         $result = $query->first();
         return $result;
+    }
+
+    public function defaultSelect()
+    {
+        $select = [];
+        $select[] = $this->column($this->getTableName(), '*');
+        foreach ($this->getQuerySet()->getWith() as $relationName) {
+            $table = $this->getRelationTable($relationName);
+            $relationModel = $this->getRelationModel($relationName);
+            $attributes = $relationModel->getAttributesList();
+            foreach ($attributes as $attribute) {
+                $select[$this->column($table, $attribute)] = $relationName . '__' . $attribute;
+            }
+        }
+        return $select;
     }
 
     public function aggregate(Aggregation $aggregation, $sql = false)
