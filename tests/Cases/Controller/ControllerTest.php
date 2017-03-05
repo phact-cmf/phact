@@ -38,7 +38,8 @@ class ControllerTest extends AppTest
         $this->expectOutputString('test');
 
         $router = Phact::app()->router;
-        $match = $router->match('/test_route', 'GET');
+        $matches = $router->match('/test_route', 'GET');
+        $match = $matches[0];
 
         $controllerClass = $match['target'][0];
         $action = $match['target'][1];
@@ -61,8 +62,9 @@ class ControllerTest extends AppTest
         $this->expectOutputString('Name: params_test');
 
         $router = Phact::app()->router;
-        $match = $router->match('/test_route/params_test', 'GET');
-
+        $matches = $router->match('/test_route/params_test', 'GET');
+        $match = $matches[0];
+        
         $controllerClass = $match['target'][0];
         $action = $match['target'][1];
         $params = $match['params'];

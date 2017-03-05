@@ -30,7 +30,7 @@ class Group extends Model
                 'class' => ManyToManyField::class,
                 'modelClass' => Person::class,
                 'through' => Membership::class,
-                'back' => 'group'
+                'back' => 'groups'
             ]
         ];
     }

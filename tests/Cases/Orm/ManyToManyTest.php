@@ -46,7 +46,7 @@ class ManyToManyTest extends DatabaseTest
         $group = new Group();
         $group->name = 'Test group';
         $group->save();
-        $this->assertEquals("SELECT `test_person`.* FROM `test_person` INNER JOIN `test_membership` ON `test_person`.`id` = `test_membership`.`person_id` WHERE `test_membership`.`group_id` = 1", $group->persons->getQuerySet()->allSql());
+        $this->assertEquals("SELECT DISTINCT `test_person`.* FROM `test_person` INNER JOIN `test_membership` ON `test_person`.`id` = `test_membership`.`person_id` WHERE `test_membership`.`group_id` = 1", $group->persons->getQuerySet()->allSql());
     }
 
     public function testSetNonBack()

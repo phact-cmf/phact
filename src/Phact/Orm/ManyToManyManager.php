@@ -70,7 +70,9 @@ class ManyToManyManager extends RelationManager
         $qs = parent::getQuerySet();
 
         if ($this->backThroughName && $this->backThroughField) {
-
+            $qs->filter([
+                $this->backThroughName . '__' . $this->backThroughField => $this->getKey()
+            ]);
         } else {
             $relationName = $this->getRelationName();
             $qs->appendRelation($relationName, null, [[
@@ -82,6 +84,7 @@ class ManyToManyManager extends RelationManager
                 $relationName . '__' . $this->throughFromField => $this->getKey()
             ]);
         }
+
 
         return $qs;
     }

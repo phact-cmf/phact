@@ -48,14 +48,14 @@ class RouterTest extends AppTest
         ], $router->getRoutes());
 
         $this->assertEquals('/test_route', $router->url('test:test'));
-        $this->assertEquals([
+        $this->assertEquals([[
             'target' => [
                 'Modules\Test\Controllers\TestController',
                 'test'
             ],
             'params' => [],
             'name' => 'test:test'
-        ], $router->match('/test_route', 'GET'));
+        ]], $router->match('/test_route', 'GET'));
         $this->assertEquals('/test_route', $router->url('test:test'));
     }
 
@@ -80,35 +80,35 @@ class RouterTest extends AppTest
             ]
         ]);
 
-        $this->assertEquals([
+        $this->assertEquals([[
             'target' => 'target',
             'params' => [
                 'id' => '0102'
             ],
             'name' => 'first-route'
-        ], $router->match('/test1/0102'));
+        ]], $router->match('/test1/0102'));
 
         $this->assertEquals("/test1/123", $router->url('first-route', ['id' => 123]));
         $this->assertEquals("/test1/321", $router->url('first-route', [321]));
 
-        $this->assertEquals([
+        $this->assertEquals([[
             'target' => 'target',
             'params' => [
                 'name' => 'amazing_route'
             ],
             'name' => 'second-route'
-        ], $router->match('/test2/amazing_route'));
+        ]], $router->match('/test2/amazing_route'));
 
         $this->assertEquals("/test2/amazing_route", $router->url('second-route', ['name' => 'amazing_route']));
         $this->assertEquals("/test2/amazing_route", $router->url('second-route', ['amazing_route']));
 
-        $this->assertEquals([
+        $this->assertEquals([[
             'target' => 'target',
             'params' => [
                 'name' => 'amazing_route'
             ],
             'name' => 'third-route'
-        ], $router->match('/test3/amazing_route'));
+        ]], $router->match('/test3/amazing_route'));
 
         $this->assertEquals("/test3/amazing_route", $router->url('third-route', ['name' => 'amazing_route']));
         $this->assertEquals("/test3/amazing_route", $router->url('third-route', ['amazing_route']));
@@ -137,16 +137,16 @@ class RouterTest extends AppTest
             ]
         ]);
 
-        $this->assertEquals([
+        $this->assertEquals([[
             'target' => 'target',
             'params' => [],
             'name' => 'first-route'
-        ], $router->match('/'));
+        ]], $router->match('/'));
 
-        $this->assertEquals([
+        $this->assertEquals([[
             'target' => 'target',
             'params' => [],
             'name' => 'first-route'
-        ], $router->match(''));
+        ]], $router->match(''));
     }
 }

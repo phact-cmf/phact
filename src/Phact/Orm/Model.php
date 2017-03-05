@@ -485,8 +485,10 @@ class Model implements Serializable
         $query = $this->getQuery();
         $pk = $query->insert($this->getTableName(), $prepared);
         $pkAttribute = $this->getPkAttribute();
+        
+        $field = $this->getFieldsManager()->getField($pkAttribute);
+        $this->_attributes[$pkAttribute] = $field->attributePrepareValue($pk);
 
-        $this->_setAttribute($pkAttribute, $pk);
         $this->_provideEvent('afterInsert');
         $this->_mergeOldAttributes($data);
         $this->_isNew = false;
