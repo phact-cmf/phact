@@ -382,7 +382,7 @@ class QueryLayer
         foreach ($this->getQuerySet()->getWith() as $relationName) {
             $table = $this->getRelationTable($relationName);
             $relationModel = $this->getRelationModel($relationName);
-            $attributes = $relationModel->getAttributesList();
+            $attributes = $relationModel->getFieldsManager()->getDbAttributesList();
             foreach ($attributes as $attribute) {
                 $select[$this->column($table, $attribute)] = $relationName . '__' . $attribute;
             }

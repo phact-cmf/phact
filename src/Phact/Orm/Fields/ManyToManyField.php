@@ -290,6 +290,6 @@ class ManyToManyField extends RelationField
 
     public function getAttributeName()
     {
-        return null;
+        return $this->getName();
     }
 }

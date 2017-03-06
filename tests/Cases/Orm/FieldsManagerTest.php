@@ -34,17 +34,7 @@ class FieldsManagerTest extends DatabaseTest
         $this->assertTrue($has);
         $this->assertInstanceOf(CharField::class, $field);
     }
-
-    /**
-     * @expectedException \Phact\Exceptions\UnknownPropertyException
-     */
-    public function testUnknown()
-    {
-        $note = new Note();
-        $fieldsManager = $note->getFieldsManager();
-        $fieldsManager->getField('foo');
-    }
-
+    
     public function testAliases()
     {
         $thesis = new NoteThesis();
