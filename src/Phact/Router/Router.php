@@ -6,12 +6,15 @@ use Exception;
 use InvalidArgumentException;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
+use Phact\Helpers\Text;
 use Phact\Main\Phact;
 use Traversable;
 
 class Router
 {
     use SmartProperties;
+
+    public $fixTrailingSlash = true;
 
     /**
      * @var array Default HTTP-methods
@@ -330,6 +333,11 @@ class Router
                 );
             }
         }
+
+        if (!$matches && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
+            Phact::app()->request->redirect(rtrim($requestUrl, '/'));
+        }
+
         return $matches;
     }
 
