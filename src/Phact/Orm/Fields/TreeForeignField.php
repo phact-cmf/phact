@@ -28,17 +28,18 @@ class TreeForeignField extends ForeignField
         }
         $class = $this->modelClass;
 
-        $filter = [];
+        $exclude = [];
         $model = $this->getModel();
         if ($model && $model->className() == $class && !$model->getIsNew()) {
-            $filter = [
+            $exclude = [
                 'lft__gte' => $model->lft,
                 'rgt__lte' => $model->rgt,
                 'root' => $model->root
             ];
         }
         /** @var QuerySet $qs */
-        $qs = $class::objects()->filter($filter)->order(['root', 'lft']);
+        $qs = $class::objects()->exclude($exclude)->order(['root', 'lft']);
+
         if ($this->nameAttribute) {
             $values = $qs->values(['id', 'depth', $this->nameAttribute]);
             foreach ($values as $item) {

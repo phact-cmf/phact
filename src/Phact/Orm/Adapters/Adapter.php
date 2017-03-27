@@ -371,7 +371,8 @@ class Adapter
         foreach ($pieces as $piece) {
             $items[] = trim($piece);
         }
-        return implode(' ', $items);
+        $items = array_filter($items);
+        return trim(implode(' ', $items));
     }
 
     /**

@@ -377,7 +377,7 @@ class QueryBuilder
         return $this;
     }
 
-    public function having($key, $operator, $value, $joiner = 'AND')
+    public function having($key, $operator = null, $value = null, $joiner = 'AND')
     {
         $key = $this->addTablePrefix($key);
         $this->_statements['havings'][] = compact('key', 'operator', 'value', 'joiner');

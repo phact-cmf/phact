@@ -91,8 +91,12 @@ class FieldsManager
             $this->_pkField = $name;
             $this->_pkAttribute = $attribute;
         }
-        if ($attribute) {
+
+         if ($attribute) {
             $this->_attributes[$name] = $attribute;
+             if ($field->virtual) {
+                 $this->_virtualFields[$name] = $attribute;
+             }
         }
 
         return $field;
@@ -106,6 +110,18 @@ class FieldsManager
     public function getAttributesList()
     {
         return $this->_attributes;
+    }
+
+    public function getDbAttributesList()
+    {
+        $virtual = array_keys($this->_virtualFields);
+        $dbAttributes = [];
+        foreach ($this->_attributes as $key => $value) {
+            if (!in_array($key, $virtual)) {
+                $data[$key] = $value;
+            }
+        }
+        return $dbAttributes;
     }
 
     public function getAttributesListByFields($fields = [])

@@ -166,12 +166,12 @@ class LookupManager
      */
     public function processIsnull($query, $column, $value, $operator)
     {
-        $prefix = 'NOT';
+        $prefix = ' NOT';
         if ($value) {
-            $prefix = 'NOT';
+            $prefix = '';
         }
         $key = $query->getAdapter()->wrapSanitizer($query->addTablePrefix($column));
-        return $query->buildWhere($query->raw("{$key} IS {$prefix} NULL"), null, null, $operator);
+        return $query->buildWhere($query->raw("{$key} IS{$prefix} NULL"), null, null, $operator);
     }
 
     /**
