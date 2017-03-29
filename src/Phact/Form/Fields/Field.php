@@ -466,7 +466,6 @@ abstract class Field
 
     public function validate()
     {
-        $this->_errors = [];
         $value = $this->getValue();
         foreach ($this->_validators as $validator) {
             $error = true;

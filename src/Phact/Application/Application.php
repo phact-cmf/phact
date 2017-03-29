@@ -32,7 +32,6 @@ use Phact\Request\HttpRequest;
  * @property \Phact\Orm\ConnectionManager $db Database connection
  * @property \Phact\Router\Router $router Url manager, router
  * @property \Phact\Request\HttpRequest|\Phact\Request\CliRequest $request Request
- * @property \Phact\Request\Session $session Session
  * @property \Phact\Template\TemplateManager $template Template manager
  * @property \Phact\Interfaces\AuthInterface $auth Authorization component
  * @property \Phact\Cache\Cache $cache Cache component

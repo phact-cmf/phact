@@ -620,7 +620,7 @@ class QuerySet implements PaginableInterface
     {
         $conditions = [];
         foreach ($data as $key => $condition) {
-            if ($key == 0 && in_array($condition, ['not', 'and', 'or'])) {
+            if ($key === 0 && in_array($condition, ['not', 'and', 'or'])) {
                 $conditions[] = $condition;
             } elseif (is_numeric($key)) {
                 if (is_array($condition)) {
@@ -689,9 +689,8 @@ class QuerySet implements PaginableInterface
         if (!$filter || !$exclude) {
             $this->_where = $filter ? $filter : $exclude;
         } else {
-            $this->_where = Q::andQ([$filter,$exclude]);
+            $this->_where = Q::andQ([$filter, $exclude]);
         }
-
         if ($this->_order) {
             $this->_orderBy = $this->buildOrder();
         }
