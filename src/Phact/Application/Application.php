@@ -31,6 +31,7 @@ use Phact\Request\HttpRequest;
  *
  * @property \Phact\Orm\ConnectionManager $db Database connection
  * @property \Phact\Router\Router $router Url manager, router
+ * @property \Phact\Event\EventManager $event Event manager
  * @property \Phact\Request\HttpRequest|\Phact\Request\CliRequest $request Request
  * @property \Phact\Template\TemplateManager $template Template manager
  * @property \Phact\Interfaces\AuthInterface $auth Authorization component

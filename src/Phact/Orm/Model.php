@@ -351,7 +351,7 @@ class Model implements Serializable
         if ($manager->has($name)) {
             return $this->getFieldValue($name);
         } else {
-            if (substr($name, -9, null) == '__display') {
+            if (substr($name, -9) == '__display') {
                 $start = mb_strpos($name, '__display', 0, 'UTF-8');
                 $name = mb_substr($name, 0, $start, 'UTF-8');
 
