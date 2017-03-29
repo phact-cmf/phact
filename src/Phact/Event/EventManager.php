@@ -30,7 +30,7 @@ class EventManager
 
     public function __construct()
     {
-        $this->_events = new SplPriorityQueue;
+        $this->_events = [];
     }
 
     /**
@@ -47,11 +47,11 @@ class EventManager
         if (!is_string($sender) && !is_null($sender)) {
             throw new InvalidArgumentException('Attribute $sender must be string or null');
         }
-        $this->_events->insert([
+        $this->_events[] = [
             'name' => $name,
             'callback' => $callback,
             'sender' => $sender
-        ], $priority);
+        ];
     }
 
     /**
