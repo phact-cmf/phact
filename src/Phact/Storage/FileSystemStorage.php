@@ -17,6 +17,7 @@ use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Storage\Files\File;
+use Phact\Storage\Files\LocalFile;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -245,7 +246,17 @@ class FileSystemStorage extends Storage
      */
     public function save($fileName, $content)
     {
-        $fileName = $this->getAvailableName($fileName);
+        if ($content instanceof File) {
+            if ($content instanceof LocalFile) {
+                $fileName = $this->getAvailableName($fileName);
+                $this->prepareFilePath($fileName);
+                copy($content->getPath(), $this->getAbsolutePath($fileName));
+                return $fileName;
+            } else {
+                $content = $content->getContent();
+            }
+        }
+
         if ($this->writeFile($fileName, $content)) {
             return $fileName;
         } else {

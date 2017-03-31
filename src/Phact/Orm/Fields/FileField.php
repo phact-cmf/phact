@@ -290,7 +290,7 @@ class FileField extends CharField
     {
         $uploadDir = $this->getUploadDir();
         $name = $this->getFileName($file);
-        $path = $this->getStorage()->save($uploadDir . $name, $file->getContent());
+        $path = $this->getStorage()->save($uploadDir . $name, $file);
         return ($path) ? new StorageFile($path, $this->getStorage()) : false;
     }
 

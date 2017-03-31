@@ -147,7 +147,6 @@ class ImageField extends FileField
                 $this->getStorage()->delete($this->sizeStoragePath($prefix, $this->getOldAttribute()));
             }
         }
-
     }
 
 
