@@ -96,11 +96,6 @@ class ImageField extends FileField
      */
     protected $_imagine;
 
-    /**
-     * @var AbstractImage instance
-     */
-    protected $_imageInstance;
-
 
     const RESIZE_METHOD_PREFIX = 'size';
 
@@ -177,7 +172,7 @@ class ImageField extends FileField
                     $source = $imageInstance;
                 } else {
                     /** @var ImageInterface $source */
-                    $source = $this->{$methodName}($box);
+                    $source = $this->{$methodName}($box, $imageInstance);
                 }
 
                 $this->saveSize($sizeName, $source);
@@ -187,21 +182,21 @@ class ImageField extends FileField
 
     /**
      * @param BoxInterface $box
+     * @param ImageInterface $imageInstance
      * @return ImageInterface|static
      */
-    public function sizeCover(BoxInterface $box)
+    public function sizeCover(BoxInterface $box, $imageInstance)
     {
-        $imageInstance = $this->getImageInstance();
         return $imageInstance->thumbnail($box, ManipulatorInterface::THUMBNAIL_OUTBOUND);
     }
 
     /**
      * @param BoxInterface $box
+     * @param ImageInterface $imageInstance
      * @return ImageInterface|static
      */
-    public function sizeContain(BoxInterface $box)
+    public function sizeContain(BoxInterface $box, $imageInstance)
     {
-        $imageInstance = $this->getImageInstance();
         return $imageInstance->thumbnail($box, ManipulatorInterface::THUMBNAIL_INSET);
     }
 
@@ -275,14 +270,14 @@ class ImageField extends FileField
     public function getImageInstance()
     {
         $filePath = $this->getPath();
-        if ($this->_imageInstance == null && is_readable($filePath)) {
+        $instance = null;
+        if (is_readable($filePath)) {
             try {
-                $this->_imageInstance = $this->getImagine()->open($filePath);
+                $instance = $this->getImagine()->open($filePath);
             } catch (Exception $e) {
-                $this->_imageInstance = null;
             }
         }
-        return $this->_imageInstance;
+        return $instance;
     }
 
 
@@ -317,7 +312,6 @@ class ImageField extends FileField
             'class' => \Phact\Form\Fields\ImageField::class
         ]);
     }
-
 
     public function getDimensions($prefix = null)
     {

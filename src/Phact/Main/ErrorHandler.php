@@ -144,10 +144,17 @@ class ErrorHandler
             }
         }
 
-        echo self::renderTemplate($template, [
-            'exception' => $exception,
-            'code' => $code,
-            'trace' => $trace
-        ]);
+        if (Phact::app()->getIsCliMode()) {
+            echo "Exception: " . $exception->getMessage() . PHP_EOL;
+            echo "Trace: " . PHP_EOL;
+            print_r($trace);
+        } else {
+            echo self::renderTemplate($template, [
+                'exception' => $exception,
+                'code' => $code,
+                'trace' => $trace
+            ]);
+        }
+
     }
 }

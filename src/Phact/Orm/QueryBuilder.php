@@ -271,6 +271,7 @@ class QueryBuilder
     public function insert($data, $type = 'insert')
     {
         if (!is_array(current($data))) {
+            /** @var $result \PDOStatement */
             list($result, $executionTime) = $this->queryStatement($type, $data);
             $return = $result->rowCount() === 1 ? $this->getPdo()->lastInsertId() : null;
         } else {
