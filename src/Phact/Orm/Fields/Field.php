@@ -206,7 +206,14 @@ abstract class Field
 
     public function getIsChanged()
     {
-        return $this->_attribute !== $this->_oldAttribute;
+        $attr = $this->_attribute;
+        $oldAttr = $this->_oldAttribute;
+
+        if (is_numeric($attr) && is_numeric($oldAttr)) {
+            return $attr != $oldAttr;
+        }
+
+        return $attr !== $oldAttr;
     }
 
     /**
