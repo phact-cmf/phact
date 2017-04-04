@@ -42,7 +42,7 @@ class ForeignField extends RelationField
     public $onUpdate = self::CASCADE;
     public $onDelete = self::CASCADE;
 
-    /** s
+    /**
      * Attribute of related model that contains name
      * @var string|null
      */

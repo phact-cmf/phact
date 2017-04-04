@@ -14,6 +14,7 @@
 
 namespace Phact\Form\Fields;
 
+use Phact\Orm\Manager;
 use Phact\Orm\Model;
 
 class DropDownField extends Field
@@ -31,6 +32,9 @@ class DropDownField extends Field
     {
         if ($value instanceof Model) {
             $value = $value->id;
+        }
+        if ($value instanceof Manager) {
+            $value = $value->values(['id'], true);
         }
         $this->_value = $value;
         return $this;

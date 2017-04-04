@@ -13,8 +13,10 @@
  */
 
 namespace Phact\Orm\Fields;
+use Phact\Form\Fields\DropDownField;
 use Phact\Helpers\Configurator;
 use Phact\Orm\ManyToManyManager;
+use Phact\Orm\QuerySet;
 
 /**
  * Class HasManyField
@@ -83,12 +85,17 @@ class ManyToManyField extends RelationField
     public $onUpdateFrom = ForeignField::CASCADE;
     public $onDeleteFrom = ForeignField::CASCADE;
 
-    public $editable = false;
     public $virtual = true;
     public $null = true;
     public $blank = true;
 
     public $managerClass = ManyToManyManager::class;
+
+    /**
+     * Attribute of related model that contains name
+     * @var string|null
+     */
+    public $nameAttribute = null;
 
     public function getFrom()
     {
@@ -291,5 +298,25 @@ class ManyToManyField extends RelationField
     public function getAttributeName()
     {
         return $this->getName();
+    }
+
+    public function setUpFormField($config = [])
+    {
+        $config['class'] = DropDownField::class;
+        $config['multiple'] = true;
+        $choices = [];
+        $class = $this->getRelationModelClass();
+        /** @var QuerySet $qs */
+        $qs = $class::objects()->getQuerySet();
+        if ($this->nameAttribute) {
+            $choices = $choices + $qs->choices('pk', $this->nameAttribute);
+        } else {
+            $objects = $qs->all();
+            foreach ($objects as $object) {
+                $choices[$object->pk] = (string) $object;
+            }
+        }
+        $config['choices'] = $choices;
+        return parent::setUpFormField($config);
     }
 }

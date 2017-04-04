@@ -581,6 +581,7 @@ abstract class Field
 
     public function getHtmlName()
     {
-        return $this->getForm()->getName() . '[' . $this->getName() . ']';
+        $name = $this->getForm()->getName() . '[' . $this->getName() . ']';
+        return $this->multiple ? $name . '[]' : $name;
     }
 }
