@@ -250,6 +250,7 @@ class QueryLayer
             // A relation and a table on which a join is to be build
             $currentRelationName = $this->getQuerySet()->parentRelationName($relationName);
             $currentTable = $this->getRelationTable($currentRelationName);
+            $currentAlias = null;
 
             if (isset($relation['joins']) && is_array($relation['joins'])) {
                 foreach ($relation['joins'] as $join) {
@@ -269,7 +270,7 @@ class QueryLayer
 
                             $query->join(
                                 $connectTable,
-                                $this->columnAlias($currentRelationName, $attributeFrom, $currentTable),
+                                $this->column($currentAlias ?: $currentTable, $attributeFrom),
                                 '=',
                                 $this->column($alias ?: $tableName, $attributeTo),
                                 isset($join['type']) ? $join['type'] : 'inner'
@@ -278,6 +279,7 @@ class QueryLayer
                             // We change the current join
                             $currentTable = $tableName;
                             $currentRelationName = $relationName;
+                            $currentAlias = $alias;
                         } else {
                             throw new Exception('Invalid join configuration. Please, check your relation fields.');
                         }

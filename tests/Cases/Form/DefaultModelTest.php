@@ -72,7 +72,8 @@ class DefaultModelTest extends DatabaseTest
         $this->assertTrue($form->valid);
         $this->assertEmpty($form->getErrors());
         $this->assertEquals([
-            'name' => 'Test book'
+            'name' => 'Test book',
+            'authors' => []
         ], $form->getAttributes());
         return $form;
     }

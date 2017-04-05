@@ -110,4 +110,82 @@ class ManyToManyTest extends DatabaseTest
 
         $this->assertEquals(0, $group->persons->count());
     }
+
+    public function testQueriesNonBack()
+    {
+        $book1 = new Book();
+        $book1->name = "The Cuckoo's Calling";
+        $book1->save();
+
+        $book2 = new Book();
+        $book2->name = "The Silkworm";
+        $book2->save();
+
+        $author = new Author();
+        $author->name = 'JK Rowling';
+        $author->books = [$book1, $book2->id];
+        $author->save();
+
+        $this->assertEquals("SELECT DISTINCT `test_author`.* FROM `test_author` INNER JOIN `test_author_test_book` ON `test_author`.`id` = `test_author_test_book`.`author_id` INNER JOIN `test_book` ON `test_author_test_book`.`book_id` = `test_book`.`id` WHERE `test_book`.`id` IN (1)", Author::objects()->filter(['books__id__in' => [$book1->id]])->allSql());
+        $this->assertEquals(1, Author::objects()->filter(['books__id__in' => [$book1->id]])->count());
+
+        $this->assertEquals("SELECT DISTINCT `test_book`.* FROM `test_book` INNER JOIN `test_author_test_book` ON `test_book`.`id` = `test_author_test_book`.`book_id` INNER JOIN `test_author` ON `test_author_test_book`.`author_id` = `test_author`.`id` WHERE `test_author`.`id` IN (1)", Book::objects()->filter(['authors__id__in' => [$author->id]])->allSql());
+        $this->assertEquals(2, Book::objects()->filter(['authors__id__in' => [$author->id]])->count());
+
+        $this->assertEquals("SELECT DISTINCT `test_book`.* FROM `test_book` INNER JOIN `test_author_test_book` ON `test_book`.`id` = `test_author_test_book`.`book_id` INNER JOIN `test_author` ON `test_author_test_book`.`author_id` = `test_author`.`id` WHERE `test_author`.`name` LIKE '%JK%'", Book::objects()->filter(['authors__name__contains' => 'JK'])->allSql());
+        $this->assertEquals(2, Book::objects()->filter(['authors__name__contains' => 'JK'])->count());
+    }
+
+    public function testQueriesBack()
+    {
+        $person1 = new Person();
+        $person1->name = "Cormoran Strike";
+        $person1->save();
+
+        $person2 = new Person();
+        $person2->name = "Robin Ellacott";
+        $person2->save();
+
+        $group = new Group();
+        $group->name = 'Detectives';
+        $group->persons = [$person1, $person2->id];
+        $group->save();
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_group`.* FROM `test_group` INNER JOIN `test_membership` ON `test_group`.`id` = `test_membership`.`group_id` INNER JOIN `test_person` ON `test_membership`.`person_id` = `test_person`.`id` WHERE `test_person`.`id` IN (1)",
+            Group::objects()->filter(['persons__id__in' => [$person1->id]])->allSql()
+        );
+        $this->assertEquals(1, Group::objects()->filter(['persons__id__in' => [$person1->id]])->count());
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_group`.* FROM `test_group` INNER JOIN `test_membership` ON `test_group`.`id` = `test_membership`.`group_id` INNER JOIN `test_person` ON `test_membership`.`person_id` = `test_person`.`id` WHERE `test_person`.`id` IN (2) AND `test_person`.`name` LIKE '%Robin%'",
+            Group::objects()->filter(['persons__id__in' => [$person2->id], 'persons__name__contains' => 'Robin'])->allSql()
+        );
+        $this->assertEquals(1, Group::objects()->filter(['persons__id__in' => [$person2->id], 'persons__name__contains' => 'Robin'])->count());
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_group`.* FROM `test_group` INNER JOIN `test_membership` ON `test_group`.`id` = `test_membership`.`group_id` WHERE `test_membership`.`role` = 'Director'",
+            Group::objects()->filter(['membership__role' => 'Director'])->allSql()
+        );
+        $this->assertEquals(0, Group::objects()->filter(['membership__role' => 'Director'])->count());
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_group`.* FROM `test_group` INNER JOIN `test_membership` ON `test_group`.`id` = `test_membership`.`group_id` INNER JOIN `test_person` ON `test_membership`.`person_id` = `test_person`.`id` WHERE `test_membership`.`role` = 'Director' AND `test_person`.`name` LIKE '%Albert%'",
+            Group::objects()->filter(['membership__role' => 'Director', 'persons__name__contains' => 'Albert'])->allSql()
+        );
+        $this->assertEquals(0, Group::objects()->filter(['membership__role' => 'Director', 'persons__name__contains' => 'Albert'])->count());
+
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_person`.* FROM `test_person` INNER JOIN `test_membership` ON `test_person`.`id` = `test_membership`.`person_id` INNER JOIN `test_group` ON `test_membership`.`group_id` = `test_group`.`id` WHERE `test_group`.`id` IN (1)",
+            Person::objects()->filter(['groups__id__in' => [$person1->id]])->allSql()
+        );
+        $this->assertEquals(2, Person::objects()->filter(['groups__id__in' => [$group->id]])->count());
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_person`.* FROM `test_person` INNER JOIN `test_membership` ON `test_person`.`id` = `test_membership`.`person_id` INNER JOIN `test_group` ON `test_membership`.`group_id` = `test_group`.`id` WHERE `test_group`.`name` LIKE '%tive%'",
+            Person::objects()->filter(['groups__name__contains' => 'tive'])->allSql()
+        );
+        $this->assertEquals(2, Book::objects()->filter(['groups__name__contains' => 'tive'])->count());
+    }
 }
