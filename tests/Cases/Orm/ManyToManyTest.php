@@ -186,6 +186,6 @@ class ManyToManyTest extends DatabaseTest
             "SELECT DISTINCT `test_person`.* FROM `test_person` INNER JOIN `test_membership` ON `test_person`.`id` = `test_membership`.`person_id` INNER JOIN `test_group` ON `test_membership`.`group_id` = `test_group`.`id` WHERE `test_group`.`name` LIKE '%tive%'",
             Person::objects()->filter(['groups__name__contains' => 'tive'])->allSql()
         );
-        $this->assertEquals(2, Book::objects()->filter(['groups__name__contains' => 'tive'])->count());
+        $this->assertEquals(2, Person::objects()->filter(['groups__name__contains' => 'tive'])->count());
     }
 }
