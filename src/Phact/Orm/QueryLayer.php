@@ -19,6 +19,7 @@ use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Aggregations\Aggregation;
+use Phact\Orm\Having\Having;
 use Phact\Orm\Raw;
 
 /**
@@ -273,7 +274,7 @@ class QueryLayer
                                 $this->column($currentAlias ?: $currentTable, $attributeFrom),
                                 '=',
                                 $this->column($alias ?: $tableName, $attributeTo),
-                                isset($join['type']) ? $join['type'] : 'inner'
+                                isset($join['type']) ? $join['type'] : 'left'
                             );
 
                             // We change the current join
@@ -635,6 +636,16 @@ class QueryLayer
         if ($having instanceof Expression) {
             $value = $this->convertExpression($having);
             $query->having($value);
+        } elseif ($having instanceof Having) {
+            $aggregation = $having->getAggregation();
+            $field = $aggregation->getField();
+            $name = 'hav';
+            if (!$aggregation->getRaw()) {
+                $field = $this->relationColumnAlias($field, true);
+                $field = $this->sanitize($field);
+            }
+            $query->select(new Raw($aggregation->getSql($field) . ' as ' . $name));
+            $query->having(new Raw($name . ' ' . $having->getCondition()));
         }
     }
 

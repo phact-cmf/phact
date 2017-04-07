@@ -24,6 +24,7 @@ use Phact\Orm\Aggregations\Avg;
 use Phact\Orm\Aggregations\Sum;
 use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Fields\RelationField;
+use Phact\Orm\Having\Having;
 use Phact\Pagination\PaginableInterface;
 
 /**
@@ -91,7 +92,7 @@ class QuerySet implements PaginableInterface
     protected $_relations = [];
 
     /**
-     * @var Expression|null
+     * @var Expression|Having|null
      */
     protected $_having = null;
 
@@ -118,7 +119,7 @@ class QuerySet implements PaginableInterface
     protected $_with = [];
 
     /**
-     * @return mixed QuerySet
+     * @return QuerySet
      */
     protected function nextQuerySet()
     {
@@ -412,7 +413,7 @@ class QuerySet implements PaginableInterface
         return $this->_groupBy;
     }
 
-    public function having(Expression $expression)
+    public function having($expression)
     {
         $this->_having = $expression;
         return $this->nextQuerySet();
@@ -677,7 +678,9 @@ class QuerySet implements PaginableInterface
         if ($this->_aggregation) {
             $this->handleAggregation($this->_aggregation);
         }
-
+        if ($this->_having) {
+            $this->handleHaving($this->_having);
+        }
         $filter = null;
         if ($this->_filter) {
             $filter = $this->buildConditions($this->_filter);
@@ -731,6 +734,22 @@ class QuerySet implements PaginableInterface
         $raw = $aggregation->getRaw();
         if (!$raw) {
             $this->handleRelationColumn($field);
+        }
+    }
+
+    public function handleHaving($having)
+    {
+        if ($having instanceof Expression) {
+            $this->handleExpression($having);
+        } elseif ($having instanceof Having) {
+            $aggregation = $having->getAggregation();
+
+            $field = $aggregation->getField();
+            $raw = $aggregation->getRaw();
+
+            if (!$raw) {
+                $this->handleRelationColumn($field);
+            }
         }
     }
 
