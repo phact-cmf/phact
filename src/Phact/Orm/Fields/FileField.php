@@ -334,6 +334,6 @@ class FileField extends CharField
 
     public function __toString()
     {
-        return $this->getUrl();
+        return (string) $this->getUrl();
     }
 }
