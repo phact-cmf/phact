@@ -123,7 +123,7 @@ class QuerySet implements PaginableInterface
      */
     protected function nextQuerySet()
     {
-        return $this;
+        return clone $this;
     }
 
     public function getModel()

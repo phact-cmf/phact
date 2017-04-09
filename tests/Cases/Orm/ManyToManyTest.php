@@ -188,4 +188,36 @@ class ManyToManyTest extends DatabaseTest
         );
         $this->assertEquals(2, Person::objects()->filter(['groups__name__contains' => 'tive'])->count());
     }
+
+    public function testThroughModels()
+    {
+        $person1 = new Person();
+        $person1->name = "Cormoran Strike";
+        $person1->save();
+
+        $person2 = new Person();
+        $person2->name = "Robin Ellacott";
+        $person2->save();
+
+        $group = new Group();
+        $group->name = 'Detectives';
+        $group->save();
+
+        $membership1 = new Membership();
+        $membership1->person = $person1;
+        $membership1->group = $group;
+        $membership1->role = 'Detective';
+        $membership1->save();
+
+        $person2->groups->link($group, [
+            'role' => 'Assistant'
+        ]);
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_group`.* FROM `test_group` LEFT JOIN `test_membership` ON `test_group`.`id` = `test_membership`.`group_id` WHERE `test_membership`.`role` = 'Detective'",
+            Group::objects()->filter(['membership__role' => 'Detective'])->allSql()
+        );
+        $this->assertEquals(1, Group::objects()->filter(['membership__role' => 'Detective'])->count());
+        $this->assertEquals(1, Group::objects()->filter(['membership__role' => 'Assistant'])->count());
+    }
 }
