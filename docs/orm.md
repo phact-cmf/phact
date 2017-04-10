@@ -111,33 +111,33 @@ $comment->status__display;
 
 - [IntField](#intfield-bigintfield)
 - [BigIntField](#intfield-bigintfield)
-- DecimalField
-- FloatField
-- CharField
-- TextField
-- DateField
-- TimeField
-- DateTimeField
-- BooleanField
+- [DecimalField](#decimalfield-floatfield)
+- [FloatField](#decimalfield-floatfield)
+- [CharField](#charfield)
+- [TextField](#textfield)
+- [DateField](#datefield-timefield-datetimefield)
+- [TimeField](#datefield-timefield-datetimefield)
+- [DateTimeField](#datefield-timefield-datetimefield)
+- [BooleanField](#booleanfield)
 
 Поля, отвечающие за работу с файлами
 
-- FileField
-- ImageField
+- [FileField](#filefield)
+- [ImageField](#imagefield)
 
 Поля, отвечающие за работу со связями
 
-- ForeignField
-- HasManyField
-- ManyToManyField
+- [ForeignField](#foreignfield)
+- [HasManyField](#hasmanyfield)
+- [ManyToManyField](#manytomanyfield)
 
 А так же некоторые дополнительные поля, упрощающие определенные действия
 
-- EmailField
-- SlugField
-- JsonField
-- PositionField
-- TreeForeignField
+- [EmailField](#emailfield)
+- [SlugField](#slugfield)
+- [JsonField](#jsonfield)
+- [PositionField](#positionfield)
+- [TreeForeignField](#treeforeignfield)
 
 А теперь чуть подробнее по каждому
 
