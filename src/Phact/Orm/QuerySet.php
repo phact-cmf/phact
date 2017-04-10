@@ -654,7 +654,7 @@ class QuerySet implements PaginableInterface
             } else {
                 if (is_string($key) && is_string($item)) {
                     $direction = strtoupper($item) == 'ASC' ? 'ASC' : 'DESC';
-                    list($relation, $field) = $this->getRelationColumn($key);
+                    list($relation, $field) = $this->handleRelationColumn($key);
                 } elseif (is_string($item)) {
                     $column = $item;
                     $direction = 'ASC';
@@ -662,7 +662,7 @@ class QuerySet implements PaginableInterface
                         $column = substr($column, 1);
                         $direction = 'DESC';
                     }
-                    list($relation, $field) = $this->getRelationColumn($column);
+                    list($relation, $field) = $this->handleRelationColumn($column);
                 }
                 $builtOrder[] = compact('relation', 'field', 'direction');
             }

@@ -220,4 +220,28 @@ class QuerySetTest extends DatabaseTest
 
         $this->assertEquals("First note", $all[0]->name);
     }
+
+    public function testOrderWithMany()
+    {
+        $note1 = new Note();
+        $note1->name = 'First note';
+        $note1->save();
+
+        $thesis1 = new NoteThesis();
+        $thesis1->note = $note1;
+        $thesis1->name = 'First thesis';
+        $thesis1->save();
+
+        $thesis2 = new NoteThesis();
+        $thesis2->note = $note1;
+        $thesis2->name = 'Second thesis';
+        $thesis2->save();
+
+        $qs = Note::objects()->order(['-theses__name']);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT DISTINCT `test_note`.*, `test_note_thesis`.`name` AS `order__theses__name` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` ORDER BY `order__theses__name` DESC", $sql);
+
+        $sql = $qs->valuesSql(['name', 'theses__id']);
+        $this->assertEquals("SELECT DISTINCT `test_note`.`name` as `name`, `test_note_thesis`.`id` as `theses__id`, `test_note_thesis`.`name` AS `order__theses__name` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` ORDER BY `order__theses__name` DESC", $sql);
+    }
 }

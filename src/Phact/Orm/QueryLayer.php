@@ -604,7 +604,15 @@ class QueryLayer
                 $query->orderBy($value);
             } elseif (is_array($item)) {
                 $column = $this->columnAlias($item['relation'], $item['field']);
-                $query->orderBy($column, $item['direction']);
+
+                if ($this->getQuerySet()->getHasManyRelations()) {
+                    $alias = implode('__', ['order', $item['relation'], $item['field']]);
+                    $query->select([$column => $alias]);
+                    $query->orderBy($alias, $item['direction']);
+                } else {
+                    $query->orderBy($column, $item['direction']);
+                }
+
             }
         }
     }
