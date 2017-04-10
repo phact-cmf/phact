@@ -626,18 +626,20 @@ User::objects()->filter(['membership__role' => 'Director'])->all();
 Устанавливаются значения, которые могут быть корректно преобразованы в json-строку (строки, числовые значения, массивы):
 
 ```php
-$model->data = "String";
-$model->data = 1;
-$model->data = ['Array', 'of', 'strings'];
+$model->data_first = "String";
+$model->data_second = 1;
+$model->data_third = ['Array', 'of', 'strings'];
 ```
 
 Получаемые значения (при корректных исходных данных) совпадут с устанавливаемыми:
 
 ```php
-$value = $model->data; // "String";
-$value = $model->data; // 1
-$value = $model->data; // ['Array', 'of', 'strings']
+$value1 = $model->data_first; // "String";
+$value2 = $model->data_second; // 1
+$value3 = $model->data_third; // ['Array', 'of', 'strings']
 ```
+
+Поля *data_first*, *data_second* и *data_third* описаны в модели *$model* как JsonField.
 
 Применяемость.
 
@@ -799,3 +801,122 @@ $company->delete();
 ```
 
 После вызова данного метода запись о нашей компании удаляется из базы данных.
+
+### События модели
+
+Часто бывает так что с моделью необходимо проводить манипуляции с моделью в определенные моменты ее состояния - сообщать о добавлении заказа администатору сайта после создания заказа, 
+сообщать пользователю о том что администратор отклонил/подтвердил его отзыв, заполнить сервисные поля (н-р какое-либо состояние) перед сохранением модели и так далее. 
+Для решения данных задач существуют события модели.
+
+Перечислим их:
+
+- *beforeInsert*, *afterInsert* - вызываются перед созданием и после создания модели
+- *beforeUpdate*, *afterUpdate* - вызываются перед обновлением и после обновления модели
+- *beforeSave* - вызывается перед созданием и обновлением модели (срабатывает и в момент beforeInsert и в момент beforeUpdate)
+- *afterSave* - вызывается после создания и обновления модели (срабатывает и в момент afterInsert и в момент afterUpdate)
+- *beforeDelete*, *afterDelete* - вызываются перед удалением и после удаления модели
+
+Описываются события как обычные методы модели. 
+
+Опишем событие *beforeSave*, которое перед каждым сохранением будет приводить наш слоган к верхнему регистру: 
+
+```php
+class Company extends Model
+{
+    public static function getFields()
+    {
+        return [
+            'name' => [
+                'class' => CharField::class,
+                'label' => 'Company name'
+            ],
+            'tagline' => [
+                'class' => CharField::class,
+                'label' => 'Tagline',
+                'null' => true
+            ]
+        ];
+    }
+    
+    public function beforeSave()
+    {
+        parent::beforeSave();
+        
+        if ($this->tagline) {
+            $this->tagline = mb_strtoupper($this->tagline, "UTF-8");
+        }
+    }
+}
+```
+
+Остальные события описываются аналогично.
+
+## QuerySet или немного о выборках
+
+Объект QuerySet позволяет в удобной форме формировать условия выборки (а в некоторых случаях и не только выборки) из базы данных.
+
+Объект QuerySet можно получить из менеджера модели. Например, для нашей модели компании получить QuerySet можно следующим образом:
+
+```php
+$querySet = Company::objects()->getQuerySet();
+```
+
+Так же, для объекта менеджера доступны следующие методы QuerySet, которые возвращают измененный этими методами QuerySet, либо соответствующие данные:
+*all*, *count*, *sum*, *max*, *avg*, *min*, *get*, *filter*, *exclude*, *order*, *limit*, *offset*, *values*, *choices*. 
+
+Например, при вызове метода *filter* у менеджера мы получим QuerySet с примененным filter:
+
+```php
+$filteredQuerySet = Company::objects()->filter(['name' => 'Bar company']);
+```
+
+А при вызове метода *values* получим соответствующий результат:
+
+```php
+$arrayOfValues = Company::objects()->values(['name']);
+```
+
+Методы QuerySet можно разбить на две большие группы: методы, которые возвращают измененный QuerySet и иные методы.
+
+Методы, возвращающие измененный QuerySet:
+
+- filter
+- exclude
+- order
+- having
+- limit
+- offset
+- with
+- group
+- select
+
+Иные методы:
+
+- all
+- get
+- aggregate
+- min
+- max
+- avg
+- sum
+- count
+- values
+- choices
+- update
+- delete
+
+Так же существует ряд сервисных методов, возвращащих текст запроса к БД, что позволяет быстро разобраться в возникшей проблеме:
+
+- allSql
+- getSql
+- aggregateSql
+- minSql
+- maxSql
+- avgSql
+- sumSql
+- countSql
+- valuesSql
+- updateSql
+- deleteSql
+
+Алгоритм работы этих методов соответствует их аналогам, лишь в качестве результата они возвращают текст SQL-запроса.
