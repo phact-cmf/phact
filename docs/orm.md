@@ -953,18 +953,18 @@ Company::objects()->filter(['id__gt' => 5]);
 
 Перечислим все возможные лукапы и кратко опишем их применение:
 
-- (exact)[#exact]
-- (contains)[#contains]
-- (in)[#in]
-- (gt)[#gt]
-- (gte)[#gte]
-- (lt)[#lt]
-- (lte)[#lte]
-- (startswith)[#startswith]
-- (endswith)[#endswith]
-- (range)[#range]
-- (isnull)[#isnull]
-- (regex)[#regex]
+- [exact](#exact)
+- [contains](#contains)
+- [in](#in)
+- [gt](#gt)
+- [gte](#gte)
+- [lt](#lt)
+- [lte](#lte)
+- [startswith](#startswith)
+- [endswith](#endswith)
+- [range](#range)
+- [isnull](#isnull)
+- [regex](#regex)
 
 ##### exact
 
