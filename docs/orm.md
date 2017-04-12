@@ -1234,3 +1234,7 @@ Comment::objects()->order(['post__name']);
 ```php
 Comment::objects()->values(['id', 'post__name']);
 ```
+
+### Выражения (Expression)
+
+В некоторых случаях необходимо вста

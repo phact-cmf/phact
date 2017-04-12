@@ -77,14 +77,36 @@ class QuerySetTest extends DatabaseTest
         $qs->filter(['id__gt' => new Expression("{id} + {theses__id}"), new Expression("{id} <= {theses__id}")]);
         $sql = $qs->allSql();
         $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` > `test_note`.`id` + `test_note_thesis`.`id` AND `test_note`.`id` <= `test_note_thesis`.`id`", $sql);
+
+        $qs = Note::objects()->getQuerySet();
+        $qs->filter([new Expression("{id} + {theses__id} > ?", [2000])]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` + `test_note_thesis`.`id` > 2000", $sql);
     }
 
     public function testOrder()
     {
         $qs = Note::objects()->getQuerySet();
-        $qs->order(['-id', new Expression('{id} = 0')]);
+        $qs->order(['-id', new Expression('{id} = ?', [0])]);
         $sql = $qs->allSql();
         $this->assertEquals("SELECT `test_note`.* FROM `test_note` ORDER BY `test_note`.`id` DESC, `test_note`.`id` = 0 ASC", $sql);
+    }
+
+    public function testSubQuery()
+    {
+        $qs = Note::objects()->getQuerySet();
+        $qs->filter([
+            'id__in' => NoteThesis::objects()->filter(['id__gt' => 20])->select(['note_id'])
+        ]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` IN (SELECT `note_id` FROM `test_note_thesis` WHERE `test_note_thesis`.`id` > 20)", $sql);
+
+        $qs = Note::objects()->getQuerySet();
+        $qs->filter([
+            'id__gt' => NoteThesis::objects()->filter(['id__gt' => new Expression('`test_note`.`id`')])->select([new Expression('COUNT(*)')])
+        ]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` > (SELECT COUNT(*) FROM `test_note_thesis` WHERE `test_note_thesis`.`id` > `test_note`.`id`)", $sql);
     }
 
     public function testBuildRelations()

@@ -118,6 +118,8 @@ class QuerySet implements PaginableInterface
 
     protected $_with = [];
 
+    protected $_aliases = [];
+
     /**
      * @return QuerySet
      */
@@ -584,6 +586,10 @@ class QuerySet implements PaginableInterface
         }
         if ($value instanceof Expression) {
             $value = $this->handleExpression($value);
+        } elseif ($value instanceof QuerySet) {
+            $value = new Expression("({$value->allSql()})");
+        }elseif ($value instanceof Model) {
+            $value = $value->getPk();
         }
         return compact('relation', 'field', 'lookup', 'value');
     }
@@ -794,7 +800,7 @@ class QuerySet implements PaginableInterface
     {
         return $this->_with;
     }
-
+    
     public function setPaginationLimit($limit)
     {
         $this->limit($limit);

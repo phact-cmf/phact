@@ -335,7 +335,7 @@ class QueryLayer
         if (!$select) {
             $select = $this->defaultSelect();
         }
-
+        $select = $this->buildSelect($select);
         if ($qs->getHasManyRelations()) {
             $query->selectDistinct($select);
         } else {
@@ -367,7 +367,7 @@ class QueryLayer
         if (!$select) {
             $select = $this->defaultSelect();
         }
-
+        $select = $this->buildSelect($select);
         $query->select($select);
 
         if ($sql) {
@@ -391,6 +391,19 @@ class QueryLayer
             }
         }
         return $select;
+    }
+
+
+    public function buildSelect($select)
+    {
+        $result = [];
+        foreach ($select as $key => $value) {
+            if ($value instanceof Expression) {
+                $value = $this->convertExpression($value);
+            }
+            $result[$key] = $value;
+        }
+        return $result;
     }
 
     public function aggregate(Aggregation $aggregation, $sql = false)
