@@ -16,6 +16,7 @@ namespace Phact\Orm;
 
 use Phact\Helpers\Configurator;
 use Phact\Helpers\SmartProperties;
+use Phact\Orm\Having\Having;
 
 /**
  * Class Manager
@@ -117,6 +118,24 @@ class Manager
     }
 
     /**
+     * @param Expression|Having $expression
+     * @return QuerySet
+     */
+    public function having($expression)
+    {
+        return $this->getQuerySet()->having($expression);
+    }
+
+    /**
+     * @param array $group
+     * @return QuerySet
+     */
+    public function group($group = [])
+    {
+        return $this->getQuerySet()->group($group);
+    }
+
+    /**
      * @param $limit
      * @return QuerySet
      */
@@ -132,6 +151,15 @@ class Manager
     public function offset($offset)
     {
         return $this->getQuerySet()->offset($offset);
+    }
+
+    /**
+     * @param string[] $with
+     * @return QuerySet
+     */
+    public function with($with = [])
+    {
+        return $this->getQuerySet()->with($with);
     }
 
     /**

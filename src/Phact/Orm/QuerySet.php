@@ -790,6 +790,10 @@ class QuerySet implements PaginableInterface
         return count($this->_relations) > 0;
     }
 
+    /**
+     * @param string[] $with
+     * @return $this
+     */
     public function with($with = [])
     {
         $this->_with = array_merge($this->_with, $with);
