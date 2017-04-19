@@ -19,6 +19,7 @@ use Phact\Orm\Adapters\Adapter;
 class Connection
 {
     public $driver = 'mysql';
+    public $adapterClass = null;
     public $config = [];
 
     /**
@@ -36,7 +37,10 @@ class Connection
     public function getAdapter()
     {
         if (!$this->_adapter) {
-            $adapter = '\\Phact\\Orm\\Adapters\\' . ucfirst(strtolower($this->driver));
+            $adapter = $this->adapterClass;
+            if (!$adapter && $this->driver) {
+                $adapter = '\\Phact\\Orm\\Adapters\\' . ucfirst(strtolower($this->driver));
+            }
             /** @var Adapter _adapter */
             $this->_adapter = new $adapter();
             $pdo = $this->_adapter->connect($this->config);
