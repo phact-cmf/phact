@@ -894,12 +894,12 @@ $arrayOfValues = Company::objects()->values(['name']);
 
 - [all](#all)
 - [get](#get)
-- aggregate
-- min
-- max
-- avg
-- sum
-- count
+- [aggregate](#aggregate)
+- [min](#min)
+- [max](#max)
+- [avg](#avg)
+- [sum](#sum)
+- [count](#count)
 - values
 - choices
 - update
