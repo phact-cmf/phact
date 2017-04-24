@@ -82,6 +82,10 @@ class QuerySetTest extends DatabaseTest
         $qs->filter([new Expression("{id} + {theses__id} > ?", [2000])]);
         $sql = $qs->allSql();
         $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` + `test_note_thesis`.`id` > 2000", $sql);
+
+        $qs = Note::objects()->getQuerySet();
+        $sql = $qs->valuesSql(['id', new Expression("({id} + {theses__id}) as s")]);
+        $this->assertEquals("SELECT DISTINCT `test_note`.`id` as `id`, (`test_note`.`id` + `test_note_thesis`.`id`) as s FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id`", $sql);
     }
 
     public function testOrder()
