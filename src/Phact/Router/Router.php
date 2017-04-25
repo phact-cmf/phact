@@ -334,7 +334,7 @@ class Router
             }
         }
 
-        if (!$matches && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
+        if (!$matches && $requestUrl != '/' && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
             Phact::app()->request->redirect(rtrim($requestUrl, '/'));
         }
 
