@@ -345,6 +345,19 @@ class Model implements Serializable
         }
     }
 
+    public function getIsChoiceValue($value)
+    {
+        $data = explode('_', Text::camelCaseToUnderscores($value));
+        $field = array_shift($data);
+        $name = implode('_', $data);
+        $cName = static::class . '::' . mb_strtoupper($field . '_' . $name);
+        if ($this->hasField($field) && defined($cName)) {
+            $value = $this->getFieldValue($field);
+            return $value == constant($cName);
+        }
+        return null;
+    }
+
     public function __get($name)
     {
         $manager = $this->getFieldsManager();
@@ -357,6 +370,12 @@ class Model implements Serializable
 
                 if ($manager->has($name) && ($field = $this->getField($name))) {
                     return $field->getChoiceDisplay();
+                }
+            }
+            if (substr($name, 0, 2) == 'is') {
+                $value = $this->getIsChoiceValue(mb_substr($name, 2, null, 'UTF-8'));
+                if (!is_null($value)) {
+                    return $value;
                 }
             }
             return $this->__smartGet($name);
