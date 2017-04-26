@@ -182,4 +182,34 @@ class Manager
     {
         return $this->getQuerySet()->choices($key, $value);
     }
+
+    /**
+     * @param $query
+     * @param array $params
+     * @return array
+     */
+    public function raw($query, $params = [])
+    {
+        return $this->getQuerySet()->raw($query, $params);
+    }
+
+    /**
+     * @param $query
+     * @param array $params
+     * @return Model[]
+     */
+    public function rawAll($query, $params = [])
+    {
+        return $this->getQuerySet()->rawAll($query, $params);
+    }
+
+    /**
+     * @param $query
+     * @param array $params
+     * @return Model|null
+     */
+    public function rawGet($query, $params = [])
+    {
+        return $this->getQuerySet()->rawGet($query, $params);
+    }
 }

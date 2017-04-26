@@ -188,6 +188,11 @@ class QuerySet implements PaginableInterface
         return $result;
     }
 
+    public function raw($query, $params = [])
+    {
+        return $this->getQueryLayer()->rawAll($query, $params);
+    }
+
     public function all()
     {
         $data = $this->getQueryLayer()->all();
@@ -199,12 +204,24 @@ class QuerySet implements PaginableInterface
         return $this->getQueryLayer()->all(true);
     }
 
+    public function rawAll($query, $params = [])
+    {
+        $data = $this->getQueryLayer()->rawAll($query, $params);
+        return $this->createModels($data);
+    }
+    
     /**
      * @return null|Model
      */
     public function get()
     {
         $row = $this->getQueryLayer()->get();
+        return $row ? $this->createModel($row) : null;
+    }
+
+    public function rawGet($query, $params = [])
+    {
+        $row = $this->getQueryLayer()->rawGet($query, $params);
         return $row ? $this->createModel($row) : null;
     }
 

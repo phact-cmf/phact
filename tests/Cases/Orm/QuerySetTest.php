@@ -270,4 +270,33 @@ class QuerySetTest extends DatabaseTest
         $sql = $qs->valuesSql(['name', 'theses__id']);
         $this->assertEquals("SELECT DISTINCT `test_note`.`name` as `name`, `test_note_thesis`.`id` as `theses__id`, `test_note_thesis`.`name` AS `order__theses__name` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` ORDER BY `order__theses__name` DESC", $sql);
     }
+    
+    public function testRaw()
+    {
+        $note1 = new Note();
+        $note1->name = 'First note';
+        $note1->save();
+
+        $note2 = new Note();
+        $note2->name = 'Second note';
+        $note2->save();
+        
+        $this->assertEquals([
+            [
+                'id' => '2',
+                'name' => 'Second note'
+            ]
+        ], Note::objects()->raw("SELECT * FROM test_note WHERE id = :id", ['id' => $note2->id]));
+
+        $rawAll = Note::objects()->rawAll("SELECT * FROM test_note ORDER BY id");
+
+        $this->assertEquals(2, count($rawAll));
+        $this->assertInstanceOf(Note::class, $rawAll[0]);
+        $this->assertEquals(1, $rawAll[0]->id);
+
+        $rawGet = Note::objects()->rawGet("SELECT * FROM test_note ORDER BY id DESC");
+
+        $this->assertInstanceOf(Note::class, $rawGet);
+        $this->assertEquals(2, $rawGet->id);
+    }
 }

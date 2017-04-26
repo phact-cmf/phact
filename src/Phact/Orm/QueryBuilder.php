@@ -205,6 +205,22 @@ class QueryBuilder
         return $result;
     }
 
+    public function rawAll($sql, $bindings = [])
+    {
+        return $this->fetchRaw($sql, $bindings, 'fetchAll');
+    }
+
+    public function rawGet($sql, $bindings = [])
+    {
+        return $this->fetchRaw($sql, $bindings, 'fetch');
+    }
+
+    protected function fetchRaw($sql, $bindings = [], $method = 'fetchAll')
+    {
+        list($pdo, $executionTime) = $this->statement($sql, $bindings);
+        return call_user_func_array(array($pdo, $method), $this->_fetchParameters);
+    }
+
     /**
      * Get first row
      *

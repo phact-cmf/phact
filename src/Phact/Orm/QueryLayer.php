@@ -349,6 +349,16 @@ class QueryLayer
         return $result;
     }
 
+    public function rawAll($query, $bindings = [])
+    {
+        return $this->getQueryBuilder()->rawAll($query, $bindings);
+    }
+
+    public function rawGet($query, $bindings = [])
+    {
+        return $this->getQueryBuilder()->rawGet($query, $bindings);
+    }
+
     public function get($sql = false)
     {
         $query = $this->getQueryBuilder()->setCacheKey($this->getCacheKey('get'));
