@@ -28,6 +28,8 @@ class CheckboxListField extends Field
 
     public $emptyText = null;
 
+    public $multiple = true;
+
     public function setValue($value)
     {
         if ($value instanceof Model) {
