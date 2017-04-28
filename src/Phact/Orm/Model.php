@@ -34,7 +34,7 @@ class Model implements Serializable
     use SmartProperties, ClassNames;
 
     static $_fieldsManagers = [];
-    static $_query;
+    static $_queries = [];
     static $_tableNames = [];
 
     protected $_attributes = [];
@@ -315,10 +315,11 @@ class Model implements Serializable
      */
     public static function getQuery()
     {
-        if (!static::$_query) {
-            static::$_query = new Query(static::getConnectionName());
+        $class = static::class;
+        if (!isset(self::$_queries[$class])) {
+            self::$_queries[$class] = new Query(static::getConnectionName());
         }
-        return static::$_query;
+        return self::$_queries[$class];
     }
 
     public static function getConnectionName()
