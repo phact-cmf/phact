@@ -23,6 +23,13 @@ class Query
     protected $_connectionName = 'default';
     protected $_adapter;
 
+    public function __construct($connectionName = null)
+    {
+        if($connectionName){
+            $this->_connectionName = $connectionName;
+        }
+    }
+    
     public function setConnectionName($connectionName)
     {
         $this->_connectionName = $connectionName;
