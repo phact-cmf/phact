@@ -300,7 +300,6 @@ class QueryLayer
     {
         $qs = $this->getQuerySet();
         $query = $this->processJoins($query);
-
         if ($buildConditions) {
             $wheres = $this->buildConditions($query, $qs->getWhere(), 'and', true);
             $query->setWhere($wheres);

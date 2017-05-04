@@ -15,10 +15,12 @@
 namespace Phact\Orm;
 
 use InvalidArgumentException;
+use Phact\Event\EventManager;
 use Phact\Exceptions\UnknownMethodException;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
+use Phact\Main\Phact;
 use Phact\Orm\Fields\Field;
 use Serializable;
 
@@ -36,6 +38,7 @@ class Model implements Serializable
     static $_fieldsManagers = [];
     static $_queries = [];
     static $_tableNames = [];
+    static $_eventManager;
 
     protected $_attributes = [];
     protected $_oldAttributes = [];
@@ -48,6 +51,18 @@ class Model implements Serializable
         if (!empty($attributes)) {
             $this->setAttributes($attributes);
         }
+    }
+
+    /**
+     * @return null|EventManager
+     * @throws \Phact\Exceptions\UnknownPropertyException
+     */
+    public static function getEventManager()
+    {
+        if (!self::$_eventManager && Phact::app()->hasComponent('event')) {
+            self::$_eventManager = Phact::app()->getComponent('event');
+        }
+        return self::$_eventManager;
     }
 
     public static function getTableName()
@@ -468,8 +483,16 @@ class Model implements Serializable
 
         }
 
+        $event = self::getEventManager();
+        $this->{$eventName}();
+        if ($event) {
+            $event->trigger(self::class . '::' . $eventName, [], $this);
+        }
         if(method_exists($this, $metaEvent)){
             $this->{$metaEvent}();
+            if ($event) {
+                $event->trigger(self::class . '::' . $metaEvent, [], $this);
+            }
         }
     }
 
@@ -582,6 +605,36 @@ class Model implements Serializable
     }
 
     public function afterSave()
+    {
+
+    }
+
+    public function beforeUpdate()
+    {
+
+    }
+
+    public function afterUpdate()
+    {
+
+    }
+
+    public function beforeInsert()
+    {
+
+    }
+
+    public function afterInsert()
+    {
+
+    }
+
+    public function beforeDelete()
+    {
+
+    }
+
+    public function afterDelete()
     {
 
     }

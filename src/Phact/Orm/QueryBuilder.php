@@ -370,6 +370,7 @@ class QueryBuilder
                 $field = $this->addTablePrefix($field);
             } else {
                 $bindings = $field->getBindings();
+                $type = null;
             }
             $this->_statements['orderBys'][] = compact('field', 'type', 'bindings');
         }

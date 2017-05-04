@@ -61,6 +61,14 @@ class Adapter
         // Select
         $selects = $this->arrayStr($statements['selects'], ', ');
 
+        $selectBindings = [];
+        if (is_array($statements['selects'])) {
+            foreach ($statements['selects'] as $select) {
+                if ($select instanceof Raw) {
+                    $selectBindings = array_merge($selectBindings, $select->getBindings());
+                }
+            }
+        }
 
         // Wheres
         list($whereCriteria, $whereBindings) = $this->buildCriteriaWithType($statements, 'wheres', 'WHERE');
@@ -113,6 +121,7 @@ class Adapter
         $sql = $this->concatenateQuery($sqlArray);
 
         $bindings = array_merge(
+            $selectBindings,
             $whereBindings,
             $havingBindings,
             $orderBindings
