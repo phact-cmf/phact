@@ -91,7 +91,7 @@ class QuerySetTest extends DatabaseTest
     public function testOrder()
     {
         $qs = Note::objects()->getQuerySet();
-        $qs->order(['-id', new Expression('{id} = ?', [0])]);
+        $qs->order(['-id', new Expression('{id} = ? ASC', [0])]);
         $sql = $qs->allSql();
         $this->assertEquals("SELECT `test_note`.* FROM `test_note` ORDER BY `test_note`.`id` DESC, `test_note`.`id` = 0 ASC", $sql);
     }
@@ -298,5 +298,30 @@ class QuerySetTest extends DatabaseTest
 
         $this->assertInstanceOf(Note::class, $rawGet);
         $this->assertEquals(2, $rawGet->id);
+    }
+
+    public function testRelationAlias()
+    {
+        $note1 = new Note();
+        $note1->name = 'First note';
+        $note1->save();
+
+        $thesis1 = new NoteThesis();
+        $thesis1->note = $note1;
+        $thesis1->name = 'First thesis';
+        $thesis1->save();
+
+        $thesis2 = new NoteThesis();
+        $thesis2->note = $note1;
+        $thesis2->name = 'Second thesis';
+        $thesis2->save();
+
+        $qs = Note::objects()->filter([
+            "theses#1__id" => $thesis1->id, "theses#1__name" => $thesis1->name,
+            "theses#2__id" => $thesis2->id, "theses#2__name" => $thesis2->name
+        ]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` LEFT JOIN `test_note_thesis` AS `test_note_thesis_1` ON `test_note`.`id` = `test_note_thesis_1`.`note_id` WHERE `test_note_thesis`.`id` = 1 AND `test_note_thesis`.`name` = 'First thesis' AND `test_note_thesis_1`.`id` = 2 AND `test_note_thesis_1`.`name` = 'Second thesis'", $sql);
+        $this->assertEquals(1, count($qs->all()));
     }
 }
