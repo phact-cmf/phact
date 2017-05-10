@@ -103,7 +103,7 @@ class SlugField extends CharField
         if ($this->tree && !$model->getIsNew()) {
             $slug = $this->attribute ?: $this->buildSlug();
             $oldSlug = $model->getOldAttribute($this->name);
-            if ($slug != $oldSlug) {
+            if ($oldSlug && $slug != $oldSlug) {
                 $model->objects()->filter([
                     'lft__gt' => $model->getOldAttribute('lft'),
                     'rgt__lt' => $model->getOldAttribute('rgt'),

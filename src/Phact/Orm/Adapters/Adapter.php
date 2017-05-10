@@ -258,6 +258,7 @@ class Adapter
         foreach ($data as $key => $value) {
             if ($value instanceof Raw) {
                 $statement .= $this->wrapSanitizer($key) . '=' . $value . ',';
+                $bindings = array_merge($bindings, $value->getBindings());
             } else {
                 $statement .= $this->wrapSanitizer($key) . '=?,';
                 $bindings[] = $value;
