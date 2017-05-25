@@ -71,6 +71,7 @@ class Router
                 $this->_namedRoutes = $routes['named'];
                 $this->_routes = $routes['all'];
             }
+            $this->_matched = $this->getMatchedRoutes();
         }
 
         if (!$routes) {
@@ -195,9 +196,10 @@ class Router
         $url = $this->_basePath . $route;
 
         $matches = isset($this->_matched[$routeName]) ? $this->_matched[$routeName] : null;
-        if (!$matches) {
+        if (is_null($matches)) {
             preg_match_all('`(\/|)\{.*?:(.+?)\}(\?|)`', $route, $matches, PREG_SET_ORDER);
             $this->_matched[$routeName] = $matches;
+            $this->setMatchedRoutes($this->_matched);
         }
         $usedParams = [];
         if ($matches) {
@@ -265,6 +267,8 @@ class Router
         }
 
         $matches = [];
+        $compiled = $this->getCompiledRoutes();
+        $setCompiled = false;
         foreach ($this->_routes as $handler) {
             list($method, $_route, $target, $name) = $handler;
 
@@ -314,7 +318,11 @@ class Router
                     $route .= $_route[$i++];
                 }
 
-                $regex = $this->compileRoute($route);
+                if (!isset($compiled[$route])) {
+                    $setCompiled = true;
+                    $compiled[$route] = $this->compileRoute($route);
+                }
+                $regex = $compiled[$route];
                 $match = preg_match($regex, $requestUrl, $params);
             }
 
@@ -333,12 +341,49 @@ class Router
                 );
             }
         }
+        if ($setCompiled) {
+            $this->setCompiledRoutes($compiled);
+        }
 
         if (!$matches && $requestUrl != '/' && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
             Phact::app()->request->redirect(rtrim($requestUrl, '/'));
         }
 
         return $matches;
+    }
+
+    protected function getCompiledRoutes()
+    {
+        if (!$this->cacheTimeout) {
+            return [];
+        }
+        return Phact::app()->cache->get('PHACT__ROUTER_COMPILED', []);
+    }
+
+    protected function setCompiledRoutes($routes)
+    {
+        if (!$this->cacheTimeout) {
+            return true;
+        }
+        Phact::app()->cache->set('PHACT__ROUTER_COMPILED', $routes, $this->cacheTimeout);
+        return true;
+    }
+
+    protected function getMatchedRoutes()
+    {
+        if (!$this->cacheTimeout) {
+            return [];
+        }
+        return Phact::app()->cache->get('PHACT__ROUTER_MATCHED', []);
+    }
+
+    protected function setMatchedRoutes($routes)
+    {
+        if (!$this->cacheTimeout) {
+            return true;
+        }
+        Phact::app()->cache->set('PHACT__ROUTER_MATCHED', $routes, $this->cacheTimeout);
+        return true;
     }
 
     /**

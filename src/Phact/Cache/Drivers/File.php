@@ -25,9 +25,16 @@ class File extends CacheDriver
 
     public $gcProbability = 10;
 
-    public $directoryLevel = 1;
+    public $directoryLevel = 0;
 
     public $mode = 0755;
+
+    protected $_basePath;
+
+    public function __construct()
+    {
+        $this->_basePath = Paths::get($this->path);
+    }
 
     protected function getValue($key)
     {
@@ -64,6 +71,11 @@ class File extends CacheDriver
         return false;
     }
 
+    protected function getBasePath()
+    {
+        return $this->_basePath;
+    }
+
     protected function getFileName($key)
     {
         $filePath = $key;
@@ -76,13 +88,13 @@ class File extends CacheDriver
             }
             $filePath = $base . $filePath;
         }
-        return Paths::get($this->path) . $filePath . $this->extension;
+        return $this->getBasePath() . $filePath . $this->extension;
     }
 
     public function gc($force = false, $expiredOnly = true)
     {
         if ($force || mt_rand(0, 1000000) < $this->gcProbability) {
-            $this->gcRecursive(Paths::get($this->path), $expiredOnly);
+            $this->gcRecursive($this->getBasePath(), $expiredOnly);
         }
     }
 

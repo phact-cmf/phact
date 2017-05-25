@@ -12,7 +12,6 @@ namespace Phact\Storage\Files;
 use Phact\Helpers\FileHelper;
 use Phact\Main\Phact;
 use Phact\Storage\Storage;
-use Phact\Storage\StorageInterface;
 
 class StorageFile implements FileInterface
 {

@@ -76,10 +76,8 @@ class QueryBuilder
 
     public function addTablePrefix($values, $tableFieldMix = true)
     {
-        if (is_null($this->_tablePrefix)) {
-            return $values;
-        }
         //@TODO
+        return $values;
     }
 
     public function addStatement($key, $value)
