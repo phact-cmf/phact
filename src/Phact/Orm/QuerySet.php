@@ -508,6 +508,15 @@ class QuerySet implements PaginableInterface
         return $this->_hasManyRelations;
     }
 
+    public function cleanRelationName($relationName)
+    {
+        $pos = strpos($relationName, '#');
+        if ($pos !== false) {
+            return substr($relationName, 0, $pos);
+        }
+        return $relationName;
+    }
+
     public function connectRelation($name)
     {
         /* @var $model Model */
@@ -515,9 +524,10 @@ class QuerySet implements PaginableInterface
         $full = $found;
 
         foreach ($path as $relationName) {
+            $cleanName = $this->cleanRelationName($relationName);
             $full[] = $relationName;
             /* @var $field \Phact\Orm\Fields|RelationField */
-            if (($field = $model->getField($relationName)) && is_a($field, RelationField::class)) {
+            if (($field = $model->getField($cleanName)) && is_a($field, RelationField::class)) {
                 if (is_a($field, ManyToManyField::class) && ($throughName = $field->getThroughName())) {
                     $throughRelationPath = $this->siblingRelationPath($full, $throughName);
                     if (!$this->hasRelation($throughRelationPath)) {
@@ -527,7 +537,8 @@ class QuerySet implements PaginableInterface
                 if ($field->getIsMany()) {
                     $this->_hasManyRelations = $field->getIsMany();
                 }
-                $this->appendRelation($full, $field->getRelationModel(), $field->getRelationJoins());
+                $model = $field->getRelationModel();
+                $this->appendRelation($full, $model, $field->getRelationJoins());
             } else {
                 throw new InvalidArgumentException("Invalid relation name. Please, check relations in your conditions.");
             }

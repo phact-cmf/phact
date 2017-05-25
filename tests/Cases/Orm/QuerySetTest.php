@@ -18,6 +18,9 @@ use Modules\Test\Models\Area;
 use Modules\Test\Models\Author;
 use Modules\Test\Models\Group;
 use Modules\Test\Models\Note;
+use Modules\Test\Models\NoteProperty;
+use Modules\Test\Models\NotePropertyCharValue;
+use Modules\Test\Models\NotePropertyIntValue;
 use Modules\Test\Models\NoteThesis;
 use Phact\Orm\Aggregations\Avg;
 use Phact\Orm\Aggregations\Count;
@@ -36,7 +39,10 @@ class QuerySetTest extends DatabaseTest
             new NoteThesis(),
             new Author(),
             new Area(),
-            new Group()
+            new Group(),
+            new NoteProperty(),
+            new NotePropertyCharValue(),
+            new NotePropertyIntValue(),
         ];
     }
 
@@ -91,7 +97,7 @@ class QuerySetTest extends DatabaseTest
     public function testOrder()
     {
         $qs = Note::objects()->getQuerySet();
-        $qs->order(['-id', new Expression('{id} = ?', [0])]);
+        $qs->order(['-id', new Expression('{id} = ? ASC', [0])]);
         $sql = $qs->allSql();
         $this->assertEquals("SELECT `test_note`.* FROM `test_note` ORDER BY `test_note`.`id` DESC, `test_note`.`id` = 0 ASC", $sql);
     }
@@ -298,5 +304,118 @@ class QuerySetTest extends DatabaseTest
 
         $this->assertInstanceOf(Note::class, $rawGet);
         $this->assertEquals(2, $rawGet->id);
+    }
+
+    public function testRelationAlias()
+    {
+        $note1 = new Note();
+        $note1->name = 'First note';
+        $note1->save();
+
+        $thesis1 = new NoteThesis();
+        $thesis1->note = $note1;
+        $thesis1->name = 'First thesis';
+        $thesis1->save();
+
+        $thesis2 = new NoteThesis();
+        $thesis2->note = $note1;
+        $thesis2->name = 'Second thesis';
+        $thesis2->save();
+
+        $qs = Note::objects()->filter([
+            "theses#1__id" => $thesis1->id, "theses#1__name" => $thesis1->name,
+            "theses#2__id" => $thesis2->id, "theses#2__name" => $thesis2->name
+        ]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` LEFT JOIN `test_note_thesis` AS `test_note_thesis_1` ON `test_note`.`id` = `test_note_thesis_1`.`note_id` WHERE `test_note_thesis`.`id` = 1 AND `test_note_thesis`.`name` = 'First thesis' AND `test_note_thesis_1`.`id` = 2 AND `test_note_thesis_1`.`name` = 'Second thesis'", $sql);
+        $this->assertEquals(1, count($qs->all()));
+    }
+
+    public function testDynamicProperties()
+    {
+        $note1 = new Note();
+        $note1->name = 'First note';
+        $note1->save();
+
+        $note2 = new Note();
+        $note2->name = 'Second note';
+        $note2->save();
+
+        $property1 = new NoteProperty();
+        $property1->name = 'Description';
+        $property1->type = NoteProperty::TYPE_CHAR;
+        $property1->save();
+
+        $property2 = new NoteProperty();
+        $property2->name = 'Rating';
+        $property2->type = NoteProperty::TYPE_INT;
+        $property2->save();
+
+        $value1 = new NotePropertyCharValue();
+        $value1->note = $note1;
+        $value1->note_property = $property1;
+        $value1->value = 'Some description for first note';
+        $value1->save();
+
+        $value2 = new NotePropertyIntValue();
+        $value2->note = $note2;
+        $value2->note_property = $property2;
+        $value2->value = 4;
+        $value2->save();
+
+        $qs = Note::objects()->getQuerySet();
+        $qs->appendRelation("property#1", new NotePropertyCharValue(), [
+            [
+                'table' => NotePropertyCharValue::getTableName(),
+                'from' => 'id',
+                'to' => 'note_id'
+            ]
+        ]);
+        $this->assertEquals(true, $qs->hasRelation('property#1'));
+        $this->assertEquals(false, $qs->hasRelation('property#2'));
+        $qs = $qs->filter([
+            'property#1__note_property_id' => $property1->id,
+            'property#1__value' => "Some description for first note"
+        ]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` LEFT JOIN `test_note_property_char_value` ON `test_note`.`id` = `test_note_property_char_value`.`note_id` WHERE `test_note_property_char_value`.`note_property_id` = 1 AND `test_note_property_char_value`.`value` = 'Some description for first note'", $sql);
+        $this->assertEquals(1, count($qs->all()));
+
+        $qs->appendRelation("property#2", new NotePropertyIntValue(), [
+            [
+                'table' => NotePropertyIntValue::getTableName(),
+                'from' => 'id',
+                'to' => 'note_id'
+            ]
+        ]);
+        $this->assertEquals(true, $qs->hasRelation('property#1'));
+        $this->assertEquals(true, $qs->hasRelation('property#2'));
+        $qs = $qs->filter([
+            'property#2__note_property_id' => $property2->id,
+            'property#2__value' => 3
+        ]);
+
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` LEFT JOIN `test_note_property_char_value` ON `test_note`.`id` = `test_note_property_char_value`.`note_id` LEFT JOIN `test_note_property_int_value` ON `test_note`.`id` = `test_note_property_int_value`.`note_id` WHERE (`test_note_property_char_value`.`note_property_id` = 1 AND `test_note_property_char_value`.`value` = 'Some description for first note') AND (`test_note_property_int_value`.`note_property_id` = 2 AND `test_note_property_int_value`.`value` = 3)", $sql);
+        $this->assertEquals(0, count($qs->all()));
+
+        $qs->appendRelation("property#3", new NotePropertyIntValue(), [
+            [
+                'table' => NotePropertyIntValue::getTableName(),
+                'from' => 'id',
+                'to' => 'note_id'
+            ]
+        ]);
+        $this->assertEquals(true, $qs->hasRelation('property#1'));
+        $this->assertEquals(true, $qs->hasRelation('property#2'));
+        $this->assertEquals(true, $qs->hasRelation('property#3'));
+        $qs = $qs->filter([
+            'property#3__note_property_id' => 10,
+            'property#3__value' => 10
+        ]);
+
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT `test_note`.* FROM `test_note` LEFT JOIN `test_note_property_char_value` ON `test_note`.`id` = `test_note_property_char_value`.`note_id` LEFT JOIN `test_note_property_int_value` ON `test_note`.`id` = `test_note_property_int_value`.`note_id` LEFT JOIN `test_note_property_int_value` AS `test_note_property_int_value_1` ON `test_note`.`id` = `test_note_property_int_value_1`.`note_id` WHERE (`test_note_property_char_value`.`note_property_id` = 1 AND `test_note_property_char_value`.`value` = 'Some description for first note') AND (`test_note_property_int_value`.`note_property_id` = 2 AND `test_note_property_int_value`.`value` = 3) AND (`test_note_property_int_value_1`.`note_property_id` = 10 AND `test_note_property_int_value_1`.`value` = 10)", $sql);
+        $this->assertEquals(0, count($qs->all()));
     }
 }
