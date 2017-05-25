@@ -15,9 +15,11 @@
 namespace Phact\Module;
 
 
+use Phact\Cache\Cache;
 use Phact\Form\ModelForm;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
+use Phact\Main\Phact;
 use Phact\Orm\Model;
 use ReflectionClass;
 
@@ -26,6 +28,8 @@ abstract class Module
     protected static $_paths = [];
 
     use ClassNames, SmartProperties;
+
+    public $settingsModelCache = 3600;
 
     public static function onApplicationInit()
     {
@@ -83,7 +87,19 @@ abstract class Module
         if (!$model) {
             return null;
         }
-        $settings = $model->objects()->get();
+        $settings = null;
+        if (Phact::app()->hasComponent('cache') && $this->settingsModelCache) {
+            /** @var Cache $cache */
+            $cache = Phact::app()->getComponent('cache');
+            $settingsKey = self::class . '__' . $model->className();
+            $settings = $cache->get($settingsKey, false);
+            if ($settings === false) {
+                $settings = $model->objects()->get();
+                $cache->set($settingsKey, $settings, $this->settingsModelCache);
+            }
+        } else {
+            $settings = $model->objects()->get();
+        }
         if (!$settings) {
             $settings = $model;
         }
