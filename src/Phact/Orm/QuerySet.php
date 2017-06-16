@@ -742,7 +742,8 @@ class QuerySet implements PaginableInterface
             [$this->_aggregation],
             $this->_filter,
             $this->_exclude,
-            $this->_order
+            $this->_order,
+            [$this->_limit, $this->_offset]
         )));
     }
 
