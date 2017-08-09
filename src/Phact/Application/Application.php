@@ -177,6 +177,7 @@ class Application
         $this->_provideModuleEvent('onApplicationRun');
         register_shutdown_function([$this, 'end'], 0);
         $this->handleRequest();
+        $this->end();
     }
 
     public function end($status = 0, $response = null)
