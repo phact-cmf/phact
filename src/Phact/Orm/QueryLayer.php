@@ -410,6 +410,9 @@ class QueryLayer
             if ($value instanceof Expression) {
                 $value = $this->convertExpression($value);
             }
+            if ($value == '*') {
+                $value = $this->column($this->getTableName(), '*');
+            }
             $result[$key] = $value;
         }
         return $result;
