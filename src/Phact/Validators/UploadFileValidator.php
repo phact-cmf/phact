@@ -22,42 +22,51 @@ class UploadFileValidator extends FormFieldValidator
      */
     public $maxSize;
 
+    /**
+     * @var array
+     */
+    public $errors = [];
 
-    public function __construct($allowedTypes = null, $maxSize = null)
+    const UPLOAD_ERR_UNDEFINED = 100;
+    const UPLOAD_ERR_MAX_SIZE = 101;
+    const UPLOAD_ERR_INCORRECT_TYPE = 102;
+
+    public function __construct($allowedTypes = null, $maxSize = null, $errors = null)
     {
         $this->allowedTypes = $allowedTypes;
         $this->maxSize = $maxSize;
+        if (!$errors) {
+            $this->setDefaultErrors();
+        } else {
+            $this->errors = $errors;
+        }
+    }
+
+    public function setDefaultErrors()
+    {
+        $this->errors = [
+            UPLOAD_ERR_INI_SIZE => "Загруженный файл больше возможного размера",
+            UPLOAD_ERR_FORM_SIZE => "Загруженный файл больше возможного размера",
+            UPLOAD_ERR_PARTIAL => "Файл был загружен частично, повторите попытку",
+            UPLOAD_ERR_NO_FILE => "Файл не был загружен",
+            UPLOAD_ERR_NO_TMP_DIR => "Внутренняя ошибка загрузки (отсутствует временная папка)",
+            UPLOAD_ERR_CANT_WRITE => "Внутренняя ошибка загрузки (диск недоступен для записи)",
+            UPLOAD_ERR_EXTENSION => "Внутренняя ошибка загрузки",
+            self::UPLOAD_ERR_UNDEFINED => "Неизвестная ошибка загрузки",
+            self::UPLOAD_ERR_MAX_SIZE => "Загруженный файл больше возможного размера. Максимальный размер файла {size}",
+            self::UPLOAD_ERR_INCORRECT_TYPE => "Некорректный тип файла. Доступные типы файлов {types}",
+        ];
     }
 
     protected function codeToMessage($code)
     {
-        switch ($code) {
-            case UPLOAD_ERR_INI_SIZE:
-                $message = "The uploaded file exceeds the upload_max_filesize directive in php.ini";
-                break;
-            case UPLOAD_ERR_FORM_SIZE:
-                $message = "The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form";
-                break;
-            case UPLOAD_ERR_PARTIAL:
-                $message = "The uploaded file was only partially uploaded";
-                break;
-            case UPLOAD_ERR_NO_FILE:
-                $message = "No file was uploaded";
-                break;
-            case UPLOAD_ERR_NO_TMP_DIR:
-                $message = "Missing a temporary folder";
-                break;
-            case UPLOAD_ERR_CANT_WRITE:
-                $message = "Failed to write file to disk";
-                break;
-            case UPLOAD_ERR_EXTENSION:
-                $message = "File upload stopped by extension";
-                break;
-            default:
-                $message = "Unknown upload error";
-                break;
+        if (isset($this->errors[$code])) {
+            return $this->errors[$code];
         }
-        return $message;
+        if (isset($this->errors[self::UPLOAD_ERR_UNDEFINED])) {
+            return $this->errors[self::UPLOAD_ERR_UNDEFINED];
+        }
+        return "Ошибка загрузки файла";
     }
 
     public static function checkUploadSuccessCode($upload)
@@ -80,12 +89,28 @@ class UploadFileValidator extends FormFieldValidator
             if ($this->maxSize && $isValid && !$this->validateMaxSize($value->size)){
                 $isValid = false;
                 $maxSize = FileHelper::bytesToSize($this->maxSize);
-                $messages[] = "File {$value->name} is to large. Max file size {$maxSize}";
+                if (isset($this->errors[self::UPLOAD_ERR_MAX_SIZE])) {
+                    $error = $this->errors[self::UPLOAD_ERR_MAX_SIZE];
+                } else {
+                    $error = "File is too large. Max file size {size}";
+                }
+                $error = strtr($error, [
+                    '{size}' => $maxSize
+                ]);
+                $messages[] = $error;
             }
 
             if ($this->allowedTypes && $isValid && !$this->validateFileType($value)){
                 $availFileTypes = implode(',', $this->allowedTypes);
-                $messages[] = "Incorrect file type {$value->name}. Available {$availFileTypes}";
+                if (isset($this->errors[self::UPLOAD_ERR_INCORRECT_TYPE])) {
+                    $error = $this->errors[self::UPLOAD_ERR_INCORRECT_TYPE];
+                } else {
+                    $error = "Incorrect file type. Available {types}";
+                }
+                $error = strtr($error, [
+                    '{types}' => $availFileTypes
+                ]);
+                $messages[] = $error;
             }
         }
 
