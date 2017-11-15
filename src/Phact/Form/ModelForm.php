@@ -68,16 +68,18 @@ class ModelForm extends Form
 
         // Model fields
         foreach ($modelFields as $name => $field) {
-            $config = null;
+            if (!in_array($name, $this->exclude)) {
+                $config = null;
 
-            if (isset($formFields[$name])) {
-                $config = $formFields[$name];
-                unset($formFields[$name]);
-            } elseif ($ormConfig = $field->getFormField()) {
-                $config = $ormConfig;
-            }
-            if ($config) {
-                $fields[$name] = $config;
+                if (isset($formFields[$name])) {
+                    $config = $formFields[$name];
+                    unset($formFields[$name]);
+                } elseif ($ormConfig = $field->getFormField()) {
+                    $config = $ormConfig;
+                }
+                if ($config) {
+                    $fields[$name] = $config;
+                }
             }
         }
 

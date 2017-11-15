@@ -246,9 +246,10 @@ class FileSystemStorage extends Storage
      */
     public function save($fileName, $content)
     {
+        $fileName = $this->getAvailableName($fileName);
+
         if ($content instanceof File) {
             if ($content instanceof LocalFile) {
-                $fileName = $this->getAvailableName($fileName);
                 $this->prepareFilePath($fileName);
                 copy($content->getPath(), $this->getAbsolutePath($fileName));
                 return $fileName;

@@ -134,7 +134,7 @@ class UploadFileValidator extends FormFieldValidator
     {
         $ext = pathinfo($value->name, PATHINFO_EXTENSION);
 
-        if (!in_array($ext, $this->allowedTypes)){
+        if (!in_array(mb_strtolower($ext), $this->allowedTypes)){
             return false;
         }
         return true;
