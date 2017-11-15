@@ -30,7 +30,7 @@ class TemplateLibrary
         $class = static::class;
         $reflection = new ReflectionClass($class);
         $methods = $reflection->getMethods(ReflectionMethod::IS_STATIC | ReflectionMethod::IS_PUBLIC);
-        $kinds = ['function', 'functionSmart', 'modifier', 'compiler', 'accessorProperty', 'accessorFunction'];
+        $kinds = ['function', 'functionSmart', 'blockFunction', 'modifier', 'compiler', 'accessorProperty', 'accessorFunction', 'blockCompiler'];
 
         static::$excludedMethods = array_merge(self::$excludedMethods, self::$excludedMethodsInternal);
 
