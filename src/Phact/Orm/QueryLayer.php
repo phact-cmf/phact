@@ -224,7 +224,9 @@ class QueryLayer
     {
         $key = implode('-', [$this->_model->className(), $relationName, $attribute, $tableName]);
         if (!isset(static::$_columnAliases[$key])) {
-            $attribute = $this->relationColumnAttribute($relationName, $attribute);
+            if ($attribute != '*'){
+                $attribute = $this->relationColumnAttribute($relationName, $attribute);
+            }
             $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
             static::$_columnAliases[$key] = $this->column($tableName, $attribute, $addTablePrefix);
         }
