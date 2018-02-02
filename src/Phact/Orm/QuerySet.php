@@ -361,7 +361,7 @@ class QuerySet implements PaginableInterface
         if (!is_array($filter)) {
             throw new InvalidArgumentException('QuerySet::filter() accept only arrays');
         }
-        if (isset($filter)) {
+        if (isset($filter) && !empty($filter)) {
             $this->_filter[] = $filter;
         }
         return $this->nextQuerySet();
