@@ -118,7 +118,7 @@ class FieldsManager
         $dbAttributes = [];
         foreach ($this->_attributes as $key => $value) {
             if (!in_array($key, $virtual)) {
-                $data[$key] = $value;
+                $dbAttributes[$key] = $value;
             }
         }
         return $dbAttributes;
