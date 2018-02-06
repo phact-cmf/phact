@@ -60,7 +60,7 @@ class Breadcrumbs
             }
             $name = (string) $name;
         }
-        if ($url && mb_strpos($url, '/', null, 'UTF-8') === false && mb_strpos($url, ':', null, 'UTF-8') > 0) {
+        if ($url && mb_strpos($url, '/', null, 'UTF-8') === false && mb_strpos($url, ':', null, 'UTF-8') >= 0) {
             $url = Phact::app()->router->url($url, $params);
         }
         $item = [
