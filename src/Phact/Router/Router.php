@@ -46,6 +46,11 @@ class Router
      */
     public $cacheTimeout;
 
+    /**
+     * @var string
+     */
+    protected $_currentName;
+
     protected $_matched = [];
 
     /**
@@ -86,6 +91,35 @@ class Router
                 Phact::app()->cache->set($cacheKey, $routes, $this->cacheTimeout);
             }
         }
+    }
+
+    /**
+     * @param $name
+     */
+    public function setCurrentName($name)
+    {
+        $this->_currentName = $name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCurrentName()
+    {
+        return $this->_currentName;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCurrentNamespace()
+    {
+        if ($name = $this->getCurrentName()) {
+            if ($pos = mb_strrpos($name, ':', 0, 'UTF-8')) {
+                return mb_substr($name, 0, $pos, 'UTF-8');
+            }
+        }
+        return null;
     }
 
     /**
@@ -181,6 +215,10 @@ class Router
      */
     public function url($routeName, $params = array())
     {
+        if (Text::startsWith($routeName,':')) {
+            $routeName = $this->getCurrentNamespace() . $routeName;
+        }
+
         // Check if named route exists
         if (!isset($this->_namedRoutes[$routeName])) {
             throw new \Exception("Route '{$routeName}' does not exist.");

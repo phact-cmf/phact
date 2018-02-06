@@ -230,6 +230,8 @@ class Application
                 $controllerClass = $match['target'][0];
                 $action = isset($match['target'][1]) ? $match['target'][1] : null;
                 $params = $match['params'];
+                $name = $match['name'];
+                $router->setCurrentName($name);
 
                 /** @var Controller $controller */
                 $controller = new $controllerClass($this->request);
