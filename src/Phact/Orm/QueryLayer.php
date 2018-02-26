@@ -337,8 +337,9 @@ class QueryLayer
             $select = $this->defaultSelect();
         }
         $select = $this->buildSelect($select);
-        if ($qs->getHasManyRelations()) {
-            $query->selectDistinct($select);
+        if ($qs->getHasManyRelations() && !$qs->getGroupBy() && $qs->getAutoGroup()) {
+            $query->select($select);
+            $query->groupBy($this->column($this->getTableName(), 'id'));
         } else {
             $query->select($select);
         }
@@ -655,8 +656,8 @@ class QueryLayer
             if ($item instanceof Expression) {
                 $value = $this->convertExpression($item);
                 $query->groupBy($value);
-            } elseif (is_string($item)) {
-                $query->groupBy($item);
+            } elseif (is_array($item)) {
+                $query->groupBy($this->columnAlias($item['relation'], $item['field']));
             }
         }
     }

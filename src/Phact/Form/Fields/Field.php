@@ -108,6 +108,12 @@ abstract class Field
     public $required = false;
 
     /**
+     * Readonly field
+     * @var bool
+     */
+    public $readonly = false;
+
+    /**
      * Required field
      * @var bool
      */
@@ -253,6 +259,9 @@ abstract class Field
     {
         $attributes = $this->getAttributes();
         $attributes = $this->extendAttribute($attributes, 'class', $this->getCommonClasses());
+        if ($this->readonly) {
+            $attributes['readonly'] = 'readonly';
+        }
         return $attributes;
     }
 

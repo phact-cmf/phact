@@ -18,6 +18,7 @@ use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
+use Phact\Orm\Model;
 use Phact\Request\Request;
 use ReflectionMethod;
 
@@ -127,5 +128,22 @@ class Controller
     {
         header('Content-Type: application/json');
         echo json_encode($data);
+    }
+
+    /**
+     * @param $class string|Model
+     * @param $filter array|string|int
+     * @return Model
+     */
+    public function getOr404($class, $filter)
+    {
+        if (!is_array($filter)) {
+            $filter = ['id' => $filter];
+        }
+        $model = $class::objects()->filter($filter)->get();
+        if (!$model) {
+            $this->error(404);
+        }
+        return $model;
     }
 }

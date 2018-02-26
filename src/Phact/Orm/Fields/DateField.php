@@ -63,7 +63,9 @@ class DateField extends Field
         if (is_int($value)) {
             $value = date($this->format, $value);
         } elseif (is_string($value)) {
-            if (!$this->isValidDateString($value)) {
+            if (empty($value)) {
+                $value = null;
+            } elseif (!$this->isValidDateString($value)) {
                 $time = strtotime($value);
                 $value = date($this->format, $time);
             }

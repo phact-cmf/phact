@@ -102,7 +102,11 @@ class ModelForm extends Form
         $fields = $instance->getFieldsList();
         foreach ($fields as $name) {
             $formField = $this->getField($name);
-            $value = $instance->getField($name)->getValue();
+            $instanceField = $instance->getField($name);
+            $value = $instanceField->getValue();
+            if (is_null($value) && $instanceField->default) {
+                $value = $instanceField->default;
+            }
             if ($formField) {
                 $formField->setValue($value);
             }

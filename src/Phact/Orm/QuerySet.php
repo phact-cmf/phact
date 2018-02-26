@@ -80,7 +80,19 @@ class QuerySet implements PaginableInterface
      * Built group
      * @var array
      */
+    protected $_group = [];
+
+    /**
+     * Built group
+     * @var array
+     */
     protected $_groupBy = [];
+
+    /**
+     * Auto group
+     * @var bool
+     */
+    protected $_autoGroup = true;
 
     protected $_select = [];
 
@@ -423,13 +435,29 @@ class QuerySet implements PaginableInterface
         } elseif (!is_array($group)) {
             throw new InvalidArgumentException('QuerySet::group() accept only arrays or strings');
         }
-        $this->_groupBy = array_merge($this->_groupBy, $group);
+        $this->_group = array_merge($this->_group, $group);
         return $this->nextQuerySet();
+    }
+
+    public function getGroup()
+    {
+        return $this->_group;
     }
 
     public function getGroupBy()
     {
         return $this->_groupBy;
+    }
+
+    public function setAutoGroup($autoGroup)
+    {
+        $this->_autoGroup = $autoGroup;
+        return $this;
+    }
+
+    public function getAutoGroup()
+    {
+        return $this->_autoGroup;
     }
 
     public function having($expression)
@@ -704,6 +732,20 @@ class QuerySet implements PaginableInterface
         return $builtOrder;
     }
 
+    public function buildGroup()
+    {
+        $builtGroup = [];
+        foreach ($this->_group as $item) {
+            if (is_string($item)) {
+                list($relation, $field) = $this->handleRelationColumn($item);
+                $builtGroup[] = compact('relation', 'field');
+            } elseif ($item instanceof Expression) {
+                $builtGroup[] = $this->handleExpression($item);
+            }
+        }
+        return $builtGroup;
+    }
+
     public function build()
     {
         if ($this->_with) {
@@ -731,7 +773,9 @@ class QuerySet implements PaginableInterface
         if ($this->_order) {
             $this->_orderBy = $this->buildOrder();
         }
-
+        if ($this->_group) {
+            $this->_groupBy = $this->buildGroup();
+        }
         return $this;
     }
 

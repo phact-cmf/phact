@@ -39,4 +39,13 @@ class DropDownField extends Field
         $this->_value = $value;
         return $this;
     }
+
+    public function getAttributesInput()
+    {
+        $attributes = parent::getAttributes();
+        if ($this->readonly) {
+            $attributes['disabled'] = 'disabled';
+        }
+        return $attributes;
+    }
 }

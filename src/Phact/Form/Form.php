@@ -177,7 +177,7 @@ abstract class Form
         return $has;
     }
     
-    public function setAttributes($attributes)
+    public function setRawAttributes($attributes)
     {
         foreach ($attributes as $name => $value)
         {
@@ -193,12 +193,35 @@ abstract class Form
         }
     }
 
-    public function getAttributes()
+    public function getRawAttributes()
     {
         $attributes = [];
         $fields = $this->getInitFields();
         foreach ($fields as $name => $field) {
             $attributes[$name] = $field->getValue();
+        }
+        return $attributes;
+    }
+
+    public function setAttributes($attributes)
+    {
+        foreach ($attributes as $name => $value)
+        {
+            if (($field = $this->getField($name)) && (!$field->readonly)) {
+                $field->setValue($value);
+            }
+        }
+        return $this;
+    }
+
+    public function getAttributes()
+    {
+        $attributes = [];
+        $fields = $this->getInitFields();
+        foreach ($fields as $name => $field) {
+            if (!$field->readonly) {
+                $attributes[$name] = $field->getValue();
+            }
         }
         return $attributes;
     }
