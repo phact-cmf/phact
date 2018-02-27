@@ -58,7 +58,7 @@ class SlugField extends CharField
     public $separator = '-';
 
     /**
-     * Source field in model
+     * Source field/property in model
      * @var string
      */
     public $source = 'name';
@@ -124,7 +124,7 @@ class SlugField extends CharField
     public function buildSlug()
     {
         $model = $this->getModel();
-        $source = $model->getFieldValue($this->source);
+        $source = $model->{$this->source};
         $slug = $this->getSlugify()->slugify($source);
         if ($this->tree && $model->parent) {
             /** @var TreeModel $model */
