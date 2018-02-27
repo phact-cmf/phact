@@ -59,6 +59,7 @@ class Router
     protected $_matchTypes = array(
         'i' => '[0-9]++',
         'a' => '[0-9A-Za-z]++',
+        's' => '[0-9A-Za-z\-]++',
         'slug' => '[0-9A-Za-z_\-]++',
         'h' => '[0-9A-Fa-f]++',
         '*' => '.+?',
