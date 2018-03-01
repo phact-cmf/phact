@@ -92,7 +92,13 @@ class QuerySet implements PaginableInterface
      * Auto group
      * @var bool
      */
-    protected $_autoGroup = true;
+    protected $_autoGroup = false;
+
+    /**
+     * Auto distinct
+     * @var bool
+     */
+    protected $_autoDistinct = true;
 
     protected $_select = [];
 
@@ -458,6 +464,17 @@ class QuerySet implements PaginableInterface
     public function getAutoGroup()
     {
         return $this->_autoGroup;
+    }
+
+    public function setAutoDistinct($autoDistinct)
+    {
+        $this->_autoDistinct = $autoDistinct;
+        return $this;
+    }
+
+    public function getAutoDistinct()
+    {
+        return $this->_autoDistinct;
     }
 
     public function having($expression)

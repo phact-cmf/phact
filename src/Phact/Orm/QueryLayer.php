@@ -337,9 +337,13 @@ class QueryLayer
             $select = $this->defaultSelect();
         }
         $select = $this->buildSelect($select);
-        if ($qs->getHasManyRelations() && !$qs->getGroupBy() && $qs->getAutoGroup()) {
-            $query->select($select);
-            $query->groupBy($this->column($this->getTableName(), 'id'));
+        if ($qs->getHasManyRelations()) {
+            if (!$qs->getGroupBy() && $qs->getAutoGroup()) {
+                $query->select($select);
+                $query->groupBy($this->column($this->getTableName(), 'id'));
+            } elseif ($qs->getAutoDistinct()) {
+                $query->selectDistinct($select);
+            }
         } else {
             $query->select($select);
         }
