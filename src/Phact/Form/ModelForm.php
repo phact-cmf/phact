@@ -68,7 +68,7 @@ class ModelForm extends Form
 
         // Model fields
         foreach ($modelFields as $name => $field) {
-            if (!in_array($name, $this->exclude)) {
+            if (!in_array($name, $this->exclude) && !$field->virtual) {
                 $config = null;
 
                 if (isset($formFields[$name])) {
