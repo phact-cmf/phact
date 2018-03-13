@@ -26,6 +26,8 @@ class Meta
 
     protected $_description = null;
 
+    protected $_keywords = null;
+
     protected $_canonical;
 
     public function setTitle($title)
@@ -48,6 +50,16 @@ class Meta
         return $this->_description;
     }
 
+    public function setKeywords($keywords)
+    {
+        $this->_keywords = $keywords;
+    }
+
+    public function getKeywords()
+    {
+        return $this->_keywords;
+    }
+
     public function getCanonical()
     {
         return $this->_canonical;
@@ -61,7 +73,7 @@ class Meta
     public function getData()
     {
         $data = [];
-        foreach (['title', 'description', 'canonical'] as $name) {
+        foreach (['title', 'description', 'keywords', 'canonical'] as $name) {
             $data[$name] = $this->{$name};
         }
         return $data;
