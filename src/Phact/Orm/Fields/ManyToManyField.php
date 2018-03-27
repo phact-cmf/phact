@@ -86,6 +86,7 @@ class ManyToManyField extends RelationField
     public $onDeleteFrom = ForeignField::CASCADE;
 
     public $virtual = true;
+    public $editable = false;
     public $null = true;
     public $blank = true;
 
