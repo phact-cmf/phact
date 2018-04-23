@@ -56,11 +56,9 @@ class File extends CacheDriver
     {
         $this->gc();
         $cacheFile = $this->getFileName($key);
-        if ($this->directoryLevel > 0) {
-            $dir = dirname($cacheFile);
-            if (!is_dir($dir)) {
-                @mkdir($dir, $this->mode, true);
-            }
+        $dir = dirname($cacheFile);
+        if (!is_dir($dir)) {
+            @mkdir($dir, $this->mode, true);
         }
         if (@file_put_contents($cacheFile, $data, LOCK_EX) !== false) {
             if ($timeout <= 0) {
@@ -88,7 +86,7 @@ class File extends CacheDriver
             }
             $filePath = $base . $filePath;
         }
-        return $this->getBasePath() . $filePath . $this->extension;
+        return $this->getBasePath() . DIRECTORY_SEPARATOR . $filePath . $this->extension;
     }
 
     public function gc($force = false, $expiredOnly = true)
