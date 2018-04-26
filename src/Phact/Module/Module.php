@@ -106,6 +106,19 @@ abstract class Module
         return $settings;
     }
 
+    public function afterSettingsUpdate()
+    {
+        if (Phact::app()->hasComponent('cache') && $this->settingsModelCache) {
+            $model = $this->getSettingsModel();
+            /** @var Cache $cache */
+            $cache = Phact::app()->getComponent('cache');
+            $settingsKey = self::class . '__' . $model->className();
+
+            $settings = $model->objects()->get();
+            $cache->set($settingsKey, $settings, $this->settingsModelCache);
+        }
+    }
+
     public function getSetting($name)
     {
         $settings = $this->getSettings();
