@@ -25,7 +25,8 @@
       "Phact\\Commands\\": "src/Phact/Commands",
       "Phact\\Components\\": "src/Phact/Components",
       "Phact\\Storage\\": "src/Phact/Storage",
-      "Phact\\Cache\\": "src/Phact/Cache"
+      "Phact\\Cache\\": "src/Phact/Cache",
+      "Phact\\Log\\": "src/Phact/Log"
     },
     "files": [
       "src/dump.php"

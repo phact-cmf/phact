@@ -7,8 +7,6 @@
  * @author Okulov Anton
  * @email qantus@mail.ru
  * @version 1.0
- * @company HashStudio
- * @site http://hashstudio.ru
  * @date 09/04/16 09:31
  */
 
@@ -39,8 +37,16 @@ class Configurator
         } elseif (!is_string($class)) {
             throw new InvalidConfigException("Class name must be defined");
         }
-        
-        $obj = new $class;
+        if (isset($config['__construct']) && is_array($config['__construct'])) {
+            $obj = new $class(...$config['__construct']);
+            unset($config['__construct']);
+        } else {
+            $obj = new $class;
+        }
+        if (isset($config['__afterConstruct']) && is_callable($config['__afterConstruct'])) {
+            call_user_func($config['__afterConstruct'], $obj);
+            unset($config['__afterConstruct']);
+        }
         $obj = self::configure($obj, $config);
         if (method_exists($obj, 'init')) {
             $obj->init();
@@ -51,9 +57,8 @@ class Configurator
     public static function configure($object, $properties)
     {
         foreach ($properties as $name => $value) {
-            $object->$name = $value;
+            $object->{$name} = $value;
         }
-        
         return $object;
     }
 }

@@ -7,8 +7,6 @@
  * @author Okulov Anton
  * @email qantus@mail.ru
  * @version 1.0
- * @company HashStudio
- * @site http://hashstudio.ru
  * @date 04/08/16 11:47
  */
 
@@ -21,11 +19,12 @@ use Phact\Helpers\Http;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
+use Phact\Log\Logger;
 use Phact\Template\Renderer;
 
 class ErrorHandler
 {
-    use SmartProperties, Renderer;
+    use SmartProperties, Renderer, Logger;
 
     public $errorTemplate = 'error.tpl';
     public $exceptionTemplate = 'exception.tpl';
@@ -61,11 +60,7 @@ class ErrorHandler
 
     public function handleError($code, $message, $file, $line)
     {
-        $this->handleException(new ErrorException($message, $code, $code, $file, $line), [[
-            'line' => $line,
-            'file' => $file,
-            'trace' => null
-        ]]);
+        $this->handleException(new ErrorException($message, $code, $code, $file, $line), debug_backtrace());
     }
 
     public function handleException($exception, $traceRaw = null)
@@ -144,6 +139,12 @@ class ErrorHandler
             }
         }
 
+        if ($code == 404) {
+            $this->logDebug("Page not found");
+        } else {
+            $this->logError((string) $exception);
+        }
+
         if (Phact::app()->getIsCliMode()) {
             echo "Exception: " . $exception->getMessage() . PHP_EOL;
             echo "Trace: " . PHP_EOL;
@@ -155,6 +156,6 @@ class ErrorHandler
                 'trace' => $trace
             ]);
         }
-
+        die();
     }
 }

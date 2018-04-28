@@ -7,8 +7,6 @@
  * @author Okulov Anton
  * @email qantus@mail.ru
  * @version 1.0
- * @company HashStudio
- * @site http://hashstudio.ru
  * @date 09/04/16 09:14
  */
 
@@ -22,6 +20,7 @@ use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
 use Phact\Interfaces\AuthInterface;
+use Phact\Log\Logger;
 use Phact\Main\ComponentsLibrary;
 use Phact\Request\CliRequest;
 use Phact\Request\HttpRequest;
@@ -46,7 +45,7 @@ use Phact\Request\HttpRequest;
  */
 class Application
 {
-    use ComponentsLibrary;
+    use ComponentsLibrary, Logger;
 
     public $name = 'Phact Application';
 
@@ -109,6 +108,7 @@ class Application
     public function getModule($name)
     {
         if (!isset($this->_modules[$name])) {
+            $this->logDebug("Loading module '{$name}'");
             $config = $this->getModuleConfig($name);
             if (!is_null($config)) {
                 $this->_modules[$name] = Configurator::create($config);
@@ -174,8 +174,10 @@ class Application
 
     public function run()
     {
+        $this->logDebug("Application run");
         $this->_provideModuleEvent('onApplicationRun');
         register_shutdown_function([$this, 'end'], 0);
+        $this->logDebug("Start handling request");
         $this->handleRequest();
         $this->end();
     }
@@ -219,13 +221,18 @@ class Application
         }
         return null;
     }
+
     public function handleWebRequest()
     {
         /** @var HttpRequest $request */
         $request = $this->request;
         $router = $this->router;
-        $matches = $router->match($request->getUrl(), $request->getMethod());
+        $url = $request->getUrl();
+        $method = $request->getMethod();
+        $this->logDebug("Matching route for url '{$url}' and method '{$method}'");
+        $matches = $router->match($url, $method);
         foreach ($matches as $match) {
+            $matched = false;
             if (is_array($match['target']) && isset($match['target'][0])) {
                 $controllerClass = $match['target'][0];
                 $action = isset($match['target'][1]) ? $match['target'][1] : null;
@@ -233,20 +240,19 @@ class Application
                 $name = $match['name'];
                 $router->setCurrentName($name);
 
+                $this->logDebug("Processing route to controller '{$controllerClass}' and action '{$action}'", ['params' => $params]);
                 /** @var Controller $controller */
                 $controller = new $controllerClass($this->request);
                 $matched = $controller->run($action, $params);
-                if ($matched !== false) {
-                    return true;
-                }
             } elseif (is_callable($match['target'])) {
                 $fn = $match['target'];
                 $matched = $fn($this->request, $match['params']);
-                if ($matched !== false) {
-                    return true;
-                }
+            }
+            if ($matched !== false) {
+                return true;
             }
         }
+        $this->logDebug("Matching route not found");
         throw new NotFoundHttpException("Page not found");
     }
 
@@ -255,6 +261,7 @@ class Application
         /** @var CliRequest $request */
         $request = $this->request;
         list($module, $command, $action, $arguments) = $request->parse();
+        $this->logDebug("Try to find command '{$command}' for module '{$module}'");
         if ($module && $command) {
             $module = ucfirst($module);
             $command = ucfirst($command);
@@ -262,6 +269,7 @@ class Application
             if (class_exists($class)) {
                 $command = new $class();
                 if (method_exists($command, $action)) {
+                    $this->logDebug("Run command '{$command}' for module '{$module}'");
                     $command->{$action}($arguments);
                 } else {
                     throw new Exception("Method '{$action}' of class '{$class}' does not exist");

@@ -7,8 +7,6 @@
  * @author Okulov Anton
  * @email qantus@mail.ru
  * @version 1.0
- * @company HashStudio
- * @site http://hashstudio.ru
  * @date 05/03/17 11:42
  */
 
@@ -17,10 +15,13 @@ namespace Phact\Orm;
 
 use Exception;
 use PDO;
+use Phact\Log\Logger;
 use Phact\Main\Phact;
 
 class QueryBuilder
 {
+    use Logger;
+
     /**
      *
      * @var Connection
@@ -116,7 +117,9 @@ class QueryBuilder
             );
         }
         $pdoStatement->execute();
-        return array($pdoStatement, microtime(true) - $start);
+        $executionTime = microtime(true) - $start;
+        $this->logInfo("{$sql}", ['bindings' => $bindings, 'time' => $executionTime], 'database');
+        return array($pdoStatement, $executionTime);
     }
 
     public function getRawQuery($type = 'select', $dataToBePassed = array())

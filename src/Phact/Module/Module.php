@@ -7,8 +7,6 @@
  * @author Okulov Anton
  * @email qantus@mail.ru
  * @version 1.0
- * @company HashStudio
- * @site http://hashstudio.ru
  * @date 04/08/16 08:22
  */
 
@@ -31,14 +29,23 @@ abstract class Module
 
     public $settingsModelCache = 3600;
 
+    /**
+     * Before application init
+     */
     public static function onApplicationInit()
     {
     }
 
+    /**
+     * Before application run
+     */
     public static function onApplicationRun()
     {
     }
 
+    /**
+     * Before application end
+     */
     public static function onApplicationEnd()
     {
     }
