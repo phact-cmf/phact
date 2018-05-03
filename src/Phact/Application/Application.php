@@ -264,12 +264,12 @@ class Application
         $this->logDebug("Try to find command '{$command}' for module '{$module}'");
         if ($module && $command) {
             $module = ucfirst($module);
-            $command = ucfirst($command);
-            $class = '\\Modules\\' . $module . '\\Commands\\' . $command . 'Command';
+            $commandName = ucfirst($command);
+            $class = '\\Modules\\' . $module . '\\Commands\\' . $commandName . 'Command';
             if (class_exists($class)) {
                 $command = new $class();
                 if (method_exists($command, $action)) {
-                    $this->logDebug("Run command '{$command}' for module '{$module}'");
+                    $this->logDebug("Run command '{$commandName}' for module '{$module}'");
                     $command->{$action}($arguments);
                 } else {
                     throw new Exception("Method '{$action}' of class '{$class}' does not exist");
