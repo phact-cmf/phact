@@ -45,13 +45,9 @@ class ManyToManyField extends RelationField
     protected $_throughTo;
     protected $_throughName;
 
-    protected $_throughModel;
+    protected $_throughTableName;
 
-    /**
-     * @TODO: swap columns
-     * @var bool
-     */
-    public $reverse = false;
+    protected $_throughModel;
 
     /**
      * Back name
@@ -84,7 +80,7 @@ class ManyToManyField extends RelationField
     public $onDeleteFrom = ForeignField::CASCADE;
 
     public $virtual = true;
-    public $editable = false;
+    public $editable = true;
     public $null = true;
     public $blank = true;
 
@@ -121,6 +117,11 @@ class ManyToManyField extends RelationField
         return $this->_through;
     }
 
+    public function getIsLoop()
+    {
+        return $this->getOwnerModelClass() == $this->getRelationModelClass();
+    }
+
     public function setThrough($through)
     {
         $this->_through = $through;
@@ -143,10 +144,17 @@ class ManyToManyField extends RelationField
     public function getThroughTo()
     {
         if (!$this->_throughTo) {
-            $class = $this->getRelationModelClass();
-            $modelName = $class::classNameUnderscore();
-            $toName = $this->getTo();
-            $this->_throughTo = "{$modelName}_{$toName}";
+            if ($this->getIsLoop()) {
+                if ($this->back) {
+                    $this->_throughTo = "from_{$this->getFrom()}";
+                } else {
+                    $this->_throughTo = "to_{$this->getTo()}";
+                }
+            } else {
+                $class = $this->getRelationModelClass();
+                $modelName = $class::classNameUnderscore();
+                $this->_throughTo = "{$modelName}_{$this->getTo()}";
+            }
         }
         return $this->_throughTo;
     }
@@ -159,10 +167,17 @@ class ManyToManyField extends RelationField
     public function getThroughFrom()
     {
         if (!$this->_throughFrom) {
-            $model = $this->getOwnerModelClass();
-            $modelName = $model::classNameUnderscore();
-            $fromName = $this->getFrom();
-            $this->_throughFrom = "{$modelName}_{$fromName}";
+            if ($this->getIsLoop()) {
+                if ($this->back) {
+                    $this->_throughFrom = "to_{$this->getTo()}";
+                } else {
+                    $this->_throughFrom = "from_{$this->getFrom()}";
+                }
+            } else {
+                $model = $this->getOwnerModelClass();
+                $modelName = $model::classNameUnderscore();
+                $this->_throughFrom = "{$modelName}_{$this->getFrom()}";
+            }
         }
         return $this->_throughFrom;
     }
@@ -174,15 +189,31 @@ class ManyToManyField extends RelationField
 
     public function getThroughTableName()
     {
-        if ($through = $this->getThrough()) {
-            return $through::getTableName();
-        } else {
-            $model = $this->getOwnerModelClass();
-            $modelClass = $this->getRelationModelClass();
-            $names = [$model::getTableName(), $modelClass::getTableName()];
-            sort($names);
-            return implode('_', $names);
+        if (!$this->_throughTableName) {
+            if ($through = $this->getThrough()) {
+                $this->_throughTableName = $through::getTableName();
+            } elseif ($this->getIsLoop()) {
+                $model = $this->getOwnerModelClass();
+                if ($this->back) {
+                    $names = [$model::getTableName(), $this->back];
+                } else {
+                    $names = [$model::getTableName(), $this->getName()];
+                }
+                $this->_throughTableName = implode('_', $names);
+            } else {
+                $model = $this->getOwnerModelClass();
+                $modelClass = $this->getRelationModelClass();
+                $names = [$model::getTableName(), $modelClass::getTableName()];
+                sort($names);
+                $this->_throughTableName = implode('_', $names);
+            }
         }
+        return $this->_throughTableName;
+    }
+
+    public function setThroughTableName($tableName)
+    {
+        $this->_throughTableName = $tableName;
     }
 
     public function getAdditionalFields()

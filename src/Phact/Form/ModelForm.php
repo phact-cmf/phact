@@ -33,6 +33,9 @@ class ModelForm extends Form
      */
     protected $_instance = null;
 
+
+    public $only = null;
+
     public function getModel()
     {
         return $this->_model;
@@ -64,9 +67,11 @@ class ModelForm extends Form
         $formFields = $this->getFields();
         $modelFields = $this->getModel()->getInitFields();
 
+        $only = is_array($this->only) ? array_merge($this->only, array_keys($formFields)) : null;
+
         // Model fields
         foreach ($modelFields as $name => $field) {
-            if (!in_array($name, $this->exclude)) {
+            if (!in_array($name, $this->exclude) && (is_null($only) || in_array($name, $only))) {
                 $config = null;
 
                 if (isset($formFields[$name])) {

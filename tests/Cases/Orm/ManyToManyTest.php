@@ -13,6 +13,7 @@
 namespace Phact\Tests;
 
 use Modules\Test\Models\Author;
+use Modules\Test\Models\Blogger;
 use Modules\Test\Models\Book;
 use Modules\Test\Models\Group;
 use Modules\Test\Models\Membership;
@@ -27,7 +28,8 @@ class ManyToManyTest extends DatabaseTest
             new Book(),
             new Group(),
             new Person(),
-            new Membership()
+            new Membership(),
+            new Blogger()
         ];
     }
 
@@ -217,5 +219,46 @@ class ManyToManyTest extends DatabaseTest
         );
         $this->assertEquals(1, Group::objects()->filter(['membership__role' => 'Detective'])->count());
         $this->assertEquals(1, Group::objects()->filter(['membership__role' => 'Assistant'])->count());
+    }
+
+    public function testSameModel()
+    {
+        $blogger1 = new Blogger();
+        $blogger1->name = 'Roland Deschain';
+        $blogger1->save();
+
+        $blogger2 = new Blogger();
+        $blogger2->name = 'Jake Chambers';
+        $blogger2->save();
+
+        $blogger3 = new Blogger();
+        $blogger3->name = 'Eddie Dean';
+        $blogger3->save();
+
+        $blogger1->subscribes = [$blogger2, $blogger3];
+        $blogger1->save();
+
+        $this->assertEquals(1, $blogger2->subscribers->count());
+        $this->assertEquals(1, $blogger3->subscribers->count());
+
+        $this->assertEquals(
+            "SELECT `test_blogger`.* FROM `test_blogger` LEFT JOIN `test_blogger_subscribes` ON `test_blogger`.`id` = `test_blogger_subscribes`.`to_id` WHERE (`test_blogger_subscribes`.`from_id` = 1) AND (`test_blogger`.`name` LIKE '%and%')",
+            $blogger1->subscribes->filter(['name__contains' => 'and'])->allSql()
+        );
+
+        $this->assertEquals(
+            "SELECT `test_blogger`.* FROM `test_blogger` LEFT JOIN `test_blogger_subscribes` ON `test_blogger`.`id` = `test_blogger_subscribes`.`from_id` WHERE (`test_blogger_subscribes`.`to_id` = 1) AND (`test_blogger`.`name` LIKE 'Rol%')",
+            $blogger1->subscribers->filter(['name__startswith' => 'Rol'])->allSql()
+        );
+        $this->assertEquals(1, $blogger3->subscribers->filter(['name__startswith' => 'Rol'])->count());
+
+        $this->assertEquals(
+            "SELECT DISTINCT `test_blogger`.* FROM `test_blogger` LEFT JOIN `test_blogger_subscribes` ON `test_blogger`.`id` = `test_blogger_subscribes`.`from_id` LEFT JOIN `test_blogger_subscribes` AS `test_blogger_subscribes_1` ON `test_blogger`.`id` = `test_blogger_subscribes_1`.`from_id` LEFT JOIN `test_blogger` AS `test_blogger_2` ON `test_blogger_subscribes_1`.`to_id` = `test_blogger_2`.`id` WHERE (`test_blogger_subscribes`.`to_id` = 3) AND (`test_blogger_2`.`name` LIKE 'Eddie%')",
+            $blogger3->subscribers->filter(['subscribes__name__startswith' => 'Eddie'])->allSql()
+        );
+        $this->assertEquals(1, $blogger3->subscribers->filter(['subscribes__name__startswith' => 'Eddie'])->count());
+
+        $this->assertEquals(0, $blogger1->subscribers->count());
+        $this->assertEquals(2, $blogger1->subscribes->count());
     }
 }

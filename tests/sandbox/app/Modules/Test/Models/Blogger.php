@@ -13,9 +13,10 @@
 namespace Modules\Test\Models;
 
 use Phact\Orm\Fields\CharField;
+use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Model;
 
-class Company extends Model
+class Blogger extends Model
 {
     public static function getFields()
     {
@@ -23,9 +24,14 @@ class Company extends Model
             'name' => [
                 'class' => CharField::class
             ],
-            'founded' => [
-                'class' => CharField::class,
-                'hint' => 'Year of foundation'
+            'subscribes' => [
+                'class' => ManyToManyField::class,
+                'modelClass' => static::class
+            ],
+            'subscribers' => [
+                'class' => ManyToManyField::class,
+                'modelClass' => static::class,
+                'back' => 'subscribes'
             ]
         ];
     }

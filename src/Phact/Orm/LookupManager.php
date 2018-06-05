@@ -131,7 +131,7 @@ class LookupManager
      */
     public function processStartswith($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'LIKE', '%' . $value, $operator);
+        return $query->buildWhere($column, 'LIKE', $value . '%', $operator);
     }
 
     /**
@@ -142,7 +142,7 @@ class LookupManager
      */
     public function processEndswith($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'LIKE', $value . '%', $operator);
+        return $query->buildWhere($column, 'LIKE','%' . $value, $operator);
     }
 
     /**

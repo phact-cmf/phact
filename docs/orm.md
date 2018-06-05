@@ -493,6 +493,36 @@ $user->groups->unlink($group2);
 $groups = $user->groups->all();
 ```
 
+##### ManyToMany к той же модели
+
+В данном случае определение будет выглядеть следующим образом:
+
+```php
+class Blogger extends Model
+{
+    public static function getFields()
+    {
+        return [
+            'name' => [
+                'class' => CharField::class
+            ],
+            'subscribes' => [
+                'class' => ManyToManyField::class,
+                'modelClass' => static::class
+            ],
+            'subscribers' => [
+                'class' => ManyToManyField::class,
+                'modelClass' => static::class,
+                'back' => 'subscribes'
+            ]
+        ];
+    }
+}
+```
+
+Чтобы указать, что связь *subscribers* является "обратной стороной" связи *subscribes* достаточно определить параметр 
+**back** соответствующим образом.
+
 #### ManyToMany с определением промежуточной модели
 
 Аналогично, опишем работу на основе примера. Видоизменим предыдущий пример, добавив промежуточную модель для хранения роли пользователя в конкретной группе.
