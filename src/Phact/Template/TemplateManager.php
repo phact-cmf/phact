@@ -235,7 +235,7 @@ class TemplateManager
                 $renderer->addAccessorSmart($name, implode('::', $callable), $renderer::ACCESSOR_CALL);
                 break;
             case 'blockFunction':
-                $renderer->addBlockFunction($name, implode('::', $callable), $renderer::ACCESSOR_CALL);
+                $renderer->addBlockFunction($name, $callable);
                 break;
             case 'blockCompiler':
                 $renderer->addBlockCompiler($name, $callable);
