@@ -14,6 +14,8 @@ namespace Phact\Application;
 
 use Exception;
 use Phact\Controller\Controller;
+use Phact\Event\EventManager;
+use Phact\Event\Events;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Exceptions\NotFoundHttpException;
 use Phact\Exceptions\UnknownPropertyException;
@@ -45,7 +47,7 @@ use Phact\Request\HttpRequest;
  */
 class Application
 {
-    use ComponentsLibrary, Logger;
+    use ComponentsLibrary, Logger, Events;
 
     public $name = 'Phact Application';
 
@@ -57,8 +59,10 @@ class Application
     public function init()
     {
         $this->_provideModuleEvent('onApplicationInit');
+        $this->eventTrigger("application.beforeInit", [], $this);
         $this->setUpPaths();
         $this->autoload();
+        $this->eventTrigger("application.afterInit", [], $this);
     }
 
     public function setPaths($paths)
@@ -175,6 +179,7 @@ class Application
     public function run()
     {
         $this->logDebug("Application run");
+        $this->eventTrigger("application.beforeRun", [], $this);
         $this->_provideModuleEvent('onApplicationRun');
         register_shutdown_function([$this, 'end'], 0);
         $this->logDebug("Start handling request");
@@ -184,6 +189,7 @@ class Application
 
     public function end($status = 0, $response = null)
     {
+        $this->eventTrigger("application.beforeEnd", [], $this);
         $this->_provideModuleEvent('onApplicationEnd', [$status, $response]);
         exit($status);
     }
@@ -243,7 +249,9 @@ class Application
                 $this->logDebug("Processing route to controller '{$controllerClass}' and action '{$action}'", ['params' => $params]);
                 /** @var Controller $controller */
                 $controller = new $controllerClass($this->request);
+                $this->eventTrigger("application.beforeRunController", [$controller, $action, $name, $params], $this);
                 $matched = $controller->run($action, $params);
+                $this->eventTrigger("application.afterRunController", [$controller, $action, $name, $params, $matched], $this);
             } elseif (is_callable($match['target'])) {
                 $fn = $match['target'];
                 $matched = $fn($this->request, $match['params']);

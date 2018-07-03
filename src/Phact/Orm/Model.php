@@ -485,11 +485,13 @@ class Model implements Serializable
         $this->{$eventName}();
         if ($event) {
             $event->trigger(self::class . '::' . $eventName, [], $this);
+            $event->trigger('model.' . $eventName, [], $this);
         }
         if(method_exists($this, $metaEvent)){
             $this->{$metaEvent}();
             if ($event) {
                 $event->trigger(self::class . '::' . $metaEvent, [], $this);
+                $event->trigger('model.' . $eventName, [], $this);
             }
         }
     }

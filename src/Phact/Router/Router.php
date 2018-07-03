@@ -4,6 +4,7 @@ namespace Phact\Router;
 
 use Exception;
 use InvalidArgumentException;
+use Phact\Event\Events;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
@@ -12,7 +13,7 @@ use Traversable;
 
 class Router
 {
-    use SmartProperties;
+    use SmartProperties, Events;
 
     public $fixTrailingSlash = true;
 
@@ -281,6 +282,7 @@ class Router
      */
     public function match($requestUrl = null, $requestMethod = null)
     {
+        $this->eventTrigger('router.beforeMatch', [$requestUrl, $requestMethod], $this);
 
         $params = array();
         $match = false;
@@ -387,6 +389,8 @@ class Router
         if (!$matches && $requestUrl != '/' && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
             Phact::app()->request->redirect(rtrim($requestUrl, '/'));
         }
+
+        $this->eventTrigger('router.afterMatch', [$requestUrl, $requestMethod, $matches], $this);
 
         return $matches;
     }

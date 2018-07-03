@@ -16,6 +16,7 @@ namespace Phact\Template;
 use Fenom;
 use Fenom\Tag;
 use Fenom\Tokenizer;
+use Phact\Event\Events;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
@@ -24,7 +25,7 @@ use RecursiveIteratorIterator;
 
 class TemplateManager
 {
-    use SmartProperties;
+    use SmartProperties, Events;
 
     /**
      * @var Fenom
@@ -88,7 +89,10 @@ class TemplateManager
 
     public function render($template, $params = [])
     {
-        return $this->_renderer->fetch($template, $params);
+        $this->eventTrigger('template.beforeRender', [$template, $params], $this);
+        $result = $this->_renderer->fetch($template, $params);
+        $this->eventTrigger('template.afterRender', [$template, $params, $result], $this);
+        return $result;
     }
 
     public function extendRenderer()

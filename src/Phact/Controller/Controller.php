@@ -12,6 +12,7 @@
 
 namespace Phact\Controller;
 
+use Phact\Event\Events;
 use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\SmartProperties;
@@ -29,7 +30,7 @@ use ReflectionMethod;
  */
 class Controller
 {
-    use SmartProperties;
+    use SmartProperties, Events;
 
     /**
      * @var Request
@@ -69,6 +70,7 @@ class Controller
     {
         $method = new ReflectionMethod($this, $action);
         $ps = [];
+        $response = null;
         if ($method->getNumberOfParameters() > 0) {
             foreach ($method->getParameters() as $param) {
                 $name = $param->getName();
@@ -87,10 +89,14 @@ class Controller
                     throw new InvalidConfigException("Param {$name} for action {$action} in controller {$class} must be defined. Please, check your routes.");
                 }
             }
-            return $method->invokeArgs($this, $ps);
+            $this->eventTrigger("controller.beforeAction", [$ps, $params], $this);
+            $response = $method->invokeArgs($this, $ps);
         } else {
-            return $this->{$action}();
+            $this->eventTrigger("controller.beforeAction", [$ps, $params], $this);
+            $response = $this->{$action}();
         }
+        $this->eventTrigger("controller.afterAction", [$ps, $params, $response], $this);
+        return $response;
     }
 
     /**

@@ -21,7 +21,10 @@ class Phact
 
     public static function init($configuration, $application = Application::class)
     {
-        static::$_app = Configurator::create($application, $configuration);
+
+        static::$_app = new $application;
+        Configurator::configure(static::$_app, $configuration);
+        static::$_app->init();
     }
 
     /**

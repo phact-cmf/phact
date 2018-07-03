@@ -98,7 +98,7 @@ abstract class Module
         if (Phact::app()->hasComponent('cache') && $this->settingsModelCache) {
             /** @var Cache $cache */
             $cache = Phact::app()->getComponent('cache');
-            $settingsKey = self::class . '__' . $model->className();
+            $settingsKey = static::class . '__' . $model->className();
             $settings = $cache->get($settingsKey, false);
             if ($settings === false) {
                 $settings = $model->objects()->get();
@@ -119,7 +119,7 @@ abstract class Module
             $model = $this->getSettingsModel();
             /** @var Cache $cache */
             $cache = Phact::app()->getComponent('cache');
-            $settingsKey = self::class . '__' . $model->className();
+            $settingsKey = static::class . '__' . $model->className();
 
             $settings = $model->objects()->get();
             $cache->set($settingsKey, $settings, $this->settingsModelCache);
