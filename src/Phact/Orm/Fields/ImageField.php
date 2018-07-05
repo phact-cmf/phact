@@ -141,10 +141,12 @@ class ImageField extends FileField
 
     public function deleteOld()
     {
-        parent::deleteOld();
-        if (is_a($this->getOldAttribute(), FileInterface::class)) {
-            foreach (array_keys($this->sizes) as $prefix) {
-                $this->getStorage()->delete($this->sizeStoragePath($prefix, $this->getOldAttribute()));
+        if ($this->deleteOld) {
+            parent::deleteOld();
+            if (is_a($this->getOldAttribute(), FileInterface::class)) {
+                foreach (array_keys($this->sizes) as $prefix) {
+                    $this->getStorage()->delete($this->sizeStoragePath($prefix, $this->getOldAttribute()));
+                }
             }
         }
     }
