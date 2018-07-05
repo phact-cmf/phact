@@ -48,6 +48,12 @@ class FileField extends CharField
     /** @var null|string storage type. Default FileSystemStorage */
     public $storage = null;
 
+    /**
+     * Delete old file on after model delete or set new file
+     * @var bool
+     */
+    public $deleteOld = true;
+
     /** @var Storage */
     protected $_storage;
 
@@ -188,14 +194,18 @@ class FileField extends CharField
      */
     public function deleteOld()
     {
+        if (!$this->deleteOld) {
+            return false;
+        }
         /** @var FileInterface|null $old */
         $old = $this->getOldAttribute();
         if (is_a($old, FileInterface::class)) {
             $path = $old->getPath();
             if ($path) {
-                $this->getStorage()->delete($path);
+                return $this->getStorage()->delete($path);
             }
         }
+        return false;
     }
 
     /**

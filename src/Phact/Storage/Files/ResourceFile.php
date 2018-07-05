@@ -1,11 +1,5 @@
 <?php
 
-/**
- * User: max
- * Date: 24/07/15
- * Time: 16:23
- */
-
 namespace Phact\Storage\Files;
 
 class ResourceFile extends File
@@ -18,7 +12,6 @@ class ResourceFile extends File
         $this->name = $name;
         $this->size = $size;
         $this->type = $type;
-
         $this->_content = $content;
     }
 

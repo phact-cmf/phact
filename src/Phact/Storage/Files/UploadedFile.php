@@ -2,10 +2,7 @@
 
 namespace Phact\Storage\Files;
 
-/**
- * Class UploadedFile
- * @package Mindy\Storage
- */
+
 class UploadedFile extends File
 {
     public function __construct(array $data)

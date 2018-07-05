@@ -2,10 +2,7 @@
 
 namespace Phact\Storage\Files;
 
-/**
- * Class File
- * @package Mindy\Storage
- */
+
 abstract class File implements FileInterface
 {
     /**

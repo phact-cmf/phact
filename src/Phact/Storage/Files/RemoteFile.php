@@ -1,12 +1,9 @@
 <?php
 
 namespace Phact\Storage\Files;
+
 use Exception;
 
-/**
- * Class RemoteFile
- * @package Mindy\Storage
- */
 class RemoteFile extends File
 {
     public function __construct($path)

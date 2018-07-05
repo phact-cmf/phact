@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: aleksandrgordeev
- * Date: 08.08.16
- * Time: 14:20
- */
 
 namespace Phact\Storage;
 
