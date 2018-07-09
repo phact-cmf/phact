@@ -332,8 +332,10 @@ class ManyToManyField extends RelationField
 
     public function setUpFormField($config = [])
     {
-        $config['class'] = DropDownField::class;
-        $config['multiple'] = true;
+        if (!isset($config['class'])) {
+            $config['class'] = DropDownField::class;
+            $config['multiple'] = true;
+        }
         $choices = [];
         $class = $this->getRelationModelClass();
         /** @var QuerySet $qs */
