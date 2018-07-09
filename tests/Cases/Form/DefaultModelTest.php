@@ -38,6 +38,7 @@ class DefaultModelTest extends DatabaseTest
     {
         $book = new Book();
         $form = new ModelForm(['model' => $book]);
+        $this->assertInstanceOf(Book::class, $form->getModel());
         return $form;
     }
 
@@ -99,6 +100,7 @@ class DefaultModelTest extends DatabaseTest
         $company = new Company();
         $company->name = 'P and P Company';
         $form = new ModelForm(['model' => $company, 'instance' => $company]);
+        $this->assertInstanceOf(Company::class, $form->getInstance());
         return $form;
     }
 

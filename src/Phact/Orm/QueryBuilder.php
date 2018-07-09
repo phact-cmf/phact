@@ -94,6 +94,11 @@ class QueryBuilder
         }
     }
 
+    public function getStatement($key)
+    {
+        return array_key_exists($key, $this->_statements) ? $this->_statements[$key] : null;
+    }
+
     public function getPdo()
     {
         return $this->_connection->getPdo();

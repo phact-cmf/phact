@@ -16,6 +16,7 @@ namespace Phact\Tests;
 use Phact\Application\Application;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\Paths;
+use Phact\Main\Phact;
 
 class ApplicationTest extends TestCase
 {
@@ -37,7 +38,8 @@ class ApplicationTest extends TestCase
                 ]
             ]
         ];
-        $app = Configurator::create(Application::class, $config);
+        Phact::init($config);
+        $app = Phact::app();
         $this->assertEquals('New phact application', $app->name);
         $this->assertInstanceOf(\stdClass::class, $app->std);
     }
@@ -54,7 +56,8 @@ class ApplicationTest extends TestCase
                 ]
             ]
         ];
-        $app = Configurator::create(Application::class, $config);
+        Phact::init($config);
+        $app = Phact::app();
         $this->assertInstanceOf(\stdClass::class, $app->std);
     }
 
@@ -65,7 +68,7 @@ class ApplicationTest extends TestCase
                 'base' => $this->getAppPath()
             ]
         ];
-        $app = Configurator::create(Application::class, $config);
+        Phact::init($config);
         $this->assertEquals(Paths::get('base'), $this->getAppPath());
         $this->assertEquals(Paths::get('runtime'), implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'runtime']));
         $this->assertEquals(Paths::get('Modules'), implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'Modules']));

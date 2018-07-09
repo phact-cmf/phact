@@ -27,7 +27,7 @@ class TableTest extends DatabaseTest
     public function testCreate()
     {
         $tableManager = new TableManager();
-        $tableManager->create([
+        $this->assertTrue($tableManager->create([
             new Note(),
             new NoteThesis(),
             new Author(),
@@ -35,8 +35,8 @@ class TableTest extends DatabaseTest
             new Person(),
             new Group(),
             new Membership()
-        ]);
-        $tableManager->drop([
+        ]));
+        $this->assertTrue($tableManager->drop([
             new Note(),
             new NoteThesis(),
             new Author(),
@@ -44,6 +44,6 @@ class TableTest extends DatabaseTest
             new Person(),
             new Group(),
             new Membership()
-        ]);
+        ]));
     }
 }
