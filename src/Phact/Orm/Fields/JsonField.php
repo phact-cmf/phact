@@ -14,6 +14,8 @@ namespace Phact\Orm\Fields;
 
 class JsonField extends TextField
 {
+    public $editable = false;
+
     public $rawGet = true;
 
     public $rawSet = true;
@@ -40,5 +42,12 @@ class JsonField extends TextField
             $value = json_encode($value);
         }
         return (string) $value;
+    }
+
+    public function getFormField()
+    {
+        return $this->setUpFormField([
+            'class' => TextAreaField::class
+        ]);
     }
 }
