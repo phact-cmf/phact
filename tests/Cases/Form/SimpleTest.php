@@ -21,6 +21,7 @@ class SimpleTest extends AppTest
     public function testCreate()
     {
         $form = new SimpleForm();
+        $this->assertInstanceOf(SimpleForm::class, $form);
         return $form;
     }
 

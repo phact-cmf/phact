@@ -243,7 +243,7 @@ class QuerySetTest extends DatabaseTest
 
         //$count = Note::objects()->getQuerySet()->select(['*', Count::expression('{theses__id}', 'count_theses')])->having(new Expression('count_theses > 1'))->allSql();
         $sql = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.*, COUNT(`test_note_thesis`.`id`) as hav FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` HAVING hav >= 1", $sql);
+        $this->assertEquals("SELECT DISTINCT `test_note`.*, COUNT(`test_note_thesis`.`id`) as hav FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` GROUP BY `test_note`.`id` HAVING hav >= 1", $sql);
 
         $all = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->all();
         $this->assertEquals(1, count($all));

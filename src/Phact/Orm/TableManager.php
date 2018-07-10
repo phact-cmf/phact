@@ -41,6 +41,7 @@ class TableManager
         if ($this->processFk) {
             $this->createForeignKeys($models);
         }
+        return true;
     }
 
     public function drop($models = [], $mode = self::DROP_CASCADE)
@@ -48,6 +49,7 @@ class TableManager
         foreach ($models as $model) {
             $this->dropModelTable($model, $mode);
         }
+        return true;
     }
 
     /**

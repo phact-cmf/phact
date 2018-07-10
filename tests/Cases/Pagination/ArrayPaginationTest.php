@@ -8,7 +8,9 @@ class ArrayPaginationTest extends AppTest
 {
     public function testGetArray()
     {
-        return [1,2,3,4,5,6,7,8];
+        $array = [1,2,3,4,5,6,7,8];
+        $this->assertCount(8, $array);
+        return $array;
     }
 
     /**

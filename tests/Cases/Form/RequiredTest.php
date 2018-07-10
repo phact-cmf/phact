@@ -21,6 +21,7 @@ class RequiredTest extends AppTest
     public function testCreate()
     {
         $form = new RequiredForm();
+        $this->assertInstanceOf(RequiredForm::class, $form);
         return $form;
     }
 

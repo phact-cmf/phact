@@ -684,6 +684,9 @@ class QueryLayer
             }
             $query->select(new Raw($aggregation->getSql($field) . ' as ' . $name));
             $query->having(new Raw($name . ' ' . $having->getCondition()));
+            if (!$query->getStatement('groupBys')) {
+                $query->groupBy($this->columnAlias(null, $this->getModel()->getPkAttribute()));
+            }
         }
     }
 
