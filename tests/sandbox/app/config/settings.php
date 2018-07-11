@@ -12,6 +12,9 @@ return [
         'errorHandler' => [
             'class' => \Phact\Main\ErrorHandler::class
         ],
+        'translate' => [
+            'class' => \Phact\Translate\Translate::class
+        ],
         'request' => [
             'class' => \Phact\Request\RequestManager::class,
             'httpRequest' => [
@@ -36,6 +39,7 @@ return [
         ]
     ],
     'autoloadComponents' => [
-        'errorHandler'
+        'errorHandler',
+        'translate'
     ]
 ];
