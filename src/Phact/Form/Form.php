@@ -38,12 +38,18 @@ abstract class Form
     protected $_name;
 
     /**
-     * Prefix
-     * @TODO
+     * Form name
      *
      * @var string
      */
     public $prefix = '';
+
+    /**
+     * Prefix for id attribute of fields
+     *
+     * @var string
+     */
+    public $idPrefix = '';
 
     public function __construct($config = [])
     {

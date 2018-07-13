@@ -583,7 +583,7 @@ abstract class Field
 
     public function getHtmlId()
     {
-        return $this->getForm()->getName() . '_' . $this->getName();
+        return $this->getForm()->idPrefix . $this->getForm()->getName() . '_' . $this->getName();
     }
 
     public function getHtmlName()
