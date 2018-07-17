@@ -51,6 +51,14 @@ abstract class Form
      */
     public $idPrefix = '';
 
+    /**
+     * Key of form. For multiple render same forms. 
+     * Example: default render - Form[field], with key render - Form[key][field]
+     *
+     * @var string|int
+     */
+    public $key;
+
     public function __construct($config = [])
     {
         Configurator::configure($this, $config);
