@@ -584,14 +584,14 @@ abstract class Field
     public function getHtmlId()
     {
         $form = $this->getForm();
-        $key = $form->key ? "_{$form->key}_" : '';
+        $key = is_null($form->key) ? '' : "_{$form->key}_";
         return $form->idPrefix . $form->getName() . $key . '_' . $this->getName();
     }
 
     public function getHtmlName()
     {
         $form = $this->getForm();
-        $key = $form->key ? "[{$form->key}]" : '';
+        $key = is_null($form->key) ? '' : "[{$form->key}]";
         $name = $form->getName() . $key . "[{$this->getName()}]";
         return $this->multiple ? $name . '[]' : $name;
     }
