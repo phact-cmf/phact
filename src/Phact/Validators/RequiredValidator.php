@@ -13,12 +13,16 @@
 namespace Phact\Validators;
 
 
+use Phact\Translate\Translator;
+
 class RequiredValidator extends Validator
 {
+    use Translator;
+
     public function __construct($message = null)
     {
         if (!$message) {
-            $message = 'Обязательно для заполнения';
+            $message = self::t('This field is required', 'Phact.validators');
         }
         $this->message = $message;
     }

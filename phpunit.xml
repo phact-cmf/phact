@@ -30,5 +30,8 @@
         <testsuite name="Pagination">
             <directory>./tests/Cases/Pagination</directory>
         </testsuite>
+        <testsuite name="Translate">
+            <directory>./tests/Cases/Translate</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

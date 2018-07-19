@@ -1,9 +1,14 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: anton
- * Date: 11/07/2018
- * Time: 17:09
+ *
+ *
+ * All rights reserved.
+ *
+ * @author Okulov Anton
+ * @email qantus@mail.ru
+ * @version 1.0
+ * @date 11/07/2018 16:01
  */
 
 namespace Phact\Translate;

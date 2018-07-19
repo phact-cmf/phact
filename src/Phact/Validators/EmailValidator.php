@@ -13,12 +13,16 @@
 namespace Phact\Validators;
 
 
+use Phact\Translate\Translator;
+
 class EmailValidator extends Validator
 {
+    use Translator;
+
     public function __construct($message = null)
     {
         if (!$message) {
-            $message = 'Некорректный e-mail';
+            $message = self::t('Incorrect e-mail', 'Phact.validators');
         }
         $this->message = $message;
     }
