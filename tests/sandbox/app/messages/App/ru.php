@@ -1,0 +1,5 @@
+<?php
+
+return [
+    'Application' => 'Приложение'
+];

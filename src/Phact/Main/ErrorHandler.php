@@ -78,7 +78,7 @@ class ErrorHandler
 
         try {
             if (ob_get_length()) ob_clean();
-            $this->renderException($exception, $code, $traceRaw);
+//            $this->renderException($exception, $code, $traceRaw);
         } catch (Exception $e) {
             if ($this->debug) {
                 echo PHP_EOL;

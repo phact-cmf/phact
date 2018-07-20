@@ -13,6 +13,7 @@
 namespace Phact\Main;
 
 
+use Phact\Exceptions\InvalidConfigException;
 use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\SmartProperties;
@@ -50,9 +51,19 @@ trait ComponentsLibrary
         $this->_components[$name] = $component;
     }
 
-    public function hasComponent($name)
+    public function hasComponent($name, $instanceOf = null)
     {
-        return isset($this->_componentsConfig[$name]);
+        if (isset($this->_componentsConfig[$name])) {
+            if ($instanceOf) {
+                $config = $this->_componentsConfig[$name];
+                list($class, $config) = Configurator::split($config);
+                if (!is_a($class, $instanceOf, true)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     public function __get($name)

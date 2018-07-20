@@ -10,9 +10,12 @@ namespace Phact\Validators;
 
 use Phact\Helpers\FileHelper;
 use Phact\Storage\Files\UploadedFile;
+use Phact\Translate\Translator;
 
 class UploadFileValidator extends FormFieldValidator
 {
+    use Translator;
+
     /**
      * @var null
      */
@@ -45,16 +48,16 @@ class UploadFileValidator extends FormFieldValidator
     public function setDefaultErrors()
     {
         $this->errors = [
-            UPLOAD_ERR_INI_SIZE => "Загруженный файл больше возможного размера",
-            UPLOAD_ERR_FORM_SIZE => "Загруженный файл больше возможного размера",
-            UPLOAD_ERR_PARTIAL => "Файл был загружен частично, повторите попытку",
-            UPLOAD_ERR_NO_FILE => "Файл не был загружен",
-            UPLOAD_ERR_NO_TMP_DIR => "Внутренняя ошибка загрузки (отсутствует временная папка)",
-            UPLOAD_ERR_CANT_WRITE => "Внутренняя ошибка загрузки (диск недоступен для записи)",
-            UPLOAD_ERR_EXTENSION => "Внутренняя ошибка загрузки",
-            self::UPLOAD_ERR_UNDEFINED => "Неизвестная ошибка загрузки",
-            self::UPLOAD_ERR_MAX_SIZE => "Загруженный файл больше возможного размера. Максимальный размер файла {size}",
-            self::UPLOAD_ERR_INCORRECT_TYPE => "Некорректный тип файла. Доступные типы файлов {types}",
+            UPLOAD_ERR_INI_SIZE => self::t('The uploaded file is larger than the available size', 'Phact.validators'),
+            UPLOAD_ERR_FORM_SIZE => self::t('The uploaded file is larger than the available size', 'Phact.validators'),
+            UPLOAD_ERR_PARTIAL => self::t('The file was partially uploaded, please try again', 'Phact.validators'),
+            UPLOAD_ERR_NO_FILE => self::t('The file was not uploaded', 'Phact.validators'),
+            UPLOAD_ERR_NO_TMP_DIR => self::t('Internal upload error (no temporary folder)', 'Phact.validators'),
+            UPLOAD_ERR_CANT_WRITE => self::t('Internal upload error (disk not available for writing)', 'Phact.validators'),
+            UPLOAD_ERR_EXTENSION => self::t('Internal upload error', 'Phact.validators'),
+            self::UPLOAD_ERR_UNDEFINED => self::t('Unknown upload error', 'Phact.validators'),
+            self::UPLOAD_ERR_MAX_SIZE => self::t('The uploaded file is larger than the available size. Maximum file size is {size} bytes', 'Phact.validators'),
+            self::UPLOAD_ERR_INCORRECT_TYPE => self::t('Invalid file type. Available file types: {types}', 'Phact.validators'),
         ];
     }
 
@@ -66,7 +69,7 @@ class UploadFileValidator extends FormFieldValidator
         if (isset($this->errors[self::UPLOAD_ERR_UNDEFINED])) {
             return $this->errors[self::UPLOAD_ERR_UNDEFINED];
         }
-        return "Ошибка загрузки файла";
+        return self::t('Upload error', 'Phact.validators');
     }
 
     public static function checkUploadSuccessCode($upload)
@@ -92,7 +95,7 @@ class UploadFileValidator extends FormFieldValidator
                 if (isset($this->errors[self::UPLOAD_ERR_MAX_SIZE])) {
                     $error = $this->errors[self::UPLOAD_ERR_MAX_SIZE];
                 } else {
-                    $error = "File is too large. Max file size {size}";
+                    $error = self::t('The uploaded file is larger than the available size. Maximum file size is {size} bytes', 'Phact.validators');
                 }
                 $error = strtr($error, [
                     '{size}' => $maxSize
@@ -105,7 +108,7 @@ class UploadFileValidator extends FormFieldValidator
                 if (isset($this->errors[self::UPLOAD_ERR_INCORRECT_TYPE])) {
                     $error = $this->errors[self::UPLOAD_ERR_INCORRECT_TYPE];
                 } else {
-                    $error = "Incorrect file type. Available {types}";
+                    $error = self::t('Invalid file type. Available file types: {types}', 'Phact.validators');
                 }
                 $error = strtr($error, [
                     '{types}' => $availFileTypes

@@ -9,20 +9,21 @@
 namespace Phact\Validators;
 
 use Phact\Storage\Files\UploadedFile;
+use Phact\Translate\Translator;
 
 class ImageValidator extends UploadFileValidator
 {
+    use Translator;
 
     public function validate($value)
     {
         $parentValidationResult = parent::validate($value);
         $messages = [];
 
-        if($parentValidationResult == true && $value instanceof UploadedFile){
-
+        if ($parentValidationResult == true && $value instanceof UploadedFile) {
             $size = @getimagesize($value->path);
-            if($size == false){
-                $messages[] = 'Файл не является изображением';
+            if ($size == false) {
+                $messages[] = self::t('The file is not an image', 'Phact.validators');;
             }
         }
         return empty($messages) ? true : $messages;

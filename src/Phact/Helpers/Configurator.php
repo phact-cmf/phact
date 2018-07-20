@@ -30,13 +30,7 @@ class Configurator
      */
     public static function create($class, $config = [])
     {
-        if (is_array($class) && isset($class['class'])) {
-            $config = $class;
-            $class = $config['class'];
-            unset($config['class']);
-        } elseif (!is_string($class)) {
-            throw new InvalidConfigException("Class name must be defined");
-        }
+        list($class, $config) = self::split($class, $config);
         if (isset($config['__construct']) && is_array($config['__construct'])) {
             $obj = new $class(...$config['__construct']);
             unset($config['__construct']);
@@ -52,6 +46,18 @@ class Configurator
             $obj->init();
         }
         return $obj;
+    }
+
+    public static function split($class, $config = [])
+    {
+        if (is_array($class) && isset($class['class'])) {
+            $config = $class;
+            $class = $config['class'];
+            unset($config['class']);
+        } elseif (!is_string($class)) {
+            throw new InvalidConfigException("Class name must be defined");
+        }
+        return [$class, $config];
     }
 
     public static function configure($object, $properties)

@@ -20,12 +20,14 @@ use Phact\Event\Events;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
+use Phact\Translate\Translate;
+use Phact\Translate\Translator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 class TemplateManager
 {
-    use SmartProperties, Events;
+    use SmartProperties, Events, Translator;
 
     /**
      * @var Fenom
@@ -107,11 +109,23 @@ class TemplateManager
         $this->_renderer->addAccessorSmart("app", "app", Fenom::ACCESSOR_PROPERTY);
         $this->_renderer->app = Phact::app();
 
-        $this->_renderer->addAccessorSmart("request", 'Phact\Main\Phact::app()->request', Fenom::ACCESSOR_VAR);
-
         $this->_renderer->addAccessorSmart("user", 'Phact\Main\Phact::app()->user', Fenom::ACCESSOR_VAR);
 
-        $this->_renderer->addAccessorSmart("setting", "Phact\\Main\\Phact::app()->settings->get", Fenom::ACCESSOR_CALL);
+        if (Phact::app()->hasComponent('request')) {
+            $this->_renderer->addAccessorSmart("request", 'Phact\Main\Phact::app()->request', Fenom::ACCESSOR_VAR);
+        }
+
+        if (Phact::app()->hasComponent('settings')) {
+            $this->_renderer->addAccessorSmart("setting", "Phact\\Main\\Phact::app()->settings->get", Fenom::ACCESSOR_CALL);
+        }
+
+        if (Phact::app()->hasComponent('router')) {
+            $this->_renderer->addAccessorSmart("url", "Phact\\Main\\Phact::app()->router->url", Fenom::ACCESSOR_CALL);
+        }
+
+        if (Phact::app()->hasComponent('translate', Translate::class)) {
+            $this->_renderer->addAccessorSmart("t", "Phact\\Main\\Phact::app()->translate->t", Fenom::ACCESSOR_CALL);
+        }
 
         $this->_renderer->addModifier('class', function($object) {
             if (is_object($object)) {
@@ -131,6 +145,10 @@ class TemplateManager
                 $attributes = isset($params[1]) ? $params[1] : [];
             }
             return Phact::app()->router->url($route, $attributes);
+        });
+
+        $this->_renderer->addFunction('t', function($params) {
+            return forward_static_call_array([self::class, 't'], $params);
         });
 
         if (Phact::app()->hasComponent('cache')) {
