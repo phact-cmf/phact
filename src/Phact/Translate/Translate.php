@@ -16,6 +16,7 @@ namespace Phact\Translate;
 
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\Configurator;
+use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Symfony\Component\Translation\Loader\ArrayLoader;
@@ -104,6 +105,7 @@ class Translate
     {
         $this->loadSystemMessages();
         $this->loadModulesMessages();
+        $this->loadApplicationMessages();
     }
 
     /**
@@ -129,6 +131,17 @@ class Translate
             if ($moduleMessagesPath) {
                 $this->loadFileSystemMessages($moduleMessagesPath, "{$moduleName}.");
             }
+        }
+    }
+
+    /**
+     * Load app-located resources
+     */
+    public function loadApplicationMessages()
+    {
+        $systemMessagesPath = realpath(Paths::get('base.messages'));
+        if ($systemMessagesPath) {
+            $this->loadFileSystemMessages($systemMessagesPath, "");
         }
     }
 

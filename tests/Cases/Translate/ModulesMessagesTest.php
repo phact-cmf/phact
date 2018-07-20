@@ -36,4 +36,15 @@ class ModulesMessagesTest extends AppTest
 
         $this->assertEquals('Тест модуля', $translate->t('Module test', 'Test'));
     }
+
+    public function testPlural()
+    {
+        /** @var Translate $translate */
+        $translate = Phact::app()->translate;
+        $translate->setLocale('ru');
+
+        $this->assertEquals('1 элемент', $translate->t('%count% item|%count% items', 'Test', 1));
+        $this->assertEquals('2 элемента', $translate->t('%count% item|%count% items', 'Test', 2));
+        $this->assertEquals('5 элементов', $translate->t('%count% item|%count% items', 'Test', 5));
+    }
 }

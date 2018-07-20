@@ -37,6 +37,7 @@ use Phact\Request\HttpRequest;
  * @property \Phact\Template\TemplateManager $template Template manager
  * @property \Phact\Interfaces\AuthInterface $auth Authorization component
  * @property \Phact\Cache\Cache $cache Cache component
+ * @property \Phact\Translate\Translate $translate Translate component
  * @property \Phact\Components\Settings $settings Settings component
  * @property \Phact\Components\Breadcrumbs $breadcrumbs Breadcrumbs component
  * @property \Phact\Components\Flash $flash Flash component
