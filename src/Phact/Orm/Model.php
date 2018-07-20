@@ -406,6 +406,12 @@ class Model implements Serializable
         }
     }
 
+    public function __isset($name)
+    {
+        $manager = $this->getFieldsManager();
+        return $manager->has($name);
+    }
+
     public static function __callStatic($method, $args)
     {
         $managerMethod = $method . 'Manager';
