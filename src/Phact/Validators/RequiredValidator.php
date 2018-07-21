@@ -22,7 +22,7 @@ class RequiredValidator extends Validator
     public function __construct($message = null)
     {
         if (!$message) {
-            $message = self::t('This field is required', 'Phact.validators');
+            $message = self::t('Phact.validators', 'This field is required');
         }
         $this->message = $message;
     }

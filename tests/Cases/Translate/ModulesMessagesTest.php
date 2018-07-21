@@ -23,9 +23,9 @@ class ModulesMessagesTest extends AppTest
         $translate = Phact::app()->translate;
         $translate->setLocale('ru');
 
-        $this->assertEquals('тест', $translate->t('test', 'Test.main'));
-        $this->assertEquals('Пользовательский тест', $translate->t('Custom test', 'Test.custom'));
-        $this->assertEquals('Тест модуля', $translate->t('Module test', 'Test.messages'));
+        $this->assertEquals('тест', $translate->t('Test.main', 'test'));
+        $this->assertEquals('Пользовательский тест', $translate->t('Test.custom', 'Custom test'));
+        $this->assertEquals('Тест модуля', $translate->t('Test.messages', 'Module test'));
     }
 
     public function testModule()
@@ -34,7 +34,7 @@ class ModulesMessagesTest extends AppTest
         $translate = Phact::app()->translate;
         $translate->setLocale('ru');
 
-        $this->assertEquals('Тест модуля', $translate->t('Module test', 'Test'));
+        $this->assertEquals('Тест модуля', $translate->t('Test', 'Module test'));
     }
 
     public function testPlural()
@@ -43,8 +43,8 @@ class ModulesMessagesTest extends AppTest
         $translate = Phact::app()->translate;
         $translate->setLocale('ru');
 
-        $this->assertEquals('1 элемент', $translate->t('%count% item|%count% items', 'Test', 1));
-        $this->assertEquals('2 элемента', $translate->t('%count% item|%count% items', 'Test', 2));
-        $this->assertEquals('5 элементов', $translate->t('%count% item|%count% items', 'Test', 5));
+        $this->assertEquals('1 элемент', $translate->t('Test', '%count% item|%count% items', 1));
+        $this->assertEquals('2 элемента', $translate->t('Test', '%count% item|%count% items', 2));
+        $this->assertEquals('5 элементов', $translate->t('Test', '%count% item|%count% items', 5));
     }
 }

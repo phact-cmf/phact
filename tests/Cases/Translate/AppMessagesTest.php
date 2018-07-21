@@ -25,7 +25,7 @@ class AppMessagesTest extends AppTest
         $translate = Phact::app()->translate;
         $translate->setLocale('ru');
 
-        $this->assertEquals('Приложение', $translate->t('Application', 'App'));
+        $this->assertEquals('Приложение', $translate->t('App', 'Application'));
     }
 
     public function testOverlappedMessages()
@@ -34,8 +34,8 @@ class AppMessagesTest extends AppTest
         $translate = Phact::app()->translate;
         $translate->setLocale('ru');
 
-        $this->assertEquals('Пользовательское правило', $translate->t('Custom rule', 'Test.messages'));
-        $this->assertEquals('Пользовательское правило', $translate->t('Custom rule', 'Test'));
-        $this->assertEquals('Тест модуля', $translate->t('Module test', 'Test'));
+        $this->assertEquals('Пользовательское правило', $translate->t('Test.messages', 'Custom rule'));
+        $this->assertEquals('Пользовательское правило', $translate->t('Test', 'Custom rule'));
+        $this->assertEquals('Тест модуля', $translate->t('Test', 'Module test'));
     }
 }

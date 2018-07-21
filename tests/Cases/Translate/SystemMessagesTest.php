@@ -24,9 +24,9 @@ class SystemMessagesTest extends AppTest
         /** @var Translate $translate */
         $translate = Phact::app()->translate;
         $translate->setLocale('ru');
-        $this->assertEquals('Некорректный e-mail', $translate->t('Incorrect e-mail', 'Phact.validators'));
+        $this->assertEquals('Некорректный e-mail', $translate->t('Phact.validators', 'Incorrect e-mail'));
         $translate->setLocale('en');
-        $this->assertEquals('Incorrect e-mail', $translate->t('Incorrect e-mail', 'Phact.validators'));
+        $this->assertEquals('Incorrect e-mail', $translate->t('Phact.validators', 'Incorrect e-mail'));
     }
 
     public function testValidators()

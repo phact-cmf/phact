@@ -223,8 +223,12 @@ class Translate
      * @param null|string $locale
      * @return string
      */
-    public function t($key, $domain = "", $number = null, $parameters = [], $locale = null)
+    public function t($domain, $key = "", $number = null, $parameters = [], $locale = null)
     {
+        if (!$key) {
+            $key = $domain;
+            $domain = "";
+        }
         if (is_string($parameters)) {
             $locale = $parameters;
         }

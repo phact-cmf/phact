@@ -48,16 +48,16 @@ class UploadFileValidator extends FormFieldValidator
     public function setDefaultErrors()
     {
         $this->errors = [
-            UPLOAD_ERR_INI_SIZE => self::t('The uploaded file is larger than the available size', 'Phact.validators'),
-            UPLOAD_ERR_FORM_SIZE => self::t('The uploaded file is larger than the available size', 'Phact.validators'),
-            UPLOAD_ERR_PARTIAL => self::t('The file was partially uploaded, please try again', 'Phact.validators'),
-            UPLOAD_ERR_NO_FILE => self::t('The file was not uploaded', 'Phact.validators'),
-            UPLOAD_ERR_NO_TMP_DIR => self::t('Internal upload error (no temporary folder)', 'Phact.validators'),
-            UPLOAD_ERR_CANT_WRITE => self::t('Internal upload error (disk not available for writing)', 'Phact.validators'),
-            UPLOAD_ERR_EXTENSION => self::t('Internal upload error', 'Phact.validators'),
-            self::UPLOAD_ERR_UNDEFINED => self::t('Unknown upload error', 'Phact.validators'),
-            self::UPLOAD_ERR_MAX_SIZE => self::t('The uploaded file is larger than the available size. Maximum file size is {size} bytes', 'Phact.validators'),
-            self::UPLOAD_ERR_INCORRECT_TYPE => self::t('Invalid file type. Available file types: {types}', 'Phact.validators'),
+            UPLOAD_ERR_INI_SIZE => self::t('Phact.validators', 'The uploaded file is larger than the available size'),
+            UPLOAD_ERR_FORM_SIZE => self::t('Phact.validators', 'The uploaded file is larger than the available size'),
+            UPLOAD_ERR_PARTIAL => self::t('Phact.validators', 'The file was partially uploaded, please try again'),
+            UPLOAD_ERR_NO_FILE => self::t('Phact.validators', 'The file was not uploaded'),
+            UPLOAD_ERR_NO_TMP_DIR => self::t('Phact.validators', 'Internal upload error (no temporary folder)'),
+            UPLOAD_ERR_CANT_WRITE => self::t('Phact.validators', 'Internal upload error (disk not available for writing)'),
+            UPLOAD_ERR_EXTENSION => self::t('Phact.validators', 'Internal upload error'),
+            self::UPLOAD_ERR_UNDEFINED => self::t('Phact.validators', 'Unknown upload error'),
+            self::UPLOAD_ERR_MAX_SIZE => self::t('Phact.validators', 'The uploaded file is larger than the available size. Maximum file size is {size} bytes'),
+            self::UPLOAD_ERR_INCORRECT_TYPE => self::t('Phact.validators', 'Invalid file type. Available file types: {types}'),
         ];
     }
 
@@ -69,7 +69,7 @@ class UploadFileValidator extends FormFieldValidator
         if (isset($this->errors[self::UPLOAD_ERR_UNDEFINED])) {
             return $this->errors[self::UPLOAD_ERR_UNDEFINED];
         }
-        return self::t('Upload error', 'Phact.validators');
+        return self::t('Phact.validators', 'Upload error');
     }
 
     public static function checkUploadSuccessCode($upload)
@@ -95,7 +95,7 @@ class UploadFileValidator extends FormFieldValidator
                 if (isset($this->errors[self::UPLOAD_ERR_MAX_SIZE])) {
                     $error = $this->errors[self::UPLOAD_ERR_MAX_SIZE];
                 } else {
-                    $error = self::t('The uploaded file is larger than the available size. Maximum file size is {size} bytes', 'Phact.validators');
+                    $error = self::t('Phact.validators', 'The uploaded file is larger than the available size. Maximum file size is {size} bytes');
                 }
                 $error = strtr($error, [
                     '{size}' => $maxSize
@@ -108,7 +108,7 @@ class UploadFileValidator extends FormFieldValidator
                 if (isset($this->errors[self::UPLOAD_ERR_INCORRECT_TYPE])) {
                     $error = $this->errors[self::UPLOAD_ERR_INCORRECT_TYPE];
                 } else {
-                    $error = self::t('Invalid file type. Available file types: {types}', 'Phact.validators');
+                    $error = self::t('Phact.validators', 'Invalid file type. Available file types: {types}');
                 }
                 $error = strtr($error, [
                     '{types}' => $availFileTypes

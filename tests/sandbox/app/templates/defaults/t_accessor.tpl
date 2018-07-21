@@ -1,7 +1,7 @@
-{$.t("Module test", "Test")}
+{$.t("Test", "Module test")}
 
-{$.t("test", "Test.main")}
+{$.t("Test.main", "test")}
 
-{$.t("%count% item|%count% items", "Test", 1)}
+{$.t("Test", "%count% item|%count% items", 1)}
 
-{$.t("%count% item|%count% items", "Test", 2)}
+{$.t("Test", "%count% item|%count% items", 2)}

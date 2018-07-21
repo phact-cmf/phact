@@ -22,7 +22,7 @@ class EmailValidator extends Validator
     public function __construct($message = null)
     {
         if (!$message) {
-            $message = self::t('Incorrect e-mail', 'Phact.validators');
+            $message = self::t('Phact.validators', 'Incorrect e-mail');
         }
         $this->message = $message;
     }

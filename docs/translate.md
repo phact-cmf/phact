@@ -50,7 +50,7 @@
 вызвать перевод с из данного словаря можно следующим образом 
 
 ```php
-Phact::app()->translate->t("Some key", "Test.main")
+Phact::app()->translate->t("Test.main", "Some key")
 ```
 
 Файлы правил перевода по локалям могут быть расположены непосредственно в папке *messages*:
@@ -66,13 +66,13 @@ Phact::app()->translate->t("Some key", "Test.main")
 вызвать перевод можно будет как с указанием имени словаря: 
 
 ```php
-Phact::app()->translate->t("Some key", "Test.messages")
+Phact::app()->translate->t("Test.messages", "Some key")
 ```
 
 так и с указанием только имени модуля: 
 
 ```php
-Phact::app()->translate->t("Some key", "Test")
+Phact::app()->translate->t("Test", "Some key")
 ```
 
 ### Словари в приложении
@@ -96,7 +96,7 @@ Phact::app()->translate->t("Some key", "Test")
 вызвать перевод с из данного словаря можно следующим образом 
 
 ```php
-Phact::app()->translate->t("Some key", "main")
+Phact::app()->translate->t("main", "Some key")
 ```
 
 Словари в приложении так же позволяют перекрыть стандартные словари (*Phact.**) и словари модулей. 
@@ -164,7 +164,9 @@ Phact::app()->translate->t("Some key", "main")
 1. Для обычного перевода строки
 2. Для перевода с плюрализацией
 
-Для обоих сценариев первые два параметра остаются одинаковыми - это ключ в словаре перевода и сам словарь. 
+Для обоих сценариев первые два параметра остаются одинаковыми - это имя словаря и ключ в словаре перевода. 
+Причем, если передать только один параметр - то он будет считатся ключом, а домен будет выбираться по-умолчанию.
+
 А теперь рассмотрим применение подробнее.
 
 ### Простой перевод строки
@@ -172,7 +174,7 @@ Phact::app()->translate->t("Some key", "main")
 И сразу с примеров. Получение значения по ключу *Some key* из словаря *Test.main*.
 
 ```
-Phact::app()->translate->t('Some key', 'Test.main')
+Phact::app()->translate->t('Test.main', 'Some key')
 ```
 
 Тут всё просто.
@@ -182,7 +184,7 @@ Phact::app()->translate->t('Some key', 'Test.main')
 Получение плюрализированного значения по ключу *element|elements* из словаря *Test.main* со значением 2.
 
 ```
-Phact::app()->translate->t('element|elements', 'Test.main', 2)
+Phact::app()->translate->t('Test.main', 'element|elements', 2)
 ```
 
 В данном случае компонент перевода не просто сделает перевод строки, 
@@ -216,13 +218,13 @@ Phact::app()->translate->t('element|elements', 'Test.main', 2)
 Например вместо следующей конструкции:
 
 ```
-Phact::app()->translate->t("Hello, ", "Test.main") . $username . Phact::app()->translate->t(", have a nice day!", "Test.main");
+Phact::app()->translate->t("Test.main", "Hello, ") . $username . Phact::app()->translate->t("Test.main", ", have a nice day!");
 ```
 
 Можно применять следующую:
 
 ```
-Phact::app()->translate->t("Hello, %username%, have a nice day!", "Test.main", ['%username%' => $username]);
+Phact::app()->translate->t("Test.main", "Hello, %username%, have a nice day!", ['%username%' => $username]);
 ```
 
 Для строк с плюрализацией один элемент в списке замен всегда присутствует - это *%count%*, 
@@ -231,7 +233,7 @@ Phact::app()->translate->t("Hello, %username%, have a nice day!", "Test.main", [
 Пример:
 
 ```
-Phact::app()->translate->t('%count% element|%count% elements', 'Test.main', 2)
+Phact::app()->translate->t('Test.main', '%count% element|%count% elements', 2)
 ```
 
 
@@ -281,7 +283,7 @@ class Blogger extends Model
 
 ```
 
-В данном примере обращение ```self::t("Blogger name")``` будет равно обращению ```self::t("Blogger name", "Test")```, 
+В данном примере обращение ```self::t("Blogger name")``` будет равно обращению ```self::t("Test", "Blogger name")```, 
 так как имя модуля в качестве словаря подставится автоматически. 
 
 К тому же использование trait ```\Phact\Translate\Translator``` чуть более безопасно, 
@@ -296,14 +298,14 @@ accessor-функция (для получения результата пере
 
 ```smarty
 
-{t "Module test" "Test"}
+{t "Test" "Module test"}
 
-{t "test" "Test.main"}
+{t "Test.main" "test"}
 
-{t "%count% item|%count% items" "Test" 2}
+{t "Test" "%count% item|%count% items" 2}
 
-{$.t("test", "Test.main")}
+{$.t("Test.main", "test")}
 
-{set $translated = $.t("%count% item|%count% items", "Test", 1)}
+{set $translated = $.t("Test" "%count% item|%count% items", 1)}
 
 ```
