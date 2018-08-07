@@ -79,12 +79,13 @@ class TemplateManager
     protected function collectTemplatesPaths()
     {
         $modulesPath = Paths::get('Modules');
-        $activeModules = Phact::app()->getModulesList();
+        $activeModules = Phact::app()->getModulesConfig();
         $paths = [
             Paths::get('base') . DIRECTORY_SEPARATOR . $this->templateFolder
         ];
-        foreach ($activeModules as $module) {
-            $paths[] = implode(DIRECTORY_SEPARATOR, [$modulesPath, $module, $this->templateFolder]);
+        foreach ($activeModules as $module => $config) {
+            $moduleClass = $config['class'];
+            $paths[] = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), $this->templateFolder]);
         }
         return $paths;
     }
@@ -200,10 +201,11 @@ class TemplateManager
         if (is_null($extensions)) {
             $extensions = [];
             $modulesPath = Paths::get('Modules');
-            $activeModules = Phact::app()->getModulesList();
+            $activeModules = Phact::app()->getModulesConfig();
             $classes = [];
-            foreach ($activeModules as $module) {
-                $path = implode(DIRECTORY_SEPARATOR, [$modulesPath, $module, $this->librariesFolder]);
+            foreach ($activeModules as $module => $config) {
+                $moduleClass = $config['class'];
+                $path = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), $this->librariesFolder]);
                 if (is_dir($path)) {
                     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename) {
                         // filter out "." and ".."

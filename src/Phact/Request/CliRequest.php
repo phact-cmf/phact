@@ -51,10 +51,11 @@ class CliRequest extends Request
     public function getCommandsList()
     {
         $modulesPath = Paths::get('Modules');
-        $activeModules = Phact::app()->getModulesList();
+        $activeModules = Phact::app()->getModulesConfig();
         $data = [];
         foreach ($activeModules as $module) {
-            $path = implode(DIRECTORY_SEPARATOR, [$modulesPath, $module, 'Commands']);
+            $moduleClass = $module['class'];
+            $path = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), 'Commands']);
             if (is_dir($path)) {
                 foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename)
                 {

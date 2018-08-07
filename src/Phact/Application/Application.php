@@ -135,7 +135,7 @@ class Application
 
     public function getModulesList()
     {
-        return array_keys($this->_modulesConfig);
+        return array_keys($this->getModulesConfig());
     }
 
     public function getModulesConfig()
@@ -145,7 +145,7 @@ class Application
 
     protected function _provideModuleEvent($event, $args = [])
     {
-        foreach ($this->_modulesConfig as $name => $config) {
+        foreach ($this->getModulesConfig() as $name => $config) {
             $class = $config['class'];
             forward_static_call_array([$class, $event], $args);
         }
@@ -171,6 +171,10 @@ class Application
         if (!$modulesPath) {
             $modulesPath = Paths::get('base.Modules');
             Paths::add('Modules', $modulesPath);
+            foreach ($this->getModulesConfig() as $name => $config) {
+                $class = $config['class'];
+                Paths::add("Modules.{$name}", $class::getPath());
+            }
         }
         if (!is_dir($modulesPath)) {
             throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');
