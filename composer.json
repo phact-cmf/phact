@@ -1,7 +1,8 @@
 {
   "name": "phact-cmf/phact",
   "homepage": "https://github.com/phact-cmf/phact",
-  "version": "0.1",
+  "description": "Compact MVC framework",
+  "version": "1.0.0",
   "type": "library",
   "license": "MIT",
   "autoload": {
