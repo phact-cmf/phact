@@ -1,5 +1,7 @@
 # Phact
 
+[![Build Status](https://travis-ci.org/phact-cmf/phact.svg?branch=master)](https://travis-ci.org/phact-cmf/phact)
+
 Компактный MVC-framework, следующий стандартам PSR-1, PSR-2, PSR-4
 
 ## Разделы документации
