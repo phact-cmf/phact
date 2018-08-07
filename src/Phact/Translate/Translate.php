@@ -24,13 +24,13 @@ use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\Loader\MoFileLoader;
 use Symfony\Component\Translation\Loader\PhpFileLoader;
 use Symfony\Component\Translation\Loader\PoFileLoader;
-use Symfony\Component\Translation\Translator;
+use Symfony\Component\Translation\Translator as SymfonyTranslator;
 
 class Translate
 {
     use SmartProperties;
 
-    /** @var Translator */
+    /** @var SymfonyTranslator */
     protected $_translator;
 
     protected $_locales = [];
@@ -52,13 +52,13 @@ class Translate
     public function init()
     {
         $this->_locale = $this->detect();
-        $this->_translator = new Translator($this->_locale);
+        $this->_translator = new SymfonyTranslator($this->_locale);
         $this->initLoaders();
         $this->loadMessages();
     }
 
     /**
-     * @return Translator
+     * @return SymfonyTranslator
      */
     public function getTranslator()
     {
