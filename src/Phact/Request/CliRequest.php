@@ -53,7 +53,7 @@ class CliRequest extends Request
         $modulesPath = Paths::get('Modules');
         $activeModules = Phact::app()->getModulesConfig();
         $data = [];
-        foreach ($activeModules as $module) {
+        foreach ($activeModules as $moduleName => $module) {
             $moduleClass = $module['class'];
             $path = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), 'Commands']);
             if (is_dir($path)) {
@@ -61,16 +61,16 @@ class CliRequest extends Request
                 {
                     if ($filename->isDir()) continue;
                     $name = $filename->getBasename('.php');
-                    if (!isset($data[$module])) {
-                        $data[$module] = [];
+                    if (!isset($data[$moduleName])) {
+                        $data[$moduleName] = [];
                     }
-                    $class = implode('\\', ['Modules', $module, 'Commands', $name]);
+                    $class = implode('\\', ['Modules', $moduleName, 'Commands', $name]);
                     $reflection = new ReflectionClass($class);
                     if (!$reflection->isAbstract()) {
                         /** @var Command $command */
                         $command = new $class();
                         $name = preg_replace('/Command$/', '', $name);
-                        $data[$module][$name] = $command->getDescription();
+                        $data[$moduleName][$name] = $command->getDescription();
                     }
                 }
             }
