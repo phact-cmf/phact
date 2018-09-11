@@ -150,14 +150,28 @@ class ForeignField extends RelationField
         ];
     }
 
-    public function getSqlType()
+    public function getRelatedField()
     {
         $to = $this->getTo();
         $relationModelClass = $this->getRelationModelClass();
         /** @var Model $relationModel */
         $relationModel = new $relationModelClass();
-        $field = $relationModel->getField($to);
-        return $field->getSqlType();
+        return $relationModel->getField($to);
+
+    }
+
+    public function getType()
+    {
+        return $this->getRelatedField()->getType();
+    }
+
+    public function getColumnOptions()
+    {
+        $options = $this->getRelatedField()->getColumnOptions();
+        if (isset($options['autoincrement'])) {
+            unset($options['autoincrement']);
+        }
+        return $options;
     }
 
     public function attributePrepareValue($value)

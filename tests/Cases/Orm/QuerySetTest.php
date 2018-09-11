@@ -50,12 +50,29 @@ class QuerySetTest extends DatabaseTest
         $this->assertInstanceOf(QuerySet::class, Note::objects()->getQuerySet());
     }
 
+    public function testExpressions()
+    {
+        $qs = Note::objects()->getQuerySet();
+        $qs->filter(['id__gt' => new Expression("{id} + {theses__id}"), new Expression("{id} <= {theses__id}")]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT DISTINCT test_note.* FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE (test_note.id > test_note.id + test_note_thesis_1.id) AND (test_note.id <= test_note_thesis_1.id)", $sql);
+
+        $qs = Note::objects()->getQuerySet();
+        $qs->filter([new Expression("{id} + {theses__id} > ?", [2000])]);
+        $sql = $qs->allSql();
+        $this->assertEquals("SELECT DISTINCT test_note.* FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE test_note.id + test_note_thesis_1.id > 2000", $sql);
+
+        $qs = Note::objects()->getQuerySet();
+        $sql = $qs->valuesSql(['id', new Expression("({id} + {theses__id}) as s")]);
+        $this->assertEquals("SELECT DISTINCT test_note.id AS id, (test_note.id + test_note_thesis_1.id) as s FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id", $sql);
+    }
+
     public function testCondition()
     {
         $qs = Note::objects()->getQuerySet();
         $qs->filter(['name' => 'Test', 'id__gte' => 10, 'theses__id__lte' => 5, Q::orQ(['id' => 20], ['name' => 'Layla'])]);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`name` = 'Test' AND `test_note`.`id` >= 10 AND `test_note_thesis`.`id` <= 5 AND ((`test_note`.`id` = 20) OR (`test_note`.`name` = 'Layla'))", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.* FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE (test_note.name = 'Test') AND (test_note.id >= 10) AND (test_note_thesis_1.id <= 5) AND ((test_note.id = 20) OR (test_note.name = 'Layla'))", $sql);
     }
 
     public function testExclude()
@@ -63,7 +80,7 @@ class QuerySetTest extends DatabaseTest
         $qs = Note::objects()->getQuerySet();
         $qs->exclude(['name' => 'Test']);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE NOT ((`test_note`.`name` = 'Test'))", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE NOT (test_note.name = 'Test')", $sql);
     }
 
     public function testExcludeFilter()
@@ -72,24 +89,7 @@ class QuerySetTest extends DatabaseTest
         $qs->filter(['name' => 'Actual']);
         $qs->exclude(['name' => 'Test']);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE (((`test_note`.`name` = 'Actual')) AND (NOT ((`test_note`.`name` = 'Test'))))", $sql);
-    }
-
-    public function testExpressions()
-    {
-        $qs = Note::objects()->getQuerySet();
-        $qs->filter(['id__gt' => new Expression("{id} + {theses__id}"), new Expression("{id} <= {theses__id}")]);
-        $sql = $qs->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` > `test_note`.`id` + `test_note_thesis`.`id` AND `test_note`.`id` <= `test_note_thesis`.`id`", $sql);
-
-        $qs = Note::objects()->getQuerySet();
-        $qs->filter([new Expression("{id} + {theses__id} > ?", [2000])]);
-        $sql = $qs->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` + `test_note_thesis`.`id` > 2000", $sql);
-
-        $qs = Note::objects()->getQuerySet();
-        $sql = $qs->valuesSql(['id', new Expression("({id} + {theses__id}) as s")]);
-        $this->assertEquals("SELECT DISTINCT `test_note`.`id` as `id`, (`test_note`.`id` + `test_note_thesis`.`id`) as s FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id`", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE (test_note.name = 'Actual') AND (NOT (test_note.name = 'Test'))", $sql);
     }
 
     public function testOrder()
@@ -97,7 +97,7 @@ class QuerySetTest extends DatabaseTest
         $qs = Note::objects()->getQuerySet();
         $qs->order(['-id', new Expression('{id} = ? ASC', [0])]);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` ORDER BY `test_note`.`id` DESC, `test_note`.`id` = 0 ASC", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note ORDER BY test_note.id DESC, test_note.id = 0 ASC", $sql);
     }
 
     public function testSubQuery()
@@ -107,14 +107,14 @@ class QuerySetTest extends DatabaseTest
             'id__in' => NoteThesis::objects()->filter(['id__gt' => 20])->select(['note_id'])
         ]);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` IN (SELECT `note_id` FROM `test_note_thesis` WHERE `test_note_thesis`.`id` > 20)", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE test_note.id IN (SELECT note_id FROM test_note_thesis WHERE test_note_thesis.id > 20)", $sql);
 
         $qs = Note::objects()->getQuerySet();
         $qs->filter([
-            'id__gt' => NoteThesis::objects()->filter(['id__gt' => new Expression('`test_note`.`id`')])->select([new Expression('COUNT(*)')])
+            'id__gt' => NoteThesis::objects()->filter(['id__gt' => new Expression('test_note.id')])->select([new Expression('COUNT(*)')])
         ]);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` > (SELECT COUNT(*) FROM `test_note_thesis` WHERE `test_note_thesis`.`id` > `test_note`.`id`)", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE test_note.id > (SELECT COUNT(*) FROM test_note_thesis WHERE test_note_thesis.id > test_note.id)", $sql);
     }
 
     public function testBuildRelations()
@@ -138,70 +138,67 @@ class QuerySetTest extends DatabaseTest
     public function testLimitOffset()
     {
         $sql = Note::objects()->getQuerySet()->filter(['id' => 3])->limit(1)->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 3 LIMIT 1", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE test_note.id = 3 LIMIT 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['id' => 3])->limit(1)->offset(2)->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 3 LIMIT 1 OFFSET 2", $sql);
-
-        $sql = Note::objects()->getQuerySet()->filter(['id' => 3])->offset(3)->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 3 OFFSET 3", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE test_note.id = 3 LIMIT 1 OFFSET 2", $sql);
     }
 
     public function testAggregations()
     {
         $sql = Note::objects()->getQuerySet()->aggregateSql(new Count());
-        $this->assertEquals("SELECT COUNT(*) as aggregation FROM `test_note`", $sql);
+        $this->assertEquals("SELECT COUNT(*) as aggregation FROM test_note", $sql);
 
         $sql = Note::objects()->getQuerySet()->aggregateSql(new Avg('theses__id'));
-        $this->assertEquals("SELECT AVG(`test_note_thesis`.`id`) as aggregation FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id`", $sql);
+        $this->assertEquals("SELECT AVG(test_note_thesis_1.id) as aggregation FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id", $sql);
     }
 
     public function testGet()
     {
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->getSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE test_note.id = 1", $sql);
     }
 
     public function testPk()
     {
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->getSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note WHERE test_note.id = 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['theses__pk__in' => [1,2]])->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note_thesis`.`id` IN (1, 2)", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.* FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE test_note_thesis_1.id IN (1,2)", $sql);
     }
 
     public function testUpdate()
     {
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->updateSql(['name' => 'Test']);
-        $this->assertEquals("UPDATE `test_note` SET `test_note`.`name`='Test' WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("UPDATE test_note SET test_note.name = 'Test' WHERE test_note.id = 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1, 'theses__pk__in' => [1,2]])->updateSql(['name' => 'Test']);
-        $this->assertEquals("UPDATE `test_note` SET `test_note`.`name`='Test' WHERE `test_note`.`id` IN (SELECT `temp_table_wrapper`.`id` FROM (SELECT `test_note`.`id` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` = 1 AND `test_note_thesis`.`id` IN (1, 2)) as `temp_table_wrapper`)", $sql);
+        $this->assertEquals("UPDATE test_note SET test_note.name = 'Test' WHERE test_note.id IN (SELECT temp_table_wrapper.id FROM (SELECT test_note.id FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE (test_note.id = 1) AND (test_note_thesis_1.id IN (1,2))) AS temp_table_wrapper)", $sql);
     }
 
     public function testDelete()
     {
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->deleteSql();
-        $this->assertEquals("DELETE FROM `test_note` WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("DELETE FROM test_note WHERE test_note.id = 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1, 'theses__pk__in' => [1,2]])->deleteSql();
-        $this->assertEquals("DELETE FROM `test_note` WHERE `test_note`.`id` IN (SELECT `temp_table_wrapper`.`id` FROM (SELECT `test_note`.`id` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` = 1 AND `test_note_thesis`.`id` IN (1, 2)) as `temp_table_wrapper`)", $sql);
+        $this->assertEquals("DELETE FROM test_note WHERE test_note.id IN (SELECT temp_table_wrapper.id FROM (SELECT test_note.id FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE (test_note.id = 1) AND (test_note_thesis_1.id IN (1,2))) AS temp_table_wrapper)", $sql);
     }
 
     public function testValues()
     {
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'name']);
-        $this->assertEquals("SELECT `test_note`.`id` as `id`, `test_note`.`name` as `name` FROM `test_note` WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("SELECT test_note.id AS id, test_note.name AS name FROM test_note WHERE test_note.id = 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'name', 'theses__name']);
-        $this->assertEquals("SELECT DISTINCT `test_note`.`id` as `id`, `test_note`.`name` as `name`, `test_note_thesis`.`name` as `theses__name` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.id AS id, test_note.name AS name, test_note_thesis_1.name AS theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE test_note.id = 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'name'], true);
-        $this->assertEquals("SELECT `test_note`.`id` as `id`, `test_note`.`name` as `name` FROM `test_note` WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("SELECT test_note.id AS id, test_note.name AS name FROM test_note WHERE test_note.id = 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'name', 'theses__name'], false, false);
-        $this->assertEquals("SELECT `test_note`.`id` as `id`, `test_note`.`name` as `name`, `test_note_thesis`.`name` as `theses__name` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` WHERE `test_note`.`id` = 1", $sql);
+        $this->assertEquals("SELECT test_note.id AS id, test_note.name AS name, test_note_thesis_1.name AS theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE test_note.id = 1", $sql);
     }
 
     public function testChoices()
@@ -243,7 +240,7 @@ class QuerySetTest extends DatabaseTest
 
         //$count = Note::objects()->getQuerySet()->select(['*', Count::expression('{theses__id}', 'count_theses')])->having(new Expression('count_theses > 1'))->allSql();
         $sql = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.*, COUNT(`test_note_thesis`.`id`) as hav FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` GROUP BY `test_note`.`id` HAVING hav >= 1", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.*, COUNT(test_note_thesis_1.id) as hav FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id GROUP BY test_note.id HAVING hav >= 1", $sql);
 
         $all = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->all();
         $this->assertEquals(1, count($all));
@@ -269,10 +266,10 @@ class QuerySetTest extends DatabaseTest
 
         $qs = Note::objects()->order(['-theses__name']);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.*, `test_note_thesis`.`name` AS `order__theses__name` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` ORDER BY `order__theses__name` DESC", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.*, test_note_thesis_1.name as order__theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id ORDER BY order__theses__name DESC", $sql);
 
         $sql = $qs->valuesSql(['name', 'theses__id']);
-        $this->assertEquals("SELECT DISTINCT `test_note`.`name` as `name`, `test_note_thesis`.`id` as `theses__id`, `test_note_thesis`.`name` AS `order__theses__name` FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` ORDER BY `order__theses__name` DESC", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.name AS name, test_note_thesis_1.id AS theses__id, test_note_thesis_1.name as order__theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id ORDER BY order__theses__name DESC", $sql);
     }
     
     public function testRaw()
@@ -325,7 +322,7 @@ class QuerySetTest extends DatabaseTest
             "theses#2__id" => $thesis2->id, "theses#2__name" => $thesis2->name
         ]);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT DISTINCT `test_note`.* FROM `test_note` LEFT JOIN `test_note_thesis` ON `test_note`.`id` = `test_note_thesis`.`note_id` LEFT JOIN `test_note_thesis` AS `test_note_thesis_1` ON `test_note`.`id` = `test_note_thesis_1`.`note_id` WHERE `test_note_thesis`.`id` = 1 AND `test_note_thesis`.`name` = 'First thesis' AND `test_note_thesis_1`.`id` = 2 AND `test_note_thesis_1`.`name` = 'Second thesis'", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.* FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id LEFT JOIN test_note_thesis test_note_thesis_2 ON test_note.id = test_note_thesis_2.note_id WHERE (test_note_thesis_1.id = 1) AND (test_note_thesis_1.name = 'First thesis') AND (test_note_thesis_2.id = 2) AND (test_note_thesis_2.name = 'Second thesis')", $sql);
         $this->assertEquals(1, count($qs->all()));
     }
 
@@ -376,7 +373,7 @@ class QuerySetTest extends DatabaseTest
             'property#1__value' => "Some description for first note"
         ]);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` LEFT JOIN `test_note_property_char_value` ON `test_note`.`id` = `test_note_property_char_value`.`note_id` WHERE `test_note_property_char_value`.`note_property_id` = 1 AND `test_note_property_char_value`.`value` = 'Some description for first note'", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note LEFT JOIN test_note_property_char_value test_note_property_char_value_1 ON test_note.id = test_note_property_char_value_1.note_id WHERE (test_note_property_char_value_1.note_property_id = 1) AND (test_note_property_char_value_1.value = 'Some description for first note')", $sql);
         $this->assertEquals(1, count($qs->all()));
 
         $qs->appendRelation("property#2", new NotePropertyIntValue(), [
@@ -394,7 +391,7 @@ class QuerySetTest extends DatabaseTest
         ]);
 
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` LEFT JOIN `test_note_property_char_value` ON `test_note`.`id` = `test_note_property_char_value`.`note_id` LEFT JOIN `test_note_property_int_value` ON `test_note`.`id` = `test_note_property_int_value`.`note_id` WHERE (`test_note_property_char_value`.`note_property_id` = 1 AND `test_note_property_char_value`.`value` = 'Some description for first note') AND (`test_note_property_int_value`.`note_property_id` = 2 AND `test_note_property_int_value`.`value` = 3)", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note LEFT JOIN test_note_property_char_value test_note_property_char_value_1 ON test_note.id = test_note_property_char_value_1.note_id LEFT JOIN test_note_property_int_value test_note_property_int_value_2 ON test_note.id = test_note_property_int_value_2.note_id WHERE ((test_note_property_char_value_1.note_property_id = 1) AND (test_note_property_char_value_1.value = 'Some description for first note')) AND ((test_note_property_int_value_2.note_property_id = 2) AND (test_note_property_int_value_2.value = 3))", $sql);
         $this->assertEquals(0, count($qs->all()));
 
         $qs->appendRelation("property#3", new NotePropertyIntValue(), [
@@ -413,7 +410,7 @@ class QuerySetTest extends DatabaseTest
         ]);
 
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT `test_note`.* FROM `test_note` LEFT JOIN `test_note_property_char_value` ON `test_note`.`id` = `test_note_property_char_value`.`note_id` LEFT JOIN `test_note_property_int_value` ON `test_note`.`id` = `test_note_property_int_value`.`note_id` LEFT JOIN `test_note_property_int_value` AS `test_note_property_int_value_1` ON `test_note`.`id` = `test_note_property_int_value_1`.`note_id` WHERE (`test_note_property_char_value`.`note_property_id` = 1 AND `test_note_property_char_value`.`value` = 'Some description for first note') AND (`test_note_property_int_value`.`note_property_id` = 2 AND `test_note_property_int_value`.`value` = 3) AND (`test_note_property_int_value_1`.`note_property_id` = 10 AND `test_note_property_int_value_1`.`value` = 10)", $sql);
+        $this->assertEquals("SELECT test_note.* FROM test_note LEFT JOIN test_note_property_char_value test_note_property_char_value_1 ON test_note.id = test_note_property_char_value_1.note_id LEFT JOIN test_note_property_int_value test_note_property_int_value_2 ON test_note.id = test_note_property_int_value_2.note_id LEFT JOIN test_note_property_int_value test_note_property_int_value_3 ON test_note.id = test_note_property_int_value_3.note_id WHERE ((test_note_property_char_value_1.note_property_id = 1) AND (test_note_property_char_value_1.value = 'Some description for first note')) AND ((test_note_property_int_value_2.note_property_id = 2) AND (test_note_property_int_value_2.value = 3)) AND ((test_note_property_int_value_3.note_property_id = 10) AND (test_note_property_int_value_3.value = 10))", $sql);
         $this->assertEquals(0, count($qs->all()));
     }
 }

@@ -13,6 +13,14 @@
 namespace Phact\Orm;
 
 
+use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Schema\Comparator;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
+use Doctrine\DBAL\Schema\Index;
+use Doctrine\DBAL\Schema\Table;
+use Doctrine\DBAL\Types\ObjectType;
+use Doctrine\DBAL\Types\Type;
+use Phact\Main\Phact;
 use Phact\Orm\Fields\AutoField;
 use Phact\Orm\Fields\Field;
 use Phact\Orm\Fields\ForeignField;
@@ -28,23 +36,28 @@ class TableManager
     public $addFields = true;
     public $processFk = false;
 
-    const DROP_CASCADE = 1;
-    const DROP_RESTRICT = 2;
-
-    public $deleteMode = self::DROP_CASCADE;
-
+    /**
+     * @param array $models
+     * @return bool
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
+     */
     public function create($models = [])
     {
         foreach ($models as $model) {
             $this->createModelTable($model);
         }
-        if ($this->processFk) {
-            $this->createForeignKeys($models);
-        }
         return true;
     }
 
-    public function drop($models = [], $mode = self::DROP_CASCADE)
+    /**
+     * @param array $models
+     * @param null $mode @deprecated
+     * @return bool
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
+     */
+    public function drop($models = [], $mode = null)
     {
         foreach ($models as $model) {
             $this->dropModelTable($model, $mode);
@@ -54,433 +67,157 @@ class TableManager
 
     /**
      * @param $model Model
-     * @return mixed
+     * @return \Doctrine\DBAL\Schema\AbstractSchemaManager
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
+     */
+    public function getSchemaManager($model)
+    {
+        $connectionName = $model->getConnectionName();
+        $connection = Phact::app()->db->getConnection($connectionName);
+        return $connection->getSchemaManager();
+    }
+
+    /**
+     * @param $model Model
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
      */
     public function createModelTable($model)
     {
-        $engine = $this->defaultEngine;
-        $charset = $this->defaultCharset;
-
-        $exists = "";
-        if ($this->checkExists) {
-            $exists = "IF NOT EXISTS";
-        }
-
         $tableName = $model->getTableName();
-        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
-        $tableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
-        $tableNameSafe = $queryLayer->sanitize($tableName);
+        $columns = $this->createColumns($model);
+        $attribute = $model->getPkAttribute();
 
-        $fieldsStatements = $this->makeFieldsStatements($model, $queryLayer);
-        $fields = implode(',', $fieldsStatements);
-
-        $query = "CREATE TABLE {$exists} {$tableNameSafe} ({$fields}) ENGINE={$engine} DEFAULT CHARSET={$charset}";
-        list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
-        $this->addColumns($queryLayer, $tableNameSafe, $fieldsStatements);
-
-        $this->createM2MTables($model);
-        return $result;
-    }
-
-    public function addColumns($queryLayer, $tableNameSafe, $fieldsStatements)
-    {
-        $query = "SHOW COLUMNS FROM {$tableNameSafe}";
-        list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
-        $columnsRaw = $result->fetchAll();
-        $columnsList = array_map(function($item) {
-            return isset($item['Field']) ? $item['Field'] : null;
-        }, $columnsRaw);
-
-        $statements = [];
-        $previous = null;
-        foreach ($fieldsStatements as $name => $statement) {
-            if (!in_array($name, $columnsList)) {
-                $statements[] = [
-                    'raw' => $statement,
-                    'previous' => $previous ? $queryLayer->sanitize($previous) : null
-                ];
+        $table = new Table($tableName, $columns, [
+            new Index($attribute, [$attribute], true, true)
+        ]);
+        $schemaManager = $this->getSchemaManager($model);
+        if (!$schemaManager->tablesExist([$tableName])) {
+            $schemaManager->createTable($table);
+        } else {
+            $tableExists = $schemaManager->listTableDetails($tableName);
+            $comparator = new Comparator();
+            if ($diff = $comparator->diffTable($table, $tableExists)) {
+                $schemaManager->alterTable($diff);
             }
-            $previous = $name;
         }
-
-        if ($statements) {
-            $fields = implode(', ', array_map(function($statement) {
-                return "ADD COLUMN " . $statement['raw'] . " " . ($statement['previous'] ? "AFTER {$statement['previous']}" : "FIRST");
-            }, $statements));
-            $query = "ALTER TABLE {$tableNameSafe} $fields";
-            list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
-            return $result;
-        }
-        return null;
+        $this->createM2MTables($model);
     }
 
     /**
      * @param $model Model
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
      */
     public function createM2MTables($model)
     {
-        $engine = $this->defaultEngine;
-        $charset = $this->defaultCharset;
-
-        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
-
+        $schemaManager = $this->getSchemaManager($model);
         foreach ($model->getFieldsManager()->getFields() as $field) {
             if ($field instanceof ManyToManyField && !$field->getThrough()) {
                 $tableName = $field->getThroughTableName();
-                $tableNameSafe = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
-                $tableNameSafe = $queryLayer->sanitize($tableNameSafe);
-
-                $statements = [];
+                $columns = [];
 
                 $toModelClass = $field->modelClass;
-                /** @var Model $toModel */
+                /** @var $toModel Model */
                 $toModel = new $toModelClass();
 
                 $to = $field->getTo();
-                $columnTo = $field->getThroughTo();
-                $columnTo = $queryLayer->sanitize($columnTo);
-                $toType = $toModel->getField($to)->getSqlType();
-                $statements[] = "{$columnTo} {$toType} NOT NULL";
+                $toColumnName = $field->getThroughTo();
+                $toField = $toModel->getField($to);
+                $toColumnOptions = $toField->getColumnOptions();
+                if (isset($toColumnOptions['autoincrement'])) {
+                    unset($toColumnOptions['autoincrement']);
+                }
+                $columns[] = new Column($toColumnName, Type::getType($toField->getType()), $toColumnOptions);
 
                 $from = $field->getFrom();
-                $columnFrom = $field->getThroughFrom();
-                $columnFrom = $queryLayer->sanitize($columnFrom);
-                $fromType = $model->getField($from)->getSqlType();
-                $statements[] = "{$columnFrom} {$fromType} NOT NULL";
+                $fromColumnName = $field->getThroughFrom();
+                $fromField = $model->getField($from);
+                $fromColumnOptions = $fromField->getColumnOptions();
+                if (isset($fromColumnOptions['autoincrement'])) {
+                    unset($fromColumnOptions['autoincrement']);
+                }
+                $columns[] = new Column($fromColumnName, Type::getType($toField->getType()), $fromColumnOptions);
 
-                $fields = implode(',', $statements);
-
-                $query = "CREATE TABLE IF NOT EXISTS {$tableNameSafe} ({$fields}) ENGINE={$engine} DEFAULT CHARSET={$charset}";
-                list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
+                $fk = [];
+                if ($this->processFk) {
+                    $fk[] = new ForeignKeyConstraint([$toColumnName], $toModel->getTableName(), [$to]);
+                    $fk[] = new ForeignKeyConstraint([$fromColumnName], $toModel->getTableName(), [$from]);
+                }
+                $table = new Table($tableName, $columns, [], $fk);
+                if (!$schemaManager->tablesExist([$tableName])) {
+                    $schemaManager->createTable($table);
+                }
             }
         }
     }
 
-    /**
-     * @param $model Model
-     * @param $queryLayer QueryLayer
-     * @return array
-     */
-    public function makeFieldsStatements($model, $queryLayer)
+    public function createColumns($model)
     {
         $fieldsManager = $model->getFieldsManager();
         $fields = $fieldsManager->getFields();
-        $statements = [];
+        $columns = [];
         /** @var Field $field */
         foreach ($fields as $field) {
             $attribute = $field->getAttributeName();
             if ($attribute && !$field->virtual) {
-                $column = $queryLayer->sanitize($attribute);
-                $type = $field->getSqlType();
-
-                $statement = [$column, $type];
-                $default = null;
-                if (!$field->null) {
-                    $statement[] = "NOT NULL";
-                } else {
-                    $default = "NULL";
-                }   
-
-                if ($field->default) {
-                    if (is_string($field->default)) {
-                        $default = "'{$field->default}'";
-                    } elseif ($field->default instanceof Expression) {
-                        $default = $field->default->getExpression();
-                    } elseif(is_numeric($field->default)) {
-                        $default = $field->default;
-                    }
-                }
-
-                if ($default) {
-                    $statement[] = "DEFAULT $default";
-                }
-
-                if ($field instanceof AutoField) {
-                    $statement[] = "AUTO_INCREMENT";
-                }
-
-                if ($field->pk) {
-                    $statement[] = "PRIMARY KEY";
-                }
-
-                $statements[$attribute] = implode(' ', $statement);
+                $columnName = $attribute;
+                $column = new Column($columnName, Type::getType($field->getType()), $field->getColumnOptions());
+                $columns[$columnName] = $column;
             }
         }
-        return $statements;
-    }
-
-    public function createForeignKeys($models)
-    {
-        foreach ($models as $model) {
-            $this->createModelForeignKeys($model);
-        }
+        return $columns;
     }
 
     /**
      * @param $model Model
+     * @param int $mode @deprecated
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
      */
-    public function createModelForeignKeys($model)
-    {
-        $tableName = $model->getTableName();
-        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
-        $tableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
-
-        $fieldsManager = $model->getFieldsManager();
-        $fields = $fieldsManager->getFields();
-
-        foreach ($fields as $field) {
-            if ($field instanceof ForeignField) {
-                $relationClass = $field->modelClass;
-                $relationTableName = $relationClass::getTableName();
-                $relationTableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($relationTableName);
-                $relationColumn = $field->getTo();
-
-                $this->createForeignKey(
-                    $tableName,
-                    $field->getAttributeName(),
-                    $relationTableName,
-                    $relationColumn,
-                    $field->onDelete,
-                    $field->onUpdate,
-                    $queryLayer
-                );
-            }
-        }
-        $this->createM2MForeignKeys($model);
-    }
-
-    /**
-     * @param $model Model
-     */
-    public function createM2MForeignKeys($model)
-    {
-        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
-
-        foreach ($model->getFieldsManager()->getFields() as $field) {
-            if ($field instanceof ManyToManyField && !$field->getThrough()) {
-
-                $relationModel = $field->getRelationModel();
-
-                $tableName = $field->getThroughTableName();
-                $tableNamePrefix = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
-
-                $columnTo = $field->getTo();
-                $columnThroughTo = $field->getThroughTo();
-                $toTableName = $relationModel->getTableName();
-                $toTableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($toTableName);
-
-                $this->createForeignKey(
-                    $tableName,
-                    $columnThroughTo,
-                    $toTableName,
-                    $columnTo,
-                    $field->onUpdateTo,
-                    $field->onDeleteTo,
-                    $queryLayer
-                );
-
-                $columnFrom = $field->getFrom();
-                $columnThroughFrom = $field->getThroughFrom();
-                $fromTableName = $model->getTableName();
-                $fromTableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($fromTableName);
-
-                $this->createForeignKey(
-                    $tableName,
-                    $columnThroughFrom,
-                    $fromTableName,
-                    $columnFrom,
-                    $field->onUpdateFrom,
-                    $field->onDeleteFrom,
-                    $queryLayer
-                );
-
-            }
-        }
-    }
-
-    /**
-     * @param $model Model
-     * @param int $mode
-     */
-    public function dropModelTable($model, $mode = self::DROP_CASCADE)
+    public function dropModelTable($model, $mode = null)
     {
         $this->dropM2MTables($model, $mode);
         $this->dropModelForeignKeys($model);
 
-        $exists = "";
-        if ($this->checkExists) {
-            $exists = "IF EXISTS";
-        }
-
         $tableName = $model->getTableName();
-        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
-        $tableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
-        $tableNameSafe = $queryLayer->sanitize($tableName);
-
-        $modeQuery = $this->getQueryDropMode($mode);
-        $query = "DROP TABLE {$exists} {$tableNameSafe} $modeQuery";
-        $queryLayer->getQueryBuilderRaw()->statement($query);
+        $schemaManager = $this->getSchemaManager($model);
+        if ($schemaManager->tablesExist([$tableName])) {
+            $this->getSchemaManager($model)->dropTable($tableName);
+        }
     }
 
     /**
      * @param $model Model
-     * @param int $mode
+     * @param $mode @deprecated
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
      */
-    public function dropM2MTables($model, $mode = self::DROP_CASCADE)
+    public function dropM2MTables($model, $mode = null)
     {
-        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
+        $schemaManager = $this->getSchemaManager($model);
         foreach ($model->getFieldsManager()->getFields() as $field) {
             if ($field instanceof ManyToManyField && !$field->getThrough()) {
                 $tableName = $field->getThroughTableName();
-                $tableNameSafe = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
-                $tableNameSafe = $queryLayer->sanitize($tableNameSafe);
-
-                $modeQuery = $this->getQueryDropMode($mode);
-
-                $query = "DROP TABLE IF EXISTS {$tableNameSafe} {$modeQuery}";
-                $queryLayer->getQueryBuilderRaw()->statement($query);
+                if ($schemaManager->tablesExist([$tableName])) {
+                    $schemaManager->dropTable($tableName);
+                }
             }
         }
     }
 
     /**
      * @param $model Model
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Phact\Exceptions\UnknownPropertyException
      */
     public function dropModelForeignKeys($model)
     {
         $tableName = $model->getTableName();
-        $queryLayer = $model->objects()->getQuerySet()->getQueryLayer();
-        $tableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($tableName);
-
-        $fieldsManager = $model->getFieldsManager();
-        $fields = $fieldsManager->getFields();
-
-        foreach ($fields as $field) {
-            if ($field instanceof HasManyField) {
-                $relationClass = $field->modelClass;
-                $relationTableName = $relationClass::getTableName();
-                $relationTableName = $queryLayer->getQueryBuilderRaw()->addTablePrefix($relationTableName);
-
-                $this->dropForeignKey(
-                    $relationTableName,
-                    $field->getTo(),
-                    $queryLayer
-                );
-            }
+        $schemaManager = $this->getSchemaManager($model);
+        foreach ($schemaManager->listTableForeignKeys($tableName) as $constraint) {
+            $schemaManager->dropForeignKey($constraint, $tableName);
         }
-    }
-    /**
-     * @param $tableName
-     * @param $queryLayer QueryLayer
-     * @return bool
-     */
-    public function hasTable($tableName, $queryLayer)
-    {
-        $query = "SHOW TABLES LIKE '$tableName'";
-        /** @var $result \PDOStatement */
-        list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
-        return $result->rowCount() > 0;
-    }
-
-    /**
-     * @param $tableName
-     * @param $column
-     * @param $queryLayer QueryLayer
-     * @return bool
-     */
-    public function hasForeignKey($tableName, $column, $queryLayer)
-    {
-        $tableName = $queryLayer->sanitize($tableName);
-        $query = "SHOW INDEXES IN $tableName WHERE Column_name = '$column'";
-        /** @var $result \PDOStatement */
-        list($result) = $queryLayer->getQueryBuilderRaw()->statement($query);
-        return $result->rowCount() > 0;
-    }
-
-    public function getForeignKeyName($tableName, $column)
-    {
-        return implode('__', [$tableName, $column]);
-    }
-    /**
-     * @param $tableName
-     * @param $column
-     * @param $relationTableName
-     * @param $relationColumn
-     * @param $onDelete
-     * @param $onUpdate
-     * @param $queryLayer QueryLayer
-     * @return bool
-     */
-    public function createForeignKey($tableName, $column, $relationTableName, $relationColumn, $onDelete, $onUpdate, $queryLayer)
-    {
-        if (
-            !$this->hasForeignKey($tableName, $column, $queryLayer)
-            && $this->hasTable($tableName, $queryLayer)
-            && $this->hasTable($relationTableName, $queryLayer)) {
-
-            $keyName = $this->getForeignKeyName($tableName, $column);
-            $tableName = $queryLayer->sanitize($tableName);
-            $relationTableName = $queryLayer->sanitize($relationTableName);
-            $column = $queryLayer->sanitize($column);
-            $relationColumn = $queryLayer->sanitize($relationColumn);
-
-            $updateReference = $this->getQueryReference($onUpdate, 'CASCADE');
-            $deleteReference = $this->getQueryReference($onDelete, 'CASCADE');
-
-            $query = "
-                ALTER TABLE {$tableName}
-                ADD CONSTRAINT {$keyName} FOREIGN KEY ({$column})
-                REFERENCES {$relationTableName}({$relationColumn})
-                ON UPDATE {$updateReference}
-                ON DELETE {$deleteReference}
-            ";
-            $queryLayer->getQueryBuilderRaw()->statement($query);
-        }
-    }
-
-    /**
-     * @param $tableName
-     * @param $column
-     * @param $queryLayer QueryLayer
-     * @return bool
-     */
-    public function dropForeignKey($tableName, $column, $queryLayer)
-    {
-        if ($this->hasTable($tableName, $queryLayer) && $this->hasForeignKey($tableName, $column, $queryLayer)) {
-            $keyName = $this->getForeignKeyName($tableName, $column);
-            $tableName = $queryLayer->sanitize($tableName);
-            $keyName = $queryLayer->sanitize($keyName);
-            $query = "ALTER TABLE {$tableName} DROP FOREIGN KEY {$keyName}";
-            $queryLayer->getQueryBuilderRaw()->statement($query);
-        }
-
-    }
-
-    public function getQueryReference($reference, $default = 'CASCADE')
-    {
-        switch ($reference) {
-            case ForeignField::CASCADE:
-                return 'CASCADE';
-            case ForeignField::NO_ACTION:
-                return 'NO ACTION';
-            case ForeignField::RESTRICT:
-                return 'RESTRICT';
-            case ForeignField::SET_DEFAULT:
-                return 'SET DEFAULT';
-            case ForeignField::SET_NULL:
-                return 'SET NULL';
-        }
-        return $default;
-    }
-
-    public function getQueryDropMode($mode = self::DROP_CASCADE, $default = 'CASCADE')
-    {
-        switch ($mode) {
-            case self::DROP_CASCADE:
-                return 'CASCADE';
-            case self::DROP_RESTRICT:
-                return 'NO RESTRICT';
-        }
-        return $default;
     }
 }

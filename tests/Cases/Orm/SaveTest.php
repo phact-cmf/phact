@@ -38,5 +38,29 @@ class SaveTest extends DatabaseTest
 
         $this->assertInstanceOf(Note::class, $noteThesis->note);
         $this->assertEquals($note->id, $noteThesis->note->id);
+        $this->assertEquals("Test", $note->name);
+        $this->assertEquals("Test note thesis", $noteThesis->name);
+    }
+
+    public function testUpdate()
+    {
+        $note = new Note();
+        $note->name = "Test";
+        $note->save();
+
+        $fetched = Note::objects()->filter([
+            'id' => $note->id
+        ])->get();
+
+        $this->assertEquals("Test", $fetched->name);
+
+        $fetched->name = "New test";
+        $fetched->save();
+
+        $updated = Note::objects()->filter([
+            'id' => $fetched->id
+        ])->get();
+
+        $this->assertEquals("New test", $updated->name);
     }
 }

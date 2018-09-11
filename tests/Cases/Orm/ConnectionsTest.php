@@ -13,23 +13,22 @@
 namespace Phact\Tests;
 
 use Phact\Main\Phact;
-use Phact\Orm\Adapters\Adapter;
-use Phact\Orm\Connection;
 use Phact\Orm\ConnectionManager;
-use Phact\Orm\QueryBuilder;
+use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
+use Doctrine\DBAL\Connection as DBALConnection;
 
 class ConnectionsTest extends DatabaseTest
 {
     public function testSimple()
     {
+        /** @var ConnectionManager $manager */
         $manager = Phact::app()->db;
+        /** @var DBALConnection $connection */
         $connection = $manager->getConnection();
-        $adapter = $connection->getAdapter();
-        $queryBuilder = $connection->getQueryBuilder();
+        $queryBuilder = $connection->createQueryBuilder();
 
         $this->assertInstanceOf(ConnectionManager::class, $manager);
-        $this->assertInstanceOf(Connection::class, $connection);
-        $this->assertInstanceOf(Adapter::class, $adapter);
-        $this->assertInstanceOf(QueryBuilder::class, $queryBuilder);
+        $this->assertInstanceOf(DBALConnection::class, $connection);
+        $this->assertInstanceOf(DBALQueryBuilder::class, $queryBuilder);
     }
 }

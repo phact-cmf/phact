@@ -49,8 +49,8 @@ abstract class RelationField extends Field
         return false;
     }
 
-    public function getSqlType()
+    public function getType()
     {
-        return '';
+        return null;
     }
 }

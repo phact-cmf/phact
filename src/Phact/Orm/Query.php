@@ -44,38 +44,36 @@ class Query
         return Phact::app()->db->getConnection($connectionName);
     }
 
-    /**
-     * @return Adapter
-     */
-    public function getAdapter()
-    {
-        return $this->getConnection()->getAdapter();
-    }
-
     public function getQueryBuilder()
     {
-        return $this->getConnection()->getQueryBuilder();
+        return $this->getConnection()->createQueryBuilder();
     }
 
     public function insert($tableName, $data)
     {
         $qb = $this->getQueryBuilder();
-        return $qb->table($tableName)->insert($data);
+        $statement = $qb->insert($tableName);
+        foreach ($data as $field => $value) {
+            $placeholder = $qb->createNamedParameter($value);
+            $qb->setValue($field, $placeholder);
+        }
+        $statement->execute();
+        return $statement->getConnection()->lastInsertId();
     }
 
     public function updateByPk($tableName, $pkName, $pkValue, $data)
     {
-        $qb = $this->getQueryBuilder();
-        $statement = $qb->table($tableName)->where($pkName, $pkValue)->update($data);
-        $code = $statement->errorCode();
-        return $code === "00000";
+        $qb = $this->getQueryBuilder()->update($tableName)->where($pkName, $pkValue);
+        foreach ($data as $field => $value) {
+            $placeholder = $qb->createNamedParameter($value);
+            $qb->set($field, $placeholder);
+        }
+        return $qb->execute();
     }
 
     public function delete($tableName, $pkName, $pkValue)
     {
         $qb = $this->getQueryBuilder();
-        $statement = $qb->table($tableName)->where($pkName, $pkValue)->delete();
-        $code = $statement->errorCode();
-        return $code === "00000";
+        return $qb->delete($tableName)->where($qb->expr()->eq($pkName, $pkValue))->execute();
     }
 }

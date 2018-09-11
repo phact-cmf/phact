@@ -27,8 +27,8 @@ class DateTimeField extends DateField
         return '0000-00-00 00:00:00';
     }
 
-    public function getSqlType()
+    public function getType()
     {
-        return "DATETIME({$this->fsp})";
+        return "datetime";
     }
 }

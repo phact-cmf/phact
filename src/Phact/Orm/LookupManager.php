@@ -13,6 +13,7 @@
 namespace Phact\Orm;
 
 use InvalidArgumentException;
+use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
 
 class LookupManager
 {
@@ -47,120 +48,131 @@ class LookupManager
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processExact($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, '=', $value, $operator);
+        return QueryLayer::buildWhere($column, '=', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processContains($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'LIKE', '%' . $value . '%', $operator);
+        return QueryLayer::buildWhere($column, 'LIKE', '%' . $value . '%', $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processIn($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'IN', $value, $operator);
+        return QueryLayer::buildWhere($column, 'IN', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processGt($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, '>', $value, $operator);
+        return QueryLayer::buildWhere($column, '>', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processGte($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, '>=', $value, $operator);
+        return QueryLayer::buildWhere($column, '>=', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processLt($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, '<', $value, $operator);
+        return QueryLayer::buildWhere($column, '<', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processLte($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, '<=', $value, $operator);
+        return QueryLayer::buildWhere($column, '<=', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processStartswith($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'LIKE', $value . '%', $operator);
+        return QueryLayer::buildWhere($column, 'LIKE', $value . '%', $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processEndswith($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'LIKE','%' . $value, $operator);
+        return QueryLayer::buildWhere($column, 'LIKE','%' . $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processRange($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'BETWEEN', $value, $operator);
+        return QueryLayer::buildWhere($column, 'BETWEEN', $value, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processIsnull($query, $column, $value, $operator)
     {
@@ -168,18 +180,19 @@ class LookupManager
         if ($value) {
             $prefix = '';
         }
-        $key = $query->getAdapter()->wrapSanitizer($query->addTablePrefix($column));
-        return $query->buildWhere($query->raw("{$key} IS{$prefix} NULL"), null, null, $operator);
+        $key = $query->getConnection()->quoteIdentifier($column);
+        return QueryLayer::buildWhere("{$key} IS{$prefix} NULL", null, null, $operator);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $query DBALQueryBuilder
      * @param $column string
      * @param $value mixed
      * @param $operator string "or"|"and"
+     * @return array
      */
     public function processRegex($query, $column, $value, $operator)
     {
-        return $query->buildWhere($column, 'REGEXP', $value, $operator);
+        return QueryLayer::buildWhere($column, 'REGEXP', $value, $operator);
     }
 }

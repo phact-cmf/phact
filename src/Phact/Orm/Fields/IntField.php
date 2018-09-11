@@ -36,8 +36,11 @@ class IntField extends NumericField
         return (int) $value;
     }
 
-    public function mainSqlType()
+    /**
+     * @return string
+     */
+    public function getType()
     {
-        return "INT({$this->length})";
+        return 'integer';
     }
 }

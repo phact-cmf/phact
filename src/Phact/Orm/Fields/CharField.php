@@ -35,8 +35,11 @@ class CharField extends Field
         return (string) $value;
     }
 
-    public function getSqlType()
+    /**
+     * @return string
+     */
+    public function getType()
     {
-        return "VARCHAR({$this->length})";
+        return "string";
     }
 }
