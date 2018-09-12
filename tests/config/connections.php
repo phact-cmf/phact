@@ -6,6 +6,7 @@ return [
         'dbname' => 'phact',
         'user' => 'root',
         'password' => '',
-        'charset' => 'utf8'
+        'charset' => 'utf8',
+        'driver' => 'pdo_mysql',
     ]
 ];
