@@ -171,6 +171,7 @@ class ForeignField extends RelationField
         if (isset($options['autoincrement'])) {
             unset($options['autoincrement']);
         }
+        $options['notnull'] = !$this->null;
         return $options;
     }
 

@@ -13,8 +13,11 @@
 namespace Phact\Orm;
 
 
+use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Types\Type;
 use Phact\Main\Phact;
 use Phact\Orm\Adapters\Adapter;
+use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
 
 class Query
 {
@@ -51,29 +54,87 @@ class Query
 
     public function insert($tableName, $data)
     {
-        $qb = $this->getQueryBuilder();
-        $statement = $qb->insert($tableName);
-        foreach ($data as $field => $value) {
-            $placeholder = $qb->createNamedParameter($value);
-            $qb->setValue($field, $placeholder);
-        }
-        $statement->execute();
-        return $statement->getConnection()->lastInsertId();
+        $this->getConnection()->insert($tableName, $data);
+        return $this->getConnection()->lastInsertId();
     }
 
-    public function updateByPk($tableName, $pkName, $pkValue, $data)
+    public function update($tableName, $conditions, $data)
     {
-        $qb = $this->getQueryBuilder()->update($tableName)->where($pkName, $pkValue);
-        foreach ($data as $field => $value) {
-            $placeholder = $qb->createNamedParameter($value);
-            $qb->set($field, $placeholder);
-        }
-        return $qb->execute();
+        return $this->getConnection()->update($tableName, $data, $conditions);
     }
 
-    public function delete($tableName, $pkName, $pkValue)
+    public function delete($tableName, $conditions)
     {
-        $qb = $this->getQueryBuilder();
-        return $qb->delete($tableName)->where($qb->expr()->eq($pkName, $pkValue))->execute();
+        return $this->getConnection()->delete($tableName, $conditions);
+    }
+
+    /**
+     * @param $queryBuilder DBALQueryBuilder
+     * @return string
+     */
+    public function getSQL($queryBuilder)
+    {
+        $query = $queryBuilder->getSQL();
+        $params = $queryBuilder->getParameters();
+
+        $keys = [];
+        $values = $params;
+
+        # build a regular expression for each parameter
+        foreach ($params as $key => $value) {
+            if (is_string($key)) {
+                $keys[] = '/:' . $key . '/';
+            } else {
+                $keys[] = '/[?]/';
+            }
+
+            if (is_string($value)) {
+                $values[$key] = $this->getConnection()->quote($value);
+            }
+
+            if (is_null($value)) {
+                $values[$key] = 'NULL';
+            }
+        }
+
+        $query = preg_replace($keys, $values, $query, 1, $count);
+
+        return $query;
+    }
+
+    /**
+     * @param $srcQueryBuilder DBALQueryBuilder
+     * @param $dstQueryBuilder DBALQueryBuilder
+     */
+    public function prepareSubQuery($srcQueryBuilder, $dstQueryBuilder)
+    {
+        $query = $srcQueryBuilder->getSQL();
+        $params = $srcQueryBuilder->getParameters();
+        if (!$params) {
+            return $query;
+        }
+        foreach ($params as $key => $value) {
+            if (is_string($key)) {
+                $keys[] = '/:(' . $key . ')/';
+            } else {
+                $keys[] = '/[?]/';
+            }
+        }
+        $count = 0;
+        $query = preg_replace_callback($keys, function ($match) use (&$count, $dstQueryBuilder, $params) {
+            if (isset($match[1])) {
+                $key = $match[1];
+            } else {
+                $key = $count;
+            }
+            if (!isset($params[$key])) {
+                return $match[0];
+            }
+            $value = $params[$key];
+            $placeholder = $dstQueryBuilder->createNamedParameter($params[$key], is_int($value) ? ParameterType::INTEGER : ParameterType::STRING);
+            $count++;
+            return $placeholder;
+        }, $query, 1);
+        return $query;
     }
 }

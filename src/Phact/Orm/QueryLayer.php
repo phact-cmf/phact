@@ -289,6 +289,7 @@ class QueryLayer
                         $model = $joinRelation['model'];
                         $currentRelationName = $join;
                         $currentTable = $model->getTableName();
+                        $currentAlias = $this->getAlias($currentRelationName, $currentTable);
                     }
                 }
             }
@@ -483,7 +484,7 @@ class QueryLayer
         if ($sql) {
             return $this->getSQL($queryBuilder);
         }
-        return $queryBuilder->execute()->rowCount();
+        return $queryBuilder->execute();
     }
 
     public function delete($sql = false)
@@ -499,7 +500,7 @@ class QueryLayer
         if ($sql) {
             return $this->getSQL($queryBuilder);
         }
-        return $queryBuilder->execute()->rowCount();
+        return $queryBuilder->execute();
     }
 
     public function values($columns = [], $distinct = true, $sql = false)
@@ -555,10 +556,16 @@ class QueryLayer
         $tempTable = 'temp_table_wrapper';
 
         $queryBuilder->select($pk);
+
+        $subQueryFrom = $this->prepareSubQuery($queryBuilder, $queryUpdate);
+
         $queryWrapper
-            ->from( '(' . $this->getSQL($queryBuilder) . ') AS ' . $tempTable)
+            ->from( '(' . $subQueryFrom . ') AS ' . $tempTable)
             ->select($this->column($tempTable, $pkAttribute));
-        $queryUpdate->where($pk . ' IN (' . $this->getSQL($queryWrapper) . ')');
+
+        $subQueryIn = $this->prepareSubQuery($queryWrapper, $queryUpdate);
+
+        $queryUpdate->where($pk . ' IN (' . $subQueryIn . ')');
         return $queryUpdate;
     }
 
@@ -657,7 +664,7 @@ class QueryLayer
                 } elseif (is_array($value) && count($value) == 2 && $condition['operator'] == 'BETWEEN') {
                     $placeholder1 = $queryBuilder->createNamedParameter($value[0]);
                     $placeholder2 = $queryBuilder->createNamedParameter($value[1]);
-                    $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], "{$placeholder1} and {$placeholder2}");
+                    $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], "{$placeholder1} AND {$placeholder2}");
                 } else {
                     $placeholder = $queryBuilder->createNamedParameter($value);
                     $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], $placeholder);
@@ -791,6 +798,12 @@ class QueryLayer
                     }
                     return $matches[0];
                 }, $value);
+
+                foreach ($params as $name => $param) {
+                    if (is_string($name)) {
+                        $bindings[$name] = $param;
+                    }
+                }
             }
         }
         return [$value, $bindings];
@@ -832,41 +845,16 @@ class QueryLayer
      */
     public function getSQL($queryBuilder)
     {
-        $query = $queryBuilder->getSQL();
-        $params = $queryBuilder->getParameters();
+        return $this->getQuery()->getSQL($queryBuilder);
+    }
 
-        $keys = array();
-        $values = $params;
-
-        # build a regular expression for each parameter
-        foreach ($params as $key => $value) {
-            if (is_string($key)) {
-                $keys[] = '/:' . $key . '/';
-            } else {
-                $keys[] = '/[?]/';
-            }
-
-            if (is_string($value)) {
-                $values[$key] = $this->quoteValue($value);
-            }
-
-            if (is_array($value)) {
-                $arrayValues = array_map(function ($item) {
-                    if (is_string($item)) {
-                        return $this->quoteValue($item);
-                    }
-                    return $item;
-                }, $value);
-                $values[$key] = '(' . implode(',', $arrayValues) . ')';
-            }
-
-            if (is_null($value)) {
-                $values[$key] = 'NULL';
-            }
-        }
-
-        $query = preg_replace($keys, $values, $query, 1, $count);
-
-        return $query;
+    /**
+     * @param $srcQueryBuilder DBALQueryBuilder
+     * @param $dstQueryBuilder DBALQueryBuilder
+     * @return string
+     */
+    public function prepareSubQuery($srcQueryBuilder, $dstQueryBuilder)
+    {
+        return $this->getQuery()->prepareSubQuery($srcQueryBuilder, $dstQueryBuilder);
     }
 }

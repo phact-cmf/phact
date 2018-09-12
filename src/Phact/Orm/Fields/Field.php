@@ -338,7 +338,9 @@ abstract class Field
 
     public function beforeInsert()
     {
-        $this->setDefaultDbValue();
+        if (!$this->autoincrement) {
+            $this->setDefaultDbValue();
+        }
     }
 
     public function beforeUpdate()
