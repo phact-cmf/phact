@@ -15,6 +15,6 @@ return [
         'user' => 'postgres',
         'password' => '',
         'charset' => 'utf8',
-        'driver' => 'pdo_mysql',
+        'driver' => 'pdo_pgsql',
     ]
 ];
