@@ -15,7 +15,7 @@ namespace Phact\Tests;
 use Modules\Test\Models\Note;
 use Modules\Test\Models\NoteThesis;
 
-class SaveTest extends DatabaseTest
+abstract class AbstractSaveTest extends DatabaseTest
 {
     public function useModels()
     {

@@ -20,7 +20,7 @@ use Modules\Test\Models\Person;
 use Modules\Test\Models\Storage;
 use Modules\Test\Models\Work;
 
-class IntFieldTest extends DatabaseTest
+abstract class AbstractIntFieldTest extends DatabaseTest
 {
     public function useModels()
     {

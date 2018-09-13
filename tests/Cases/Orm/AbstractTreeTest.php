@@ -21,7 +21,7 @@ use Modules\Test\Models\Note;
 use Modules\Test\Models\NoteThesis;
 use Phact\Orm\Fields\HasManyField;
 
-class TreeTest extends DatabaseTest
+abstract class AbstractTreeTest extends DatabaseTest
 {
     public function useModels()
     {

@@ -19,7 +19,7 @@ use Modules\Test\Models\Group;
 use Modules\Test\Models\Membership;
 use Modules\Test\Models\Person;
 
-class ManyToManyTest extends DatabaseTest
+abstract class AbstractManyToManyTest extends DatabaseTest
 {
     public function useModels()
     {

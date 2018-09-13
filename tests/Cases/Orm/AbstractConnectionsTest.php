@@ -17,7 +17,7 @@ use Phact\Orm\ConnectionManager;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
 use Doctrine\DBAL\Connection as DBALConnection;
 
-class ConnectionsTest extends DatabaseTest
+abstract class AbstractConnectionsTest extends DatabaseTest
 {
     public function testSimple()
     {

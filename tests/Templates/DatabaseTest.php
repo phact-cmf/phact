@@ -17,12 +17,17 @@ use Phact\Orm\TableManager;
 
 class DatabaseTest extends AppTest
 {
+    protected $defaultConnection = 'default';
+
     protected function getComponents()
     {
+        $connections = $this->getConnections();
         return [
             'db' => [
                 'class' => ConnectionManager::class,
-                'connections' => $this->getConnections()
+                'connections' => [
+                    'default' => $connections[$this->defaultConnection]
+                ]
             ]
         ];
     }

@@ -19,7 +19,7 @@ use Phact\Orm\Fields\CharField;
 use Phact\Orm\Fields\ForeignField;
 use Phact\Orm\FieldsManager;
 
-class FieldsManagerTest extends DatabaseTest
+abstract class AbstractFieldsManagerTest extends DatabaseTest
 {
     public function testGetters()
     {

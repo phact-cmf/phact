@@ -22,7 +22,7 @@ use Modules\Test\Models\NoteThesis;
 use Modules\Test\Models\Person;
 use Phact\Orm\TableManager;
 
-class TableTest extends DatabaseTest
+abstract class AbstractTableTest extends DatabaseTest
 {
     public function testCreate()
     {

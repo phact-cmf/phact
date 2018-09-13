@@ -5,8 +5,10 @@ php:
   - hhvm
 services:
   - mysql
+  - postgresql
 before_install:
   - mysql -e 'CREATE DATABASE phact;'
+  - postgresql -e 'CREATE DATABASE phact;'
   - echo 'date.timezone = "Europe/Moscow"' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 install:
   - travis_retry composer install --prefer-source --no-interaction

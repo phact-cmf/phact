@@ -28,7 +28,7 @@ use Phact\Orm\Manager;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
 
-class LookupsTest extends DatabaseTest
+abstract class AbstractLookupsTest extends DatabaseTest
 {
     public function useModels()
     {

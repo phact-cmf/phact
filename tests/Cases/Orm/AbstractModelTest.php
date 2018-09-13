@@ -19,7 +19,7 @@ use Modules\Test\Models\Membership;
 use Modules\Test\Models\Person;
 use Modules\Test\Models\Work;
 
-class ModelTest extends DatabaseTest
+abstract class AbstractModelTest extends DatabaseTest
 {
     public function useModels()
     {

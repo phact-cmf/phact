@@ -12,18 +12,10 @@
 
 namespace Phact\Tests;
 
-use Doctrine\DBAL\ParameterType;
-use Modules\Test\Models\Author;
-use Modules\Test\Models\Book;
-use Modules\Test\Models\Group;
-use Modules\Test\Models\Membership;
 use Modules\Test\Models\Note;
-use Modules\Test\Models\Person;
-use Modules\Test\Models\Work;
 use Phact\Orm\Query;
-use Phact\Orm\QueryLayer;
 
-class QueryLayerTest extends DatabaseTest
+abstract class AbstractQueryLayerTest extends DatabaseTest
 {
     public function useModels()
     {

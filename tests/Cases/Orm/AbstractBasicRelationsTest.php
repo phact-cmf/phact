@@ -20,7 +20,7 @@ use Modules\Test\Models\Note;
 use Modules\Test\Models\NoteThesis;
 use Phact\Orm\Fields\HasManyField;
 
-class BasicRelationsTest extends DatabaseTest
+abstract class AbstractBasicRelationsTest extends DatabaseTest
 {
     public function testHasManyNames()
     {
