@@ -12,8 +12,10 @@
 
 namespace Phact\Orm;
 
+use Doctrine\DBAL\Platforms\PostgreSqlPlatform;
 use InvalidArgumentException;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
+use Phact\Orm\Adapters\PostgresqlAdapter;
 
 class LookupManager
 {
@@ -190,9 +192,15 @@ class LookupManager
      * @param $value mixed
      * @param $operator string "or"|"and"
      * @return array
+     * @throws \Doctrine\DBAL\DBALException
      */
     public function processRegex($query, $column, $value, $operator)
     {
-        return QueryLayer::buildWhere($column, 'REGEXP', $value, $operator);
+        $platform = $query->getConnection()->getDatabasePlatform();
+        $expression = $platform->getRegexpExpression();
+        if ($platform instanceof PostgreSqlPlatform) {
+            $expression = PostgresqlAdapter::getRegexpExpression();
+        }
+        return QueryLayer::buildWhere($column, $expression, $value, $operator);
     }
 }

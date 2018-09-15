@@ -12,26 +12,18 @@
 
 namespace Phact\Orm;
 
-
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\Index;
 use Doctrine\DBAL\Schema\Table;
-use Doctrine\DBAL\Types\ObjectType;
 use Doctrine\DBAL\Types\Type;
 use Phact\Main\Phact;
-use Phact\Orm\Fields\AutoField;
 use Phact\Orm\Fields\Field;
-use Phact\Orm\Fields\ForeignField;
-use Phact\Orm\Fields\HasManyField;
 use Phact\Orm\Fields\ManyToManyField;
 
 class TableManager
 {
-    public $defaultEngine = 'InnoDB';
-    public $defaultCharset = 'utf8';
-
     public $checkExists = true;
     public $addFields = true;
     public $processFk = false;

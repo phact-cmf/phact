@@ -470,7 +470,7 @@ class QueryLayer
 
         $queryBuilder->update($this->getTableName());
         foreach ($data as $attribute => $value) {
-            $column = $this->relationColumnAlias($attribute);
+            $column = $attribute;
             if ($value instanceof Expression) {
                 list($value, $bindings) = $this->convertExpression($value);
                 $this->addBindings($queryBuilder, $bindings);
@@ -747,7 +747,7 @@ class QueryLayer
                 $field = $this->relationColumnAlias($field);
             }
             $queryBuilder->add('select', $aggregation->getSql($field) . ' as ' . $name, true);
-            $queryBuilder->having($name . ' ' . $having->getCondition());
+            $queryBuilder->having($aggregation->getSql($field) . ' ' . $having->getCondition());
             if (!$queryBuilder->getQueryPart('groupBy')) {
                 $queryBuilder->groupBy($this->columnAlias(null, $this->getModel()->getPkAttribute()));
             }

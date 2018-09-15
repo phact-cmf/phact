@@ -171,10 +171,10 @@ abstract class QuerySetTest extends DatabaseTest
     public function testUpdate()
     {
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->updateSql(['name' => 'Test']);
-        $this->assertEquals("UPDATE test_note SET test_note.name = 'Test' WHERE test_note.id = 1", $sql);
+        $this->assertEquals("UPDATE test_note SET name = 'Test' WHERE test_note.id = 1", $sql);
 
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1, 'theses__pk__in' => [1,2]])->updateSql(['name' => 'Test']);
-        $this->assertEquals("UPDATE test_note SET test_note.name = 'Test' WHERE test_note.id IN (SELECT temp_table_wrapper.id FROM (SELECT test_note.id FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE (test_note.id = 1) AND (test_note_thesis_1.id IN (1,2))) AS temp_table_wrapper)", $sql);
+        $this->assertEquals("UPDATE test_note SET name = 'Test' WHERE test_note.id IN (SELECT temp_table_wrapper.id FROM (SELECT test_note.id FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id WHERE (test_note.id = 1) AND (test_note_thesis_1.id IN (1,2))) AS temp_table_wrapper)", $sql);
     }
 
     public function testDelete()
@@ -240,7 +240,7 @@ abstract class QuerySetTest extends DatabaseTest
 
         //$count = Note::objects()->getQuerySet()->select(['*', Count::expression('{theses__id}', 'count_theses')])->having(new Expression('count_theses > 1'))->allSql();
         $sql = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->allSql();
-        $this->assertEquals("SELECT DISTINCT test_note.*, COUNT(test_note_thesis_1.id) as hav FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id GROUP BY test_note.id HAVING hav >= 1", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.*, COUNT(test_note_thesis_1.id) as hav FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id GROUP BY test_note.id HAVING COUNT(test_note_thesis_1.id) >= 1", $sql);
 
         $all = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->all();
         $this->assertEquals(1, count($all));

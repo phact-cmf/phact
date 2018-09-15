@@ -12,17 +12,13 @@
 
 namespace Phact\Orm;
 
-
 use Doctrine\DBAL\ParameterType;
-use Doctrine\DBAL\Types\Type;
 use Phact\Main\Phact;
-use Phact\Orm\Adapters\Adapter;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
 
 class Query
 {
     protected $_connectionName = 'default';
-    protected $_adapter;
 
     public function __construct($connectionName = null)
     {

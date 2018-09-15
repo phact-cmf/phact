@@ -16,5 +16,17 @@ return [
         'password' => '',
         'charset' => 'utf8',
         'driver' => 'pdo_pgsql',
+    ],
+    'sqlite' => [
+        'memory' => true,
+        'driver' => 'pdo_sqlite',
+        'driverOptions' => [
+            'userDefinedFunctions' => [
+                'REGEXP' => [
+                    'callback' => ['Phact\Orm\Adapters\SqliteAdapter', 'udfRegexp'],
+                    'numArgs' => -1
+                ]
+            ]
+        ]
     ]
 ];

@@ -19,5 +19,7 @@ function req($classes)
         require_once($class);
     }
 }
+
+req(glob(__DIR__ . '/Abstract/**/*.php'));
 req(glob(__DIR__ . '/sandbox/app/Modules/Test/*Module.php'));
 req(glob(__DIR__ . '/sandbox/app/Modules/Test/**/*.php'));
