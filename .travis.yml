@@ -2,10 +2,13 @@ language: php
 php:
   - '7.1'
   - '7.2'
-  - hhvm
+  - nightly
 services:
   - mysql
   - postgresql
+matrix:
+  - allow_failures:
+    - php: nightly
 before_install:
   - mysql -e 'CREATE DATABASE phact;'
   - psql -c 'CREATE DATABASE phact;' -U postgres
