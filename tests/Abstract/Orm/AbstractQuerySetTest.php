@@ -240,7 +240,7 @@ abstract class QuerySetTest extends DatabaseTest
 
         //$count = Note::objects()->getQuerySet()->select(['*', Count::expression('{theses__id}', 'count_theses')])->having(new Expression('count_theses > 1'))->allSql();
         $sql = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->allSql();
-        $this->assertEquals("SELECT DISTINCT test_note.*, COUNT(test_note_thesis_1.id) as hav FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id GROUP BY test_note.id HAVING COUNT(test_note_thesis_1.id) >= 1", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.*, COUNT(test_note_thesis_1.id) as _service__having FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id GROUP BY test_note.id HAVING COUNT(test_note_thesis_1.id) >= 1", $sql);
 
         $all = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->all();
         $this->assertEquals(1, count($all));
@@ -266,10 +266,11 @@ abstract class QuerySetTest extends DatabaseTest
 
         $qs = Note::objects()->order(['-theses__name']);
         $sql = $qs->allSql();
-        $this->assertEquals("SELECT DISTINCT test_note.*, test_note_thesis_1.name as order__theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id ORDER BY order__theses__name DESC", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.*, test_note_thesis_1.name as _service__order__theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id ORDER BY _service__order__theses__name DESC", $sql);
 
         $sql = $qs->valuesSql(['name', 'theses__id']);
-        $this->assertEquals("SELECT DISTINCT test_note.name AS name, test_note_thesis_1.id AS theses__id, test_note_thesis_1.name as order__theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id ORDER BY order__theses__name DESC", $sql);
+        $this->assertEquals("SELECT DISTINCT test_note.name AS name, test_note_thesis_1.id AS theses__id, test_note_thesis_1.name as _service__order__theses__name FROM test_note LEFT JOIN test_note_thesis test_note_thesis_1 ON test_note.id = test_note_thesis_1.note_id ORDER BY _service__order__theses__name DESC", $sql);
+        $this->assertEquals('First note', $qs->values(['name', 'theses__id'])[0]['name']);
     }
     
     public function testRaw()

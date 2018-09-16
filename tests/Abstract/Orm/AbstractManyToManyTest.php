@@ -99,7 +99,7 @@ abstract class AbstractManyToManyTest extends DatabaseTest
         $group->persons = [$person1, $person2->id];
         $group->save();
 
-        $this->assertEquals(["Cormoran Strike", "Robin Ellacott"], $group->persons->values(['name'], true));
+        $this->assertEquals(["Cormoran Strike", "Robin Ellacott"], $group->persons->order(['name'])->values(['name'], true));
 
         $group->persons->unlink($person1);
 

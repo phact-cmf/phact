@@ -20,6 +20,7 @@ use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Aggregations\Aggregation;
+use Phact\Orm\Aggregations\Max;
 use Phact\Orm\Having\Having;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
 use Doctrine\DBAL\Connection as DBALConnection;
@@ -55,6 +56,14 @@ class QueryLayer
     protected $_isBuiltQuerySet = false;
 
     protected $_paramsCounter = 0;
+
+    /**
+     * Prefix for values in query that required by SQL, but not requested by user
+     * Eg: order columns, having attributes
+     *
+     * @var string
+     */
+    protected $_servicePrefix = '_service__';
 
     public function __construct($querySet, $key = null)
     {
@@ -536,7 +545,16 @@ class QueryLayer
         if ($sql) {
             return $this->getSQL($queryBuilder);
         }
-        return $queryBuilder->execute()->fetchAll();
+        $result = [];
+        foreach ($queryBuilder->execute()->fetchAll() as $key => $row) {
+            foreach ($row as $column => $value) {
+                if (strpos($column, $this->_servicePrefix) === 0) {
+                    unset($row[$column]);
+                }
+            }
+            $result[$key] = $row;
+        }
+        return $result;
     }
 
     /**
@@ -701,7 +719,7 @@ class QueryLayer
             } elseif (is_array($item)) {
                 $column = $this->columnAlias($item['relation'], $item['field']);
                 if ($this->getQuerySet()->getHasManyRelations()) {
-                    $alias = implode('__', ['order', $item['relation'], $item['field']]);
+                    $alias = $this->_servicePrefix . implode('__', ['order', $item['relation'], $item['field']]);
                     $queryBuilder->add('select', "{$column} as {$alias}", true);
                     $queryBuilder->addOrderBy($alias, $item['direction']);
                 } else {
@@ -742,7 +760,7 @@ class QueryLayer
         } elseif ($having instanceof Having) {
             $aggregation = $having->getAggregation();
             $field = $aggregation->getField();
-            $name = 'hav';
+            $name = $this->_servicePrefix . implode('__', ['having']);
             if (!$aggregation->getRaw()) {
                 $field = $this->relationColumnAlias($field);
             }
