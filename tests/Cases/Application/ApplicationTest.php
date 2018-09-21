@@ -31,17 +31,11 @@ class ApplicationTest extends TestCase
             'name' => 'New phact application',
             'paths' => [
                 'base' => $this->getAppPath()
-            ],
-            'components' => [
-                'std' => [
-                    'class' => '\stdClass'
-                ]
             ]
         ];
         Phact::init($config);
         $app = Phact::app();
         $this->assertEquals('New phact application', $app->name);
-        $this->assertInstanceOf(\stdClass::class, $app->std);
     }
 
     public function testComponentsInit()
@@ -50,11 +44,7 @@ class ApplicationTest extends TestCase
             'paths' => [
                 'base' => $this->getAppPath()
             ],
-            'components' => [
-                'std' => [
-                    'class' => '\stdClass'
-                ]
-            ]
+            'servicesConfig' => $this->getAppPath() . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'services_std.yml'
         ];
         Phact::init($config);
         $app = Phact::app();

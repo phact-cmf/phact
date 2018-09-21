@@ -16,10 +16,14 @@ namespace Phact\Template;
 use Fenom;
 use Fenom\Tag;
 use Fenom\Tokenizer;
+use Phact\Application\Application;
+use Phact\Cache\CacheDriverInterface;
+use Phact\Event\EventManagerInterface;
 use Phact\Event\Events;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
+use Phact\Router\Router;
 use Phact\Translate\Translate;
 use Phact\Translate\Translator;
 use RecursiveDirectoryIterator;
@@ -44,8 +48,26 @@ class TemplateManager
 
     public $librariesCacheTimeout;
 
-    public function init()
+    /**
+     * @var CacheDriverInterface|null
+     */
+    protected $_cacheDriver;
+
+    /**
+     * @var Application
+     */
+    protected $_application;
+
+    /**
+     * @var EventManagerInterface
+     */
+    protected $_eventManager;
+
+    public function __construct(EventManagerInterface $eventManager, Application $application, CacheDriverInterface $cacheDriver = null)
     {
+        $this->_cacheDriver = $cacheDriver;
+        $this->_application = $application;
+
         $paths = $this->collectTemplatesPaths();
         $provider = new PhactFenomTemplateProvider($paths);
         $cacheFolder = Paths::get('runtime.' . $this->cacheFolder);
@@ -78,14 +100,16 @@ class TemplateManager
      */
     protected function collectTemplatesPaths()
     {
-        $modulesPath = Paths::get('Modules');
-        $activeModules = Phact::app()->getModulesConfig();
-        $paths = [
-            Paths::get('base') . DIRECTORY_SEPARATOR . $this->templateFolder
-        ];
-        foreach ($activeModules as $module => $config) {
-            $moduleClass = $config['class'];
-            $paths[] = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), $this->templateFolder]);
+        $paths = [];
+        if ($this->_application) {
+            $paths = [
+                $this->_application->getBasePath() . DIRECTORY_SEPARATOR . $this->templateFolder
+            ];
+            $activeModules = $this->_application->getModulesConfig();
+            foreach ($activeModules as $module => $config) {
+                $moduleClass = $config['class'];
+                $paths[] = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), $this->templateFolder]);
+            }
         }
         return $paths;
     }
@@ -107,25 +131,29 @@ class TemplateManager
             return !array_key_exists($variable, $array);
         });
 
-        $this->_renderer->addAccessorSmart("app", "app", Fenom::ACCESSOR_PROPERTY);
-        $this->_renderer->app = Phact::app();
+        if ($this->_application) {
+            $this->_renderer->addAccessorSmart("app", "app", Fenom::ACCESSOR_PROPERTY);
+            $this->_renderer->app = Phact::app();
 
-        $this->_renderer->addAccessorSmart("user", 'Phact\Main\Phact::app()->user', Fenom::ACCESSOR_VAR);
+            $this->_renderer->addAccessorSmart("user", 'Phact\Main\Phact::app()->user', Fenom::ACCESSOR_VAR);
 
-        if (Phact::app()->hasComponent('request')) {
-            $this->_renderer->addAccessorSmart("request", 'Phact\Main\Phact::app()->request', Fenom::ACCESSOR_VAR);
-        }
+            if (Phact::app()->hasComponent('request')) {
+                $this->_renderer->addAccessorSmart("request", 'Phact\Main\Phact::app()->request', Fenom::ACCESSOR_VAR);
+            }
 
-        if (Phact::app()->hasComponent('settings')) {
-            $this->_renderer->addAccessorSmart("setting", "Phact\\Main\\Phact::app()->settings->get", Fenom::ACCESSOR_CALL);
-        }
+            if (Phact::app()->hasComponent('settings')) {
+                $this->_renderer->addAccessorSmart("setting", "Phact\\Main\\Phact::app()->settings->get", Fenom::ACCESSOR_CALL);
+            }
 
-        if (Phact::app()->hasComponent('router')) {
-            $this->_renderer->addAccessorSmart("url", "Phact\\Main\\Phact::app()->router->url", Fenom::ACCESSOR_CALL);
-        }
+            if ($this->_application->hasComponent(Router::class)) {
+                $this->_renderer->addAccessorSmart("url", function($routeName, $params = array()) {
+                    return $this->_application->getComponent(Router::class)->url($routeName, $params);
+                }, Fenom::ACCESSOR_CALL);
+            }
 
-        if (Phact::app()->hasComponent('translate', Translate::class)) {
-            $this->_renderer->addAccessorSmart("t", "Phact\\Main\\Phact::app()->translate->t", Fenom::ACCESSOR_CALL);
+            if (Phact::app()->hasComponent('translate', Translate::class)) {
+                $this->_renderer->addAccessorSmart("t", "Phact\\Main\\Phact::app()->translate->t", Fenom::ACCESSOR_CALL);
+            }
         }
 
         $this->_renderer->addModifier('class', function($object) {
@@ -152,12 +180,19 @@ class TemplateManager
             return forward_static_call_array([self::class, 't'], $params);
         });
 
-        if (Phact::app()->hasComponent('cache')) {
-            $this->_renderer->addBlockFunction("__internal_cache", function ($params, $content) {
+        if ($this->_cacheDriver) {
+            $this->_renderer->addBlockFunction("__internal_cache_set", function ($params, $content) {
                 if (count($params) == 2) {
-                    Phact::app()->cache->set($params[0], $content, $params[1]);
+                    $this->_cacheDriver->set($params[0], $content, $params[1]);
                 }
                 return $content;
+            });
+
+            $this->_renderer->addBlockFunction("__internal_cache_get", function ($params, $content) {
+                if (count($params) == 1 && $this->_cacheDriver) {
+                    return $this->_cacheDriver->get($params[0]);
+                }
+                return "";
             });
 
             $this->_renderer->addBlockCompiler("cache", function ($tokenizer, Tag $tag) {
@@ -173,13 +208,25 @@ class TemplateManager
                 $params = $tag['params'];
                 if ($params) {
                     $result = '
-                        <?php if ($cacheResult = Phact\Main\Phact::app()->cache->get('. $params[0] .')) {
-                            echo $cacheResult;
+                        <?php
+                        $info = $tpl->getStorage()->getTag("__internal_cache_get");
+                        $value = call_user_func_array(
+                            $info["function"], 
+                            array(
+                                array( "0" => '. $params[0] . '), "",  $tpl, &$var
+                            )
+                        );
+                        if ($value) {
+                            echo $value;
                         } else { ob_start(); ?> '. $body.'
-                            <?php  $info = $tpl->getStorage()->getTag("__internal_cache");
+                            <?php $info = $tpl->getStorage()->getTag("__internal_cache_set");
                                 echo call_user_func_array(
-                                    $info["function"], array( array( "0" => '. $params[0] . ', "1" => '. $params[1].' ), 
-                                    ob_get_clean(),  $tpl, &$var
+                                    $info["function"], 
+                                    array( 
+                                        array( "0" => '. $params[0] . ', "1" => '. $params[1].' ), 
+                                        ob_get_clean(),  
+                                        $tpl, 
+                                        &$var
                                     )
                                 ); ?>
                         <?php } ?>
@@ -191,17 +238,20 @@ class TemplateManager
         }
     }
 
+    public function getCacheDriver()
+    {
+        return $this->_cacheDriver;
+    }
+
     public function loadLibraries()
     {
         $extensions = null;
         $cacheKey = 'PHACT__TEMPLATE_EXTENSIONS';
-        if ($this->librariesCacheTimeout) {
-            $extensions = Phact::app()->cache->get($cacheKey);
+        if ($this->librariesCacheTimeout && $this->_cacheDriver) {
+            $extensions = $this->_cacheDriver->get($cacheKey);
         }
-        if (is_null($extensions)) {
-            $extensions = [];
-            $modulesPath = Paths::get('Modules');
-            $activeModules = Phact::app()->getModulesConfig();
+        if (is_null($extensions) && $this->_application) {
+            $activeModules = $this->_application->getModulesConfig();
             $classes = [];
             foreach ($activeModules as $module => $config) {
                 $moduleClass = $config['class'];
@@ -220,13 +270,15 @@ class TemplateManager
                     $extensions = array_merge($extensions, $class::getExtensions());
                 }
             }
-            if ($this->librariesCacheTimeout) {
-                Phact::app()->cache->set($cacheKey, $extensions, $this->librariesCacheTimeout);
+            if ($this->librariesCacheTimeout && $this->_cacheDriver) {
+                $this->_cacheDriver->set($cacheKey, $extensions, $this->librariesCacheTimeout);
             }
         }
         $renderer = $this->getRenderer();
-        foreach ($extensions as $extension) {
-            $this->addExtension($renderer, $extension['class'], $extension['method'], $extension['name'], $extension['kind']);
+        if (is_array($extensions)) {
+            foreach ($extensions as $extension) {
+                $this->addExtension($renderer, $extension['class'], $extension['method'], $extension['name'], $extension['kind']);
+            }
         }
     }
 

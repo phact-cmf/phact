@@ -16,20 +16,23 @@ use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\Collection;
 use Phact\Helpers\Configurator;
+use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
+use Phact\Router\Router;
 
 /**
  * Class HttpRequest
  *
- * @property \Phact\Request\Session $session
  * @property \Phact\Helpers\Collection $get
  * @property \Phact\Helpers\Collection $post
  *
  * @package Phact\Request
  *
  */
-class HttpRequest extends Request
+class HttpRequest
 {
+    use SmartProperties;
+
     /**
      * @var string the name of the POST parameter that is used to indicate if a request is a PUT, PATCH or DELETE
      * request tunneled through POST. Defaults to '_method'.
@@ -50,9 +53,9 @@ class HttpRequest extends Request
     protected $_securePort;
 
     /**
-     * @var Session
+     * @var Router|null
      */
-    protected $_session;
+    protected $_router = null;
 
     /**
      * @var CookieCollection
@@ -77,8 +80,12 @@ class HttpRequest extends Request
 
     protected $_csrfToken;
 
-    public function init()
+    public function __construct(Router $router = null)
     {
+        $this->_router = $router;
+        $this->get = new Collection($_GET);
+        $this->post = new Collection($_POST);
+        $this->cookie = new CookieCollection();
         if ($this->enableCsrfValidation) {
             $this->validateCsrfToken();
         }
@@ -125,22 +132,6 @@ class HttpRequest extends Request
             }
         }
         return $this->_csrfToken;
-    }
-
-    public function __construct()
-    {
-        $this->get = new Collection($_GET);
-        $this->post = new Collection($_POST);
-        $this->cookie = new CookieCollection();
-    }
-    
-    public function setSession($session)
-    {
-        if ($session instanceof Session) {
-            $this->_session = $session;
-        } elseif (is_array($session) || is_string($session)) {
-            $this->_session = Configurator::create($session);
-        }
     }
 
     public function getSession()
@@ -569,12 +560,12 @@ class HttpRequest extends Request
     {
         if (is_object($url) && method_exists($url, 'getAbsoluteUrl')) {
             $url = $url->getAbsoluteUrl();
-        } elseif (strpos($url, ':') !== false) {
-            $url = Phact::app()->router->url($url, $data);
+        } elseif ((strpos($url, ':') !== false) && $this->_router) {
+            $url = $this->_router->url($url, $data);
         }
 
         header('Location: '.$url, true, $statusCode);
-        Phact::app()->end();
+        exit();
     }
 
     public function refresh()

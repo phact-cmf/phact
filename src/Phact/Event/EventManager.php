@@ -19,7 +19,7 @@ use SplPriorityQueue;
  * Class EventManager
  * @package Phact\Event
  */
-class EventManager
+class EventManager implements EventManagerInterface
 {
     /**
      * @var SplPriorityQueue Events queue

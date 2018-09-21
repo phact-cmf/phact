@@ -12,6 +12,8 @@
 
 namespace Phact\Application;
 
+use Phact\Helpers\SmartProperties;
+use Phact\Module\Module;
 use Exception;
 use Phact\Controller\Controller;
 use Phact\Event\EventManager;
@@ -26,6 +28,10 @@ use Phact\Log\Logger;
 use Phact\Main\ComponentsLibrary;
 use Phact\Request\CliRequest;
 use Phact\Request\HttpRequest;
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 /**
  * Class Application
@@ -48,18 +54,42 @@ use Phact\Request\HttpRequest;
  */
 class Application
 {
-    use ComponentsLibrary, Logger, Events;
+    use SmartProperties, Logger;
 
     public $name = 'Phact Application';
 
+    /**
+     * @var ContainerBuilder
+     */
+    protected $_container;
+
+    /**
+     * Initialized modules
+     *
+     * @var Module[]
+     */
     protected $_modules = [];
+
+    /**
+     * Modules configuration
+     *
+     * @var array
+     */
     protected $_modulesConfig = [];
+
+    /**
+     * Path to Container config file
+     *
+     * @var string
+     */
+    protected $_servicesConfigFile;
 
     public $autoloadComponents = [];
 
     public function init()
     {
-        $this->_provideModuleEvent('onApplicationInit');
+        $this->provideModuleEvent('onApplicationInit');
+        $this->initServices();
         $this->eventTrigger("application.beforeInit", [], $this);
         $this->setUpPaths();
         $this->autoload();
@@ -76,7 +106,7 @@ class Application
     public function autoload()
     {
         foreach ($this->autoloadComponents as $name) {
-            $this->getComponent($name);
+            $this->_container->get($name);
         }
     }
 
@@ -138,17 +168,24 @@ class Application
         return array_keys($this->getModulesConfig());
     }
 
+    public function setServicesConfig($path)
+    {
+        $this->_servicesConfigFile = $path;
+    }
+
+    public function initServices()
+    {
+        $this->_container = new ContainerBuilder();
+        $this->_container->setDefinition('application', (new Definition(static::class))->setSynthetic(true)->setPublic(true));
+        if ($this->_servicesConfigFile && is_file($this->_servicesConfigFile)) {
+            $loader = new YamlFileLoader($this->_container, new FileLocator(dirname($this->_servicesConfigFile)));
+            $loader->load($this->_servicesConfigFile);
+        }
+    }
+
     public function getModulesConfig()
     {
         return $this->_modulesConfig;
-    }
-
-    protected function _provideModuleEvent($event, $args = [])
-    {
-        foreach ($this->getModulesConfig() as $name => $config) {
-            $class = $config['class'];
-            forward_static_call_array([$class, $event], $args);
-        }
     }
 
     public function setUpPaths()
@@ -181,11 +218,35 @@ class Application
         }
     }
 
+    /**
+     * @return string
+     */
+    public function getBasePath()
+    {
+        return Paths::get('base');
+    }
+
+    /**
+     * @return string
+     */
+    public function getRuntimePath()
+    {
+        return Paths::get('runtime');
+    }
+
+    /**
+     * @return string
+     */
+    public function getModulesPath()
+    {
+        return Paths::get('Modules');
+    }
+
     public function run()
     {
         $this->logDebug("Application run");
         $this->eventTrigger("application.beforeRun", [], $this);
-        $this->_provideModuleEvent('onApplicationRun');
+        $this->provideModuleEvent('onApplicationRun');
         register_shutdown_function([$this, 'end'], 0);
         $this->logDebug("Start handling request");
         $this->handleRequest();
@@ -195,7 +256,7 @@ class Application
     public function end($status = 0, $response = null)
     {
         $this->eventTrigger("application.beforeEnd", [], $this);
-        $this->_provideModuleEvent('onApplicationEnd', [$status, $response]);
+        $this->provideModuleEvent('onApplicationEnd', [$status, $response]);
         exit($status);
     }
 
@@ -227,8 +288,8 @@ class Application
     public function getUser()
     {
         /** @var AuthInterface $auth */
-        if ($this->hasComponent('auth')) {
-            return $this->getComponent('auth')->getUser();
+        if ($this->hasComponent(AuthInterface::class)) {
+            return $this->getComponent(AuthInterface::class)->getUser();
         }
         return null;
     }
@@ -236,8 +297,8 @@ class Application
     public function handleWebRequest()
     {
         /** @var HttpRequest $request */
-        $request = $this->request;
-        $router = $this->router;
+        $request = $this->getComponent(Request::class);
+        $router = $this->getComponent(Router::class);
         $url = $request->getUrl();
         $method = $request->getMethod();
         $this->logDebug("Matching route for url '{$url}' and method '{$method}'");
@@ -272,7 +333,7 @@ class Application
     public function handleCliRequest()
     {
         /** @var CliRequest $request */
-        $request = $this->request;
+        $request = $this->getComponent(CliRequest::class);
         list($module, $command, $action, $arguments) = $request->parse();
         $this->logDebug("Try to find command '{$command}' for module '{$module}'");
         if ($module && $command) {
@@ -301,6 +362,65 @@ class Application
                 echo PHP_EOL;
             }
             echo  'Usage example:' . PHP_EOL . 'php index.php Base Db';
+        }
+    }
+
+    /**
+     * Get service from container object
+     *
+     * @param $name
+     * @return object
+     * @throws Exception
+     */
+    public function getComponent($name)
+    {
+        return $this->_container->get($name);
+    }
+
+    /**
+     * Checks has container has service
+     *
+     * @param $name
+     * @return bool
+     */
+    public function hasComponent($name)
+    {
+        return $this->_container->has($name);
+    }
+
+    /**
+     * Set service
+     *
+     * @param $id
+     * @param $service
+     */
+    public function setComponent($id, $service)
+    {
+        return $this->_container->set($id, $service);
+    }
+
+    public function __get($name)
+    {
+        if ($this->hasComponent($name)) {
+            return $this->getComponent($name);
+        } else {
+            return $this->__smartGet($name);
+        }
+    }
+
+    protected function eventTrigger($name, $params = array(), $sender = null, $callback = null)
+    {
+        if ($this->hasComponent(EventManager::class)) {
+            $eventManager = $this->getComponent(EventManager::class);
+            $eventManager->trigger($name, $params, $sender, $callback);
+        }
+    }
+
+    protected function provideModuleEvent($event, $args = [])
+    {
+        foreach ($this->getModulesConfig() as $name => $config) {
+            $class = $config['class'];
+            forward_static_call_array([$class, $event], $args);
         }
     }
 }

@@ -67,6 +67,9 @@ class ControllerTest extends AppTest
         $action = $match['target'][1];
         $params = $match['params'];
 
+        $this->assertEquals(TestController::class, $controllerClass);
+        $this->assertEquals($action, 'testParam');
+
         /** @var Controller $controller */
         $controller = new $controllerClass(new HttpRequest());
         $controller->run($action, $params);

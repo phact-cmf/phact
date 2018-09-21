@@ -12,15 +12,29 @@
 
 namespace Phact\Request;
 
+use Phact\Application\Application;
 use Phact\Commands\Command;
 use Phact\Helpers\Paths;
+use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
 
-class CliRequest extends Request
+class CliRequest
 {
+    use SmartProperties;
+
+    /**
+     * @var Application
+     */
+    protected $_application;
+
+    public function __construct(Application $application)
+    {
+        $this->_application = $application;
+    }
+
     public function parse()
     {
         $args = [];
@@ -50,8 +64,7 @@ class CliRequest extends Request
 
     public function getCommandsList()
     {
-        $modulesPath = Paths::get('Modules');
-        $activeModules = Phact::app()->getModulesConfig();
+        $activeModules = $this->_application->getModulesConfig();
         $data = [];
         foreach ($activeModules as $moduleName => $module) {
             $moduleClass = $module['class'];

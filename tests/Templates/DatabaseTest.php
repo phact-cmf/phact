@@ -12,6 +12,7 @@
 
 namespace Phact\Tests;
 
+use Phact\Main\Phact;
 use Phact\Orm\ConnectionManager;
 use Phact\Orm\TableManager;
 
@@ -19,22 +20,17 @@ class DatabaseTest extends AppTest
 {
     protected $defaultConnection = 'default';
 
-    protected function getComponents()
-    {
-        $connections = $this->getConnections();
-        return [
-            'db' => [
-                'class' => ConnectionManager::class,
-                'connections' => [
-                    'default' => $connections[$this->defaultConnection]
-                ]
-            ]
-        ];
-    }
-
     public function setUp()
     {
         parent::setUp();
+
+        $connections = $this->getConnections();
+        $connectionManager = new ConnectionManager();
+        $connectionManager->setConnections([
+            'default' => $connections[$this->defaultConnection]
+        ]);
+        Phact::app()->setComponent('db', $connectionManager);
+
         $tableManager = new TableManager();
         $models = $this->useModels();
         if ($models) {

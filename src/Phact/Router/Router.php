@@ -4,6 +4,7 @@ namespace Phact\Router;
 
 use Exception;
 use InvalidArgumentException;
+use Phact\Cache\CacheDriverInterface;
 use Phact\Event\Events;
 use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
@@ -38,11 +39,6 @@ class Router
     protected $_basePath = '';
 
     /**
-     * @var string|null Path to routes file (ex: base.config.routes)
-     */
-    public $pathRoutes;
-
-    /**
      * @var int Cache timeout
      */
     public $cacheTimeout;
@@ -68,12 +64,19 @@ class Router
         '' => '[^/\.]++'
     );
 
-    public function init()
+    /**
+     * @var CacheDriverInterface
+     */
+    protected $_cacheDriver;
+
+    public function __construct(string $configPath = null, CacheDriverInterface $cacheDriver = null)
     {
+        $this->_cacheDriver = $cacheDriver;
+
         $routes = null;
         $cacheKey = 'PHACT__ROUTER';
         if (!is_null($this->cacheTimeout)) {
-            $routes = Phact::app()->cache->get($cacheKey);
+            $routes = $this->_cacheDriver->get($cacheKey);
             if ($routes) {
                 $this->_namedRoutes = $routes['named'];
                 $this->_routes = $routes['all'];
@@ -82,15 +85,15 @@ class Router
         }
 
         if (!$routes) {
-            if ($this->pathRoutes) {
-                $this->collectFromFile($this->pathRoutes);
+            if ($configPath) {
+                $this->collectFromFile($configPath);
             }
             if (!is_null($this->cacheTimeout)) {
                 $routes = [
                     'named' => $this->_namedRoutes,
                     'all' => $this->_routes
                 ];
-                Phact::app()->cache->set($cacheKey, $routes, $this->cacheTimeout);
+                $this->_cacheDriver->set($cacheKey, $routes, $this->cacheTimeout);
             }
         }
     }
@@ -387,6 +390,9 @@ class Router
         }
 
         if (!$matches && $requestUrl != '/' && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
+            /**
+             * @TODO: kill me, please
+             */
             Phact::app()->request->redirect(rtrim($requestUrl, '/'));
         }
 
@@ -400,7 +406,7 @@ class Router
         if (!$this->cacheTimeout) {
             return [];
         }
-        return Phact::app()->cache->get('PHACT__ROUTER_COMPILED', []);
+        return $this->_cacheDriver->get('PHACT__ROUTER_COMPILED');
     }
 
     protected function setCompiledRoutes($routes)
@@ -408,7 +414,7 @@ class Router
         if (!$this->cacheTimeout) {
             return true;
         }
-        Phact::app()->cache->set('PHACT__ROUTER_COMPILED', $routes, $this->cacheTimeout);
+        $this->_cacheDriver->set('PHACT__ROUTER_COMPILED', $routes, $this->cacheTimeout);
         return true;
     }
 
@@ -417,7 +423,7 @@ class Router
         if (!$this->cacheTimeout) {
             return [];
         }
-        return Phact::app()->cache->get('PHACT__ROUTER_MATCHED', []);
+        return $this->_cacheDriver->get('PHACT__ROUTER_MATCHED', []);
     }
 
     protected function setMatchedRoutes($routes)
@@ -425,7 +431,7 @@ class Router
         if (!$this->cacheTimeout) {
             return true;
         }
-        Phact::app()->cache->set('PHACT__ROUTER_MATCHED', $routes, $this->cacheTimeout);
+        $this->_cacheDriver->set('PHACT__ROUTER_MATCHED', $routes, $this->cacheTimeout);
         return true;
     }
 
