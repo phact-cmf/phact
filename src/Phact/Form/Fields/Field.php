@@ -590,9 +590,14 @@ abstract class Field
 
     public function getHtmlName()
     {
+        $name = $this->getHtmlBaseName();
+        return $this->multiple ? $name . '[]' : $name;
+    }
+
+    public function getHtmlBaseName()
+    {
         $form = $this->getForm();
         $key = is_null($form->key) ? '' : "[{$form->key}]";
-        $name = $form->getName() . $key . "[{$this->getName()}]";
-        return $this->multiple ? $name . '[]' : $name;
+        return $form->getName() . $key . "[{$this->getName()}]";
     }
 }
