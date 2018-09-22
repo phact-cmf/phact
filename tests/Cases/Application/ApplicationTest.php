@@ -28,10 +28,7 @@ class ApplicationTest extends TestCase
     public function testSimpleInit()
     {
         $config = [
-            'name' => 'New phact application',
-            'paths' => [
-                'base' => $this->getAppPath()
-            ]
+            'name' => 'New phact application'
         ];
         Phact::init($config);
         $app = Phact::app();
@@ -41,26 +38,12 @@ class ApplicationTest extends TestCase
     public function testComponentsInit()
     {
         $config = [
-            'paths' => [
-                'base' => $this->getAppPath()
-            ],
-            'servicesConfig' => $this->getAppPath() . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'services_std.yml'
+            'components' => [
+                'std' => \stdClass::class
+            ]
         ];
         Phact::init($config);
         $app = Phact::app();
         $this->assertInstanceOf(\stdClass::class, $app->std);
-    }
-
-    public function testPathsInit()
-    {
-        $config = [
-            'paths' => [
-                'base' => $this->getAppPath()
-            ]
-        ];
-        Phact::init($config);
-        $this->assertEquals(Paths::get('base'), $this->getAppPath());
-        $this->assertEquals(Paths::get('runtime'), implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'runtime']));
-        $this->assertEquals(Paths::get('Modules'), implode(DIRECTORY_SEPARATOR, [$this->getAppPath(), 'Modules']));
     }
 }

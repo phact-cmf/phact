@@ -1,6 +1,0 @@
-services:
-  _defaults:
-    public: true
-
-  std:
-    class: \stdClass

@@ -12,18 +12,13 @@
 
 namespace Phact\Tests;
 
-use Phact\Event\EventManager;
-use Phact\Event\EventManagerInterface;
 use Phact\Main\Phact;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+
 
 class DefaultsTest extends AppTest
 {
     public function testUrl()
     {
-        $reflection = new \ReflectionClass(YamlFileLoader::class);
-        print_r(class_parents(YamlFileLoader::class));die();
-
         $tpl = Phact::app()->template;
 
         $this->assertEquals("/test_route\n/test_route/param", $tpl->render('defaults/url.tpl'));

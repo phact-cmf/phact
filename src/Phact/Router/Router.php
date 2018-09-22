@@ -5,8 +5,10 @@ namespace Phact\Router;
 use Exception;
 use InvalidArgumentException;
 use Phact\Cache\CacheDriverInterface;
+use Phact\Components\PathInterface;
+use Phact\Event\EventManagerInterface;
 use Phact\Event\Events;
-use Phact\Helpers\Paths;
+use Phact\Exceptions\DependencyException;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Main\Phact;
@@ -69,9 +71,16 @@ class Router
      */
     protected $_cacheDriver;
 
-    public function __construct(string $configPath = null, CacheDriverInterface $cacheDriver = null)
+    /**
+     * @var PathInterface
+     */
+    protected $_path;
+
+    public function __construct(string $configPath = null, PathInterface $path = null, CacheDriverInterface $cacheDriver = null, EventManagerInterface $eventManager)
     {
         $this->_cacheDriver = $cacheDriver;
+        $this->_eventManager = $eventManager;
+        $this->_path = $path;
 
         $routes = null;
         $cacheKey = 'PHACT__ROUTER';
@@ -426,6 +435,10 @@ class Router
         return $this->_cacheDriver->get('PHACT__ROUTER_MATCHED', []);
     }
 
+    /**
+     * @param $routes
+     * @return bool
+     */
     protected function setMatchedRoutes($routes)
     {
         if (!$this->cacheTimeout) {
@@ -475,12 +488,17 @@ class Router
      * Append routes from file
      *
      * @param $path
+     * @throws Exception
      */
     public function collectFromFile($path)
     {
-        $routesPath = Paths::file($path, 'php');
-        $routes = include $routesPath;
-        $this->collect($routes);
+        if ($this->_path) {
+            $routesPath = $this->_path->file($path, 'php');
+            $routes = include $routesPath;
+            $this->collect($routes);
+        } else {
+            throw new DependencyException('Required dependency ' . PathInterface::class . ' is not injected');
+        }
     }
 
     /**
@@ -489,11 +507,11 @@ class Router
      * @param array $configuration
      * @param string $namespace
      * @param string $route
+     * @throws Exception
      */
     public function collect($configuration = [], $namespace = '', $route = '')
     {
         foreach ($configuration as $item) {
-
             if (isset($item['route']) && isset($item['path'])) {
                 $this->appendRoutes($item, $namespace, $route);
             } elseif (isset($item['route']) && isset($item['target'])) {
@@ -508,10 +526,14 @@ class Router
      * @param $item
      * @param string $namespace
      * @param string $route
+     * @throws Exception
      */
     public function appendRoutes($item, $namespace = '', $route = '')
     {
         if (isset($item['path'])) {
+            if (!$this->_path) {
+                throw new DependencyException('Required dependency ' . PathInterface::class . ' is not injected');
+            }
             $itemNamespace = isset($item['namespace']) ? $item['namespace'] : '';
             if ($itemNamespace && $namespace) {
                 $itemNamespace = $namespace . ':' . $itemNamespace;
@@ -520,7 +542,8 @@ class Router
             if ($path && $route) {
                 $path = $route . $path;
             }
-            $routesFile = Paths::file($item['path'], 'php');
+
+            $routesFile = $this->_path->file($item['path'], 'php');
             if (!$routesFile) {
                 return;
             }

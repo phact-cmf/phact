@@ -13,7 +13,13 @@
 namespace Phact\Exceptions;
 
 
+use Throwable;
+
 class CircularContainerException extends ContainerException
 {
-
+    public function __construct(string $message = "", int $code = 0, Throwable $previous = null)
+    {
+        $message .= ". Circular dependencies can be solved with calling setter with loaded service attribute.";
+        parent::__construct($message, $code, $previous);
+    }
 }

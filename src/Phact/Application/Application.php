@@ -12,26 +12,20 @@
 
 namespace Phact\Application;
 
+use Phact\Components\PathInterface;
+use Phact\Di\Container;
 use Phact\Helpers\SmartProperties;
-use Phact\Module\Module;
 use Exception;
 use Phact\Controller\Controller;
 use Phact\Event\EventManager;
-use Phact\Event\Events;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Exceptions\NotFoundHttpException;
-use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
-use Phact\Helpers\Paths;
 use Phact\Interfaces\AuthInterface;
-use Phact\Log\Logger;
-use Phact\Main\ComponentsLibrary;
+use Phact\Log\LoggerHandle;
 use Phact\Request\CliRequest;
 use Phact\Request\HttpRequest;
-use Symfony\Component\Config\FileLocator;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class Application
@@ -52,194 +46,146 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
  * 
  * @package Phact\Application
  */
-class Application
+class Application implements ModulesInterface
 {
-    use SmartProperties, Logger;
+    use SmartProperties, LoggerHandle, ModulesTrait;
 
     public $name = 'Phact Application';
 
     /**
-     * @var ContainerBuilder
+     * @var Container
      */
     protected $_container;
 
     /**
-     * Initialized modules
-     *
-     * @var Module[]
-     */
-    protected $_modules = [];
-
-    /**
-     * Modules configuration
-     *
-     * @var array
-     */
-    protected $_modulesConfig = [];
-
-    /**
-     * Path to Container config file
+     * Components config
      *
      * @var string
      */
-    protected $_servicesConfigFile;
+    protected $_componentsConfig = [];
 
-    public $autoloadComponents = [];
+    /**
+     * Container config
+     *
+     * @var string
+     */
+    protected $_containerConfig = [];
 
+    /**
+     * Autoload components names
+     *
+     * @var array
+     */
+    protected $_autoloadComponents = [];
+
+    /**
+     * Application initialization
+     *
+     * @throws InvalidConfigException
+     * @throws \Phact\Exceptions\ContainerException
+     */
     public function init()
     {
         $this->provideModuleEvent('onApplicationInit');
-        $this->initServices();
-        $this->eventTrigger("application.beforeInit", [], $this);
+        $this->initContainer();
         $this->setUpPaths();
         $this->autoload();
         $this->eventTrigger("application.afterInit", [], $this);
     }
 
-    public function setPaths($paths)
+    /**
+     * Set autoload components config
+     *
+     * @param $components
+     */
+    public function setAutoloadComponents($components)
     {
-        foreach ($paths as $name => $path) {
-            Paths::add($name, $path);
-        }
+        $this->_autoloadComponents = $components;
     }
 
-    public function autoload()
+    /**
+     * Set components configuration for container
+     *
+     * @param $config
+     */
+    public function setComponents($config)
     {
-        foreach ($this->autoloadComponents as $name) {
+        $this->_componentsConfig = $config;
+    }
+
+    /**
+     * Set configuration for container
+     *
+     * @param $config
+     */
+    public function setContainer($config)
+    {
+        $this->_containerConfig = $config;
+    }
+
+    /**
+     * Container initialization
+     *
+     * @throws InvalidConfigException
+     * @throws \Phact\Exceptions\ContainerException
+     */
+    protected function initContainer()
+    {
+        if (!is_array($this->_containerConfig)) {
+            throw new InvalidConfigException("Container config must be an array");
+        }
+        if (!isset($this->_containerConfig['class'])) {
+            $this->_containerConfig['class'] = Container::class;
+        }
+        if (!is_a($this->_containerConfig['class'], Container::class, true)) {
+            throw new InvalidConfigException("Container class must extend class " . Container::class);
+        }
+        $this->_container = Configurator::create($this->_containerConfig);
+        $this->_container->set('application', $this);
+        $this->_container->addReference('application', Application::class);
+        $this->_container->setConfig($this->_componentsConfig);
+    }
+
+    /**
+     * Autoload required application components
+     */
+    protected function autoload()
+    {
+        foreach ($this->_autoloadComponents as $name) {
             $this->_container->get($name);
         }
     }
 
-    public function setModules($config = [])
+    /**
+     * Check and setup interfaces
+     *
+     * @throws InvalidConfigException
+     */
+    protected function setUpPaths()
     {
-        $this->_modulesConfig = $this->prepareModulesConfigs($config);
-    }
-
-    public function prepareModulesConfigs($rawConfig)
-    {
-        $configs = [];
-        foreach ($rawConfig as $key => $module) {
-            $name = null;
-            $config = [];
-            if (is_string($module)) {
-                $name = $module;
-            } elseif (is_string($key)) {
-                $name = $key;
-                if (is_array($module)) {
-                    $config = $module;
-                }
-            } else {
-                throw new InvalidConfigException("Unable to configure module {$key}");
+        /** @var PathInterface $paths */
+        if ($this->_container->has(PathInterface::class) && ($paths = $this->_container->get(PathInterface::class))) {
+            $basePath = $paths->get('base');
+            if (!is_dir($basePath)) {
+                throw new InvalidConfigException('Base path must be a valid directory. Please, set up correct base path in "paths" section of configuration.');
             }
-
-            $name = ucfirst($name);
-            $class = '\\Modules\\' . $name . '\\' . $name . 'Module';
-            $config['class'] = $class;
-            $configs[$name] = $config;
-        }
-        return $configs;
-    }
-
-    public function getModule($name)
-    {
-        if (!isset($this->_modules[$name])) {
-            $this->logDebug("Loading module '{$name}'");
-            $config = $this->getModuleConfig($name);
-            if (!is_null($config)) {
-                $this->_modules[$name] = Configurator::create($config);
-            } else {
-                throw new UnknownPropertyException("Module with name" . $name . " not found");
+            if (!$paths->get('runtime')) {
+                $paths->add('runtime', $paths->get('base.runtime'));
+            }
+            if (!is_dir($paths->get('runtime')) || !is_writable($paths->get('runtime'))) {
+                throw new InvalidConfigException('Runtime path must be a valid and writable directory. Please, set up correct runtime path in "paths" section of configuration.');
+            }
+            $modulesPath = $paths->get('Modules');
+            if (!$modulesPath && ($modulesPath = $paths->get('base.Modules')) && is_dir($modulesPath)) {
+                $paths->add('Modules', $modulesPath);
+            }
+            foreach ($this->getModulesClasses() as $name => $class) {
+                $paths->add("Modules.{$name}", $class::getPath());
+            }
+            if (!is_dir($modulesPath)) {
+                throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');
             }
         }
-
-        return $this->_modules[$name];
-    }
-
-    public function getModuleConfig($name)
-    {
-        if (array_key_exists($name, $this->_modulesConfig)) {
-            return $this->_modulesConfig[$name];
-        }
-        return null;
-    }
-
-    public function getModulesList()
-    {
-        return array_keys($this->getModulesConfig());
-    }
-
-    public function setServicesConfig($path)
-    {
-        $this->_servicesConfigFile = $path;
-    }
-
-    public function initServices()
-    {
-        $this->_container = new ContainerBuilder();
-        $this->_container->setDefinition('application', (new Definition(static::class))->setSynthetic(true)->setPublic(true));
-        if ($this->_servicesConfigFile && is_file($this->_servicesConfigFile)) {
-            $loader = new YamlFileLoader($this->_container, new FileLocator(dirname($this->_servicesConfigFile)));
-            $loader->load($this->_servicesConfigFile);
-        }
-    }
-
-    public function getModulesConfig()
-    {
-        return $this->_modulesConfig;
-    }
-
-    public function setUpPaths()
-    {
-        $basePath = Paths::get('base');
-        if (!is_dir($basePath)) {
-            throw new InvalidConfigException('Base path must be a valid directory. Please, set up correct base path in "paths" section of configuration.');
-        }
-
-        $runtimePath = Paths::get('runtime');
-        if (!$runtimePath) {
-            $runtimePath = Paths::get('base.runtime');
-            Paths::add('runtime', $runtimePath);
-        }
-        if (!is_dir($runtimePath) || !is_writable($runtimePath)) {
-            throw new InvalidConfigException('Runtime path must be a valid and writable directory. Please, set up correct runtime path in "paths" section of configuration.');
-        }
-
-        $modulesPath = Paths::get('Modules');
-        if (!$modulesPath) {
-            $modulesPath = Paths::get('base.Modules');
-            Paths::add('Modules', $modulesPath);
-            foreach ($this->getModulesConfig() as $name => $config) {
-                $class = $config['class'];
-                Paths::add("Modules.{$name}", $class::getPath());
-            }
-        }
-        if (!is_dir($modulesPath)) {
-            throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');
-        }
-    }
-
-    /**
-     * @return string
-     */
-    public function getBasePath()
-    {
-        return Paths::get('base');
-    }
-
-    /**
-     * @return string
-     */
-    public function getRuntimePath()
-    {
-        return Paths::get('runtime');
-    }
-
-    /**
-     * @return string
-     */
-    public function getModulesPath()
-    {
-        return Paths::get('Modules');
     }
 
     public function run()
@@ -389,16 +335,24 @@ class Application
     }
 
     /**
-     * Set service
+     * Set service/component
      *
      * @param $id
      * @param $service
+     * @throws \Phact\Exceptions\ContainerException
      */
     public function setComponent($id, $service)
     {
         return $this->_container->set($id, $service);
     }
 
+    /**
+     * Magic get component or smart getter
+     *
+     * @param $name
+     * @return object
+     * @throws \Phact\Exceptions\UnknownPropertyException
+     */
     public function __get($name)
     {
         if ($this->hasComponent($name)) {
@@ -408,6 +362,15 @@ class Application
         }
     }
 
+    /**
+     * Process event
+     *
+     * @param $name
+     * @param array $params
+     * @param null $sender
+     * @param null $callback
+     * @throws Exception
+     */
     protected function eventTrigger($name, $params = array(), $sender = null, $callback = null)
     {
         if ($this->hasComponent(EventManager::class)) {
@@ -416,11 +379,30 @@ class Application
         }
     }
 
+    /**
+     * Call modules static methods
+     *
+     * @param $event
+     * @param array $args
+     */
     protected function provideModuleEvent($event, $args = [])
     {
         foreach ($this->getModulesConfig() as $name => $config) {
             $class = $config['class'];
             forward_static_call_array([$class, $event], $args);
         }
+    }
+
+    /**
+     * @param string $name
+     * @return LoggerInterface|null
+     */
+    public function getLogger($name = 'default')
+    {
+        $name = "logger.{$name}";
+        if ($this->_container->has($name) && ($logger = $this->_container->get($name)) && ($logger instanceof LoggerInterface)) {
+            return $logger;
+        }
+        return null;
     }
 }

@@ -14,25 +14,27 @@
 namespace Phact\Translate;
 
 
-use Phact\Exceptions\InvalidConfigException;
-use Phact\Helpers\Configurator;
-use Phact\Helpers\Paths;
+use Phact\Application\ModulesInterface;
+use Phact\Components\PathInterface;
 use Phact\Helpers\SmartProperties;
-use Phact\Main\Phact;
 use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\Loader\MoFileLoader;
 use Symfony\Component\Translation\Loader\PhpFileLoader;
 use Symfony\Component\Translation\Loader\PoFileLoader;
 use Symfony\Component\Translation\Translator as SymfonyTranslator;
+use Symfony\Component\Translation\TranslatorInterface;
 
 class Translate
 {
     use SmartProperties;
 
-    /** @var SymfonyTranslator */
+    /** @var TranslatorInterface */
     protected $_translator;
 
+    /**
+     * @var array
+     */
     protected $_locales = [];
 
     /** @var string */
@@ -47,24 +49,30 @@ class Translate
     public $default = 'en';
 
     /**
-     * Initialization
+     * @var PathInterface
      */
-    public function init()
+    protected $_path;
+
+    /***
+     * @var ModulesInterface
+     */
+    protected $_modules;
+
+    public function __construct($localeDetector = null, PathInterface $path = null, TranslatorInterface $translator = null, ModulesInterface $modules = null)
     {
+        $this->_localeDetector = $localeDetector;
         $this->_locale = $this->detect();
-        $this->_translator = new SymfonyTranslator($this->_locale);
+        $this->_translator = $translator ?: new SymfonyTranslator($this->_locale);
+        $this->_modules = $modules;
         $this->initLoaders();
         $this->loadMessages();
     }
 
     /**
-     * @return SymfonyTranslator
+     * @return TranslatorInterface
      */
     public function getTranslator()
     {
-        if (!$this->_translator) {
-            $this->init();
-        }
         return $this->_translator;
     }
 
@@ -124,12 +132,13 @@ class Translate
      */
     public function loadModulesMessages()
     {
-        foreach (Phact::app()->getModulesConfig() as $moduleName => $config) {
-            $moduleClass = $config['class'];
-            $modulePath = $moduleClass::getPath();
-            $moduleMessagesPath = realpath(implode(DIRECTORY_SEPARATOR, [$modulePath, 'messages']));
-            if ($moduleMessagesPath) {
-                $this->loadFileSystemMessages($moduleMessagesPath, "{$moduleName}.");
+        if ($this->_modules) {
+            foreach ($this->_modules->getModulesClasses() as $moduleName => $class) {
+                $modulePath = $class::getPath();
+                $moduleMessagesPath = realpath(implode(DIRECTORY_SEPARATOR, [$modulePath, 'messages']));
+                if ($moduleMessagesPath) {
+                    $this->loadFileSystemMessages($moduleMessagesPath, "{$moduleName}.");
+                }
             }
         }
     }
@@ -139,9 +148,11 @@ class Translate
      */
     public function loadApplicationMessages()
     {
-        $systemMessagesPath = realpath(Paths::get('base.messages'));
-        if ($systemMessagesPath) {
-            $this->loadFileSystemMessages($systemMessagesPath, "");
+        if ($this->_path && $this->_path->get('base.messages')) {
+            $systemMessagesPath = realpath($this->_path->get('base.messages'));
+            if ($systemMessagesPath) {
+                $this->loadFileSystemMessages($systemMessagesPath, "");
+            }
         }
     }
 
@@ -181,24 +192,6 @@ class Translate
     }
 
     /**
-     * @param callable|null|LocaleDetector $localeDetector
-     * @return Translate
-     * @throws InvalidConfigException If locale detector is not callable and not instance of LocaleDetector
-     */
-    public function setLocaleDetector($localeDetector)
-    {
-        if (is_array($localeDetector)) {
-            $this->_localeDetector = Configurator::create($localeDetector);
-            if (!($this->_localeDetector instanceof LocaleDetector)) {
-                throw new InvalidConfigException("Locale detector must be instance of \\Phact\\Translate\\LocaleDetector");
-            }
-        } elseif (is_callable($localeDetector)) {
-            $this->_localeDetector = $localeDetector;
-        }
-        return $this;
-    }
-
-    /**
      * @return string
      */
     public function getLocale()
@@ -207,6 +200,7 @@ class Translate
     }
 
     /**
+     * @param $locale
      * @return string
      */
     public function setLocale($locale)
@@ -235,7 +229,7 @@ class Translate
         if (is_array($number)) {
             $parameters = $number;
         }
-        if (mb_strpos($domain, ".", 0, "UTF-8") === false && in_array($domain, Phact::app()->getModulesList())) {
+        if (mb_strpos($domain, ".", 0, "UTF-8") === false && $this->_modules && in_array($domain, $this->_modules->getModulesList())) {
             $domain .= ".messages";
         }
         if ((mb_strpos($key, "|", 0, "UTF-8") !== false) && $number) {

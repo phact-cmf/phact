@@ -115,7 +115,7 @@ trait LoggerHandle
 
     /**
      * @param string $name
-     * @return LoggerInterface
+     * @return LoggerInterface|null
      */
     abstract public function getLogger($name = 'default');
 }

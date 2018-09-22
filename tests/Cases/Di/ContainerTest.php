@@ -16,9 +16,11 @@ use Modules\Test\Components\ArgumentsComponent;
 use Modules\Test\Components\CrossComponent1;
 use Modules\Test\Components\CrossComponent2;
 use Modules\Test\Components\OptionalComponent;
+use Modules\Test\Components\SetterComponent;
 use Modules\Test\Components\SlaveArgumentsComponent;
 use Modules\Test\Components\SlaveComponentByClass;
 use Modules\Test\Components\SlaveComponentByInterface;
+use Modules\Test\Components\SlaveSetterComponent;
 use Modules\Test\Components\StandaloneComponent;
 use Phact\Di\Container;
 use Phact\Exceptions\CircularContainerException;
@@ -91,7 +93,7 @@ class ContainerTest extends TestCase
         $container->addDefinition('attributed3', [
             'class' => ArgumentsComponent::class,
             'arguments' => [
-                1 => 3
+                'attribute' => 3
             ]
         ]);
         $container->addDefinition('attributed_slave3', [
@@ -182,5 +184,73 @@ class ContainerTest extends TestCase
         $container->addDefinition('cross2', CrossComponent2::class);
         $container->addDefinition('cross1', CrossComponent1::class);
         $container->get('cross1');
+    }
+
+    public function testCall()
+    {
+        $container = new Container();
+        $container->addDefinition('setter', [
+            'class' => SetterComponent::class,
+            'calls' => [
+                'setValue' => ['someValue']
+            ]
+        ]);
+        $this->assertEquals('someValue', $container->get('setter')->getValue());
+    }
+
+    public function testCallAuto()
+    {
+        $container = new Container();
+        $container->addDefinition('standalone', StandaloneComponent::class);
+        $container->addDefinition('setter', [
+            'class' => SlaveSetterComponent::class,
+            'calls' => [
+                'setStandalone'
+            ]
+        ]);
+        $this->assertInstanceOf(StandaloneComponent::class, $container->get('setter')->getStandalone());
+    }
+
+    public function testSetterLoaded()
+    {
+        $container = new Container();
+        $container->addDefinition('standalone', StandaloneComponent::class);
+        $container->addDefinition('setter', [
+            'class' => SlaveSetterComponent::class,
+            'calls' => [
+                'setStandaloneAndSomething' => [
+                    'someValue' => 2
+                ]
+            ]
+        ]);
+        $this->assertInstanceOf(StandaloneComponent::class, $container->get('setter')->getStandalone());
+        $this->assertEquals(2, $container->get('setter')->getValue());
+    }
+
+    public function testDelayedCall()
+    {
+        $container = new Container();
+        $container->addDefinition('standalone', StandaloneComponent::class);
+        $container->addDefinition('setter', [
+            'class' => SlaveSetterComponent::class,
+            'calls' => [
+                'setStandalone' => ['@!standalone']
+            ]
+        ]);
+        $this->assertNull($container->get('setter')->getStandalone());
+        $container->get('standalone');
+        $this->assertInstanceOf(StandaloneComponent::class, $container->get('setter')->getStandalone());
+    }
+
+    public function testOptionalCall()
+    {
+        $container = new Container();
+        $container->addDefinition('setter', [
+            'class' => SlaveSetterComponent::class,
+            'calls' => [
+                'setStandaloneOptional' => ['@?standalone']
+            ]
+        ]);
+        $this->assertNull($container->get('setter')->getStandalone());
     }
 }

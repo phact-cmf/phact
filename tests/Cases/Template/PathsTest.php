@@ -13,13 +13,14 @@
 namespace Phact\Tests;
 
 
+use Phact\Main\Phact;
 use Phact\Template\TemplateManager;
 
 class TemplatesPathsTest extends AppTest
 {
     public function testSame()
     {
-        $tpl = new TemplateManager();
+        $tpl = new TemplateManager(Phact::app());
         $tpl->init();
         $this->assertEquals($tpl->render('same.html'), 'Same template application');
         $this->assertEquals($tpl->render('module.html'), 'Module template');

@@ -14,7 +14,6 @@ namespace Phact\Components;
 
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
-use Phact\Orm\Model;
 
 class Flash
 {

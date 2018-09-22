@@ -12,40 +12,75 @@
 
 namespace Phact\Template;
 
-
 use Fenom;
 use Fenom\Tag;
-use Fenom\Tokenizer;
-use Phact\Application\Application;
+use Phact\Application\ModulesInterface;
 use Phact\Cache\CacheDriverInterface;
+use Phact\Components\PathInterface;
+use Phact\Components\Settings;
 use Phact\Event\EventManagerInterface;
 use Phact\Event\Events;
-use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
-use Phact\Main\Phact;
+use Phact\Interfaces\AuthInterface;
+use Phact\Request\HttpRequest;
 use Phact\Router\Router;
 use Phact\Translate\Translate;
-use Phact\Translate\Translator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
-class TemplateManager
+class TemplateManager implements RendererInterface
 {
-    use SmartProperties, Events, Translator;
+    use SmartProperties, Events;
 
     /**
      * @var Fenom
      */
     protected $_renderer;
 
+    /**
+     * Fenom option
+     * @var bool
+     */
     public $forceCompile = false;
+
+    /**
+     * Fenom option
+     * @var bool
+     */
     public $autoReload = true;
+
+    /**
+     * Fenom option
+     * @var bool
+     */
     public $autoEscape = true;
 
+    /**
+     * Application template folder
+     *
+     * @var string
+     */
     public $templateFolder = 'templates';
+
+    /**
+     * Libraries folder in module
+     *
+     * @var string
+     */
     public $librariesFolder = 'TemplateLibraries';
+
+    /**
+     * Cache folder in runtime
+     *
+     * @var string
+     */
     public $cacheFolder = 'templates_cache';
 
+    /**
+     * Timeout for cache libraries from modules
+     *
+     * @var int
+     */
     public $librariesCacheTimeout;
 
     /**
@@ -54,40 +89,85 @@ class TemplateManager
     protected $_cacheDriver;
 
     /**
-     * @var Application
+     * @var ModulesInterface
      */
-    protected $_application;
+    protected $_modules;
 
     /**
-     * @var EventManagerInterface
+     * @var PathInterface
      */
-    protected $_eventManager;
+    protected $_paths;
 
-    public function __construct(EventManagerInterface $eventManager, Application $application, CacheDriverInterface $cacheDriver = null)
+    /**
+     * @var AuthInterface
+     */
+    protected $_auth;
+
+    /**
+     * @var HttpRequest
+     */
+    protected $_request;
+
+    /**
+     * @var Settings
+     */
+    protected $_settings;
+
+    /**
+     * @var Router
+     */
+    protected $_router;
+
+    /**
+     * @var Translate
+     */
+    protected $_translate;
+
+    public function __construct(
+        EventManagerInterface $eventManager = null,
+        ModulesInterface $modules = null,
+        CacheDriverInterface $cacheDriver = null,
+        PathInterface $paths = null,
+        AuthInterface $auth = null,
+        HttpRequest $request = null,
+        Settings $settings = null,
+        Router $router = null,
+        Translate $translate = null)
     {
+        $this->_eventManager = $eventManager;
         $this->_cacheDriver = $cacheDriver;
-        $this->_application = $application;
+        $this->_modules = $modules;
+        $this->_paths = $paths;
+        $this->_auth = $auth;
+        $this->_request = $request;
+        $this->_settings = $settings;
+        $this->_router = $router;
+        $this->_translate = $translate;
 
         $paths = $this->collectTemplatesPaths();
         $provider = new PhactFenomTemplateProvider($paths);
-        $cacheFolder = Paths::get('runtime.' . $this->cacheFolder);
-        if (!is_dir($cacheFolder)) {
-            mkdir($cacheFolder, 0777, true);
-        }
         $this->_renderer = new Fenom($provider);
-        $this->_renderer->setCompileDir($cacheFolder);
+
+        if ($this->_paths) {
+            $cacheFolder = $this->_paths->get('runtime.' . $this->cacheFolder);
+            if (!is_dir($cacheFolder)) {
+                mkdir($cacheFolder, 0777, true);
+            }
+            $this->_renderer->setCompileDir($cacheFolder);
+        }
+
         $this->_renderer->setOptions([
             'force_compile' => $this->forceCompile,
             'auto_reload' => $this->autoReload,
             'auto_escape' => $this->autoEscape
         ]);
+
         $this->extendRenderer();
         $this->loadLibraries();
     }
 
     /**
      * @extension modifier
-     * @name info
      * @return Fenom
      */
     public function getRenderer()
@@ -105,15 +185,21 @@ class TemplateManager
             $paths = [
                 $this->_application->getBasePath() . DIRECTORY_SEPARATOR . $this->templateFolder
             ];
-            $activeModules = $this->_application->getModulesConfig();
-            foreach ($activeModules as $module => $config) {
-                $moduleClass = $config['class'];
-                $paths[] = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), $this->templateFolder]);
+            $activeModules = $this->_modules->getModulesClasses();
+            foreach ($activeModules as $name => $class) {
+                $paths[] = implode(DIRECTORY_SEPARATOR, [$class::getPath(), $this->templateFolder]);
             }
         }
         return $paths;
     }
 
+    /**
+     * Render template with renderer
+     *
+     * @param $template
+     * @param array $params
+     * @return mixed
+     */
     public function render($template, $params = [])
     {
         $this->eventTrigger('template.beforeRender', [$template, $params], $this);
@@ -122,39 +208,18 @@ class TemplateManager
         return $result;
     }
 
+    /**
+     * Add some improvements
+     */
     public function extendRenderer()
     {
         $this->_renderer->addModifier('safe_element', function($variable, $param, $default = '') {
             return isset($variable[$param]) ? $variable[$param] : $default;
         });
+
         $this->_renderer->addModifier('not_in', function($variable, $array) {
             return !array_key_exists($variable, $array);
         });
-
-        if ($this->_application) {
-            $this->_renderer->addAccessorSmart("app", "app", Fenom::ACCESSOR_PROPERTY);
-            $this->_renderer->app = Phact::app();
-
-            $this->_renderer->addAccessorSmart("user", 'Phact\Main\Phact::app()->user', Fenom::ACCESSOR_VAR);
-
-            if (Phact::app()->hasComponent('request')) {
-                $this->_renderer->addAccessorSmart("request", 'Phact\Main\Phact::app()->request', Fenom::ACCESSOR_VAR);
-            }
-
-            if (Phact::app()->hasComponent('settings')) {
-                $this->_renderer->addAccessorSmart("setting", "Phact\\Main\\Phact::app()->settings->get", Fenom::ACCESSOR_CALL);
-            }
-
-            if ($this->_application->hasComponent(Router::class)) {
-                $this->_renderer->addAccessorSmart("url", function($routeName, $params = array()) {
-                    return $this->_application->getComponent(Router::class)->url($routeName, $params);
-                }, Fenom::ACCESSOR_CALL);
-            }
-
-            if (Phact::app()->hasComponent('translate', Translate::class)) {
-                $this->_renderer->addAccessorSmart("t", "Phact\\Main\\Phact::app()->translate->t", Fenom::ACCESSOR_CALL);
-            }
-        }
 
         $this->_renderer->addModifier('class', function($object) {
             if (is_object($object)) {
@@ -163,22 +228,52 @@ class TemplateManager
             return null;
         });
 
-        $this->_renderer->addFunction('url', function($params) {
-            $route = isset($params['route']) ? $params['route'] : null;
-            if (!$route) {
-                $route = isset($params[0]) ? $params[0] : null;
-            }
+        if ($this->_auth) {
+            $this->_renderer->addAccessorSmart("user", function () {
+                return $this->_auth->getUser();
+            }, Fenom::ACCESSOR_PROPERTY);
+        }
 
-            $attributes = isset($params['params']) ? $params['params'] : [];
-            if (!$attributes) {
-                $attributes = isset($params[1]) ? $params[1] : [];
-            }
-            return Phact::app()->router->url($route, $attributes);
-        });
+        if ($this->_request) {
+            $this->_renderer->addAccessorSmart("request", function () {
+                return $this->_request;
+            }, Fenom::ACCESSOR_PROPERTY);
+        }
 
-        $this->_renderer->addFunction('t', function($params) {
-            return forward_static_call_array([self::class, 't'], $params);
-        });
+        if ($this->_settings) {
+            $this->_renderer->addAccessorSmart("setting", function ($name) {
+                return $this->_settings->get($name);
+            }, Fenom::ACCESSOR_CALL);
+        }
+
+        if ($this->_router) {
+            $this->_renderer->addAccessorSmart("url", function($routeName, $params = array()) {
+                return $this->_router->url($routeName, $params);
+            }, Fenom::ACCESSOR_CALL);
+
+            $this->_renderer->addFunction('url', function($params) {
+                $route = isset($params['route']) ? $params['route'] : null;
+                if (!$route) {
+                    $route = isset($params[0]) ? $params[0] : null;
+                }
+
+                $attributes = isset($params['params']) ? $params['params'] : [];
+                if (!$attributes) {
+                    $attributes = isset($params[1]) ? $params[1] : [];
+                }
+                return $this->_router->url($route, $attributes);
+            });
+        }
+
+        if ($this->_translate) {
+            $this->_renderer->addAccessorSmart("t", function ($domain, $key = "", $number = null, $parameters = [], $locale = null) {
+                return $this->_translate->t($domain, $key, $number, $parameters, $locale);
+            }, Fenom::ACCESSOR_CALL);
+
+            $this->_renderer->addFunction('t', function($params) {
+                return call_user_func_array([$this->_translate, 't'], $params);
+            });
+        }
 
         if ($this->_cacheDriver) {
             $this->_renderer->addBlockFunction("__internal_cache_set", function ($params, $content) {
@@ -238,11 +333,9 @@ class TemplateManager
         }
     }
 
-    public function getCacheDriver()
-    {
-        return $this->_cacheDriver;
-    }
-
+    /**
+     * Load external libraries from modules
+     */
     public function loadLibraries()
     {
         $extensions = null;
@@ -250,18 +343,17 @@ class TemplateManager
         if ($this->librariesCacheTimeout && $this->_cacheDriver) {
             $extensions = $this->_cacheDriver->get($cacheKey);
         }
-        if (is_null($extensions) && $this->_application) {
-            $activeModules = $this->_application->getModulesConfig();
+        if (is_null($extensions) && $this->_modules) {
+            $activeModules = $this->_modules->getModulesClasses();
             $classes = [];
-            foreach ($activeModules as $module => $config) {
-                $moduleClass = $config['class'];
-                $path = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), $this->librariesFolder]);
+            foreach ($activeModules as $name => $class) {
+                $path = implode(DIRECTORY_SEPARATOR, [$class::getPath(), $this->librariesFolder]);
                 if (is_dir($path)) {
                     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename) {
                         // filter out "." and ".."
                         if ($filename->isDir()) continue;
                         $name = $filename->getBasename('.php');
-                        $classes[] = implode('\\', ['Modules', $module, $this->librariesFolder, $name]);
+                        $classes[] = implode('\\', ['Modules', $name, $this->librariesFolder, $name]);
                     }
                 }
             }
@@ -274,22 +366,21 @@ class TemplateManager
                 $this->_cacheDriver->set($cacheKey, $extensions, $this->librariesCacheTimeout);
             }
         }
-        $renderer = $this->getRenderer();
         if (is_array($extensions)) {
             foreach ($extensions as $extension) {
-                $this->addExtension($renderer, $extension['class'], $extension['method'], $extension['name'], $extension['kind']);
+                $this->addExtension($extension['class'], $extension['method'], $extension['name'], $extension['kind']);
             }
         }
     }
 
     /**
-     * @param $renderer Fenom
      * @param $methodName
      * @param $name
      * @param $kind
      */
-    public function addExtension($renderer, $class, $methodName, $name, $kind)
+    public function addExtension($class, $methodName, $name, $kind)
     {
+        $renderer = $this->getRenderer();
         $callable = [$class, $methodName];
         switch ($kind) {
             case 'function':
