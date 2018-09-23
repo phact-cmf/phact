@@ -64,6 +64,7 @@ class Translate
         $this->_locale = $this->detect();
         $this->_translator = $translator ?: new SymfonyTranslator($this->_locale);
         $this->_modules = $modules;
+        $this->_path = $path;
         $this->initLoaders();
         $this->loadMessages();
     }

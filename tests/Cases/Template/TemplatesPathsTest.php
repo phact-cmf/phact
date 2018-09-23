@@ -20,8 +20,7 @@ class TemplatesPathsTest extends AppTest
 {
     public function testSame()
     {
-        $tpl = new TemplateManager(Phact::app());
-        $tpl->init();
+        $tpl = Phact::app()->template;
         $this->assertEquals($tpl->render('same.html'), 'Same template application');
         $this->assertEquals($tpl->render('module.html'), 'Module template');
     }

@@ -147,6 +147,7 @@ class Application implements ModulesInterface
         $this->_container = Configurator::create($this->_containerConfig);
         $this->_container->set('application', $this);
         $this->_container->addReference('application', Application::class);
+        $this->_container->addReference('application', ModulesInterface::class);
         $this->_container->setConfig($this->_componentsConfig);
     }
 
@@ -257,38 +258,47 @@ class Application implements ModulesInterface
         $matches = $router->match($url, $method);
 
         foreach ($matches as $match) {
-            $matched = false;
-            if (is_array($match['target']) &&
-                isset($match['target'][0]) &&
-                is_a($match['target'][0], ControllerInterface::class, true))
-            {
-                $controllerClass = $match['target'][0];
-                $action = $match['target'][1];
-                $params = $match['params'];
-                $name = $match['name'];
-
-                $router->setCurrentName($name);
-
-                $this->logDebug("Processing route to controller '{$controllerClass}' and action '{$action}'", ['params' => $params]);
-                /** @var Controller $controller */
-                $controller = $this->_container->construct($controllerClass);
-                $action = $action ?: $controller->defaultAction;
-
-                $this->eventTrigger("application.beforeRunController", [$controller, $action, $name, $params], $this);
-                $controller->beforeActionInternal($action, $params);
-                $matched = $this->_container->invoke([$controller, $action], $params);
-                $controller->afterActionInternal($action, $params, $matched);
-                $this->eventTrigger("application.afterRunController", [$controller, $action, $name, $params, $matched], $this);
-            } elseif (is_callable($match['target'])) {
-                $fn = $match['target'];
-                $matched = $fn($this->request, $match['params']);
-            }
+            $matched = $this->handleMatch($match, $router);
             if ($matched !== false) {
                 return true;
             }
         }
         $this->logDebug("Matching route not found");
         throw new NotFoundHttpException("Page not found");
+    }
+
+    public function handleMatch(array $match, RouterInterface $router = null)
+    {
+        if (is_array($match['target']) &&
+            isset($match['target'][0]) &&
+            is_a($match['target'][0], ControllerInterface::class, true))
+        {
+            $controllerClass = $match['target'][0];
+            $action = isset($match['target'][1]) ? $match['target'][1] : null;
+            $params = isset($match['params']) ? $match['params'] : [];
+            $name = isset($match['name']) ? $match['name'] : null;
+
+            if ($router && $name) {
+                $router->setCurrentName($name);
+            }
+
+            $this->logDebug("Processing route to controller '{$controllerClass}' and action '{$action}'", ['params' => $params]);
+            /** @var Controller $controller */
+            $controller = $this->_container->construct($controllerClass);
+            $action = $action ?: $controller->defaultAction;
+
+            $this->eventTrigger("application.beforeRunController", [$controller, $action, $name, $params], $this);
+            $controller->beforeActionInternal($action, $params);
+            $matched = $this->_container->invoke([$controller, $action], $params);
+            $controller->afterActionInternal($action, $params, $matched);
+            $this->eventTrigger("application.afterRunController", [$controller, $action, $name, $params, $matched], $this);
+        } elseif (is_callable($match['target'])) {
+            $fn = $match['target'];
+            $matched = $fn($this->request, $match['params']);
+        } else {
+            $matched = false;
+        }
+        return $matched;
     }
 
     public function handleCliRequest()
@@ -303,7 +313,7 @@ class Application implements ModulesInterface
             $command = $this->_container->construct($class);
             if (method_exists($command, $action)) {
                 $this->logDebug("Run command '{$class}' action '{$action}'");
-                $command->{$action}($arguments);
+                $this->_container->invoke([$command, $action], [$arguments]);
             } else {
                 throw new Exception("Method '{$action}' of class '{$class}' does not exist");
             }
@@ -350,6 +360,14 @@ class Application implements ModulesInterface
     public function setComponent($id, $service)
     {
         return $this->_container->set($id, $service);
+    }
+
+    /**
+     * @return Container
+     */
+    public function getContainer()
+    {
+        return $this->_container;
     }
 
     /**

@@ -14,6 +14,7 @@ namespace Phact\Di;
 
 use Phact\Exceptions\CircularContainerException;
 use Phact\Exceptions\ContainerException;
+use Phact\Exceptions\InvalidAttributeException;
 use Phact\Exceptions\NotFoundContainerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -595,9 +596,13 @@ class Container implements ContainerInterface
      * @throws ContainerException
      * @throws NotFoundContainerException
      * @throws ReflectionException
+     * @throws InvalidAttributeException
      */
     public function invoke($callable, $attributes = [])
     {
+        if (!is_callable($callable)) {
+            throw new InvalidAttributeException('$callable attribute must be callable');
+        }
         $dependencies = $this->fetchCallableDependencies($callable);
         $parameters = $this->buildParameters($attributes);
         $arguments = $this->buildFunctionArguments($dependencies, $parameters);

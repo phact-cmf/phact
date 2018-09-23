@@ -33,7 +33,7 @@ class TemplateManager implements RendererInterface
     use SmartProperties, Events;
 
     /**
-     * @var Fenom
+     * @var ExtendedFenom
      */
     protected $_renderer;
 
@@ -146,7 +146,7 @@ class TemplateManager implements RendererInterface
 
         $paths = $this->collectTemplatesPaths();
         $provider = new PhactFenomTemplateProvider($paths);
-        $this->_renderer = new Fenom($provider);
+        $this->_renderer = new ExtendedFenom($provider);
 
         if ($this->_paths) {
             $cacheFolder = $this->_paths->get('runtime.' . $this->cacheFolder);
@@ -168,7 +168,7 @@ class TemplateManager implements RendererInterface
 
     /**
      * @extension modifier
-     * @return Fenom
+     * @return ExtendedFenom
      */
     public function getRenderer()
     {
@@ -229,15 +229,15 @@ class TemplateManager implements RendererInterface
         });
 
         if ($this->_auth) {
-            $this->_renderer->addAccessorSmart("user", function () {
+            $this->_renderer->addAccessorProp("user", function () {
                 return $this->_auth->getUser();
-            }, Fenom::ACCESSOR_PROPERTY);
+            });
         }
 
         if ($this->_request) {
-            $this->_renderer->addAccessorSmart("request", function () {
+            $this->_renderer->addAccessorProp("request", function () {
                 return $this->_request;
-            }, Fenom::ACCESSOR_PROPERTY);
+            });
         }
 
         if ($this->_settings) {
@@ -247,9 +247,9 @@ class TemplateManager implements RendererInterface
         }
 
         if ($this->_router) {
-            $this->_renderer->addAccessorSmart("url", function($routeName, $params = array()) {
+            $this->_renderer->addAccessorCallable('url', function($routeName, $params = array()) {
                 return $this->_router->url($routeName, $params);
-            }, Fenom::ACCESSOR_CALL);
+            });
 
             $this->_renderer->addFunction('url', function($params) {
                 $route = isset($params['route']) ? $params['route'] : null;
@@ -266,9 +266,9 @@ class TemplateManager implements RendererInterface
         }
 
         if ($this->_translate) {
-            $this->_renderer->addAccessorSmart("t", function ($domain, $key = "", $number = null, $parameters = [], $locale = null) {
+            $this->_renderer->addAccessorCallable("t", function ($domain, $key = "", $number = null, $parameters = [], $locale = null) {
                 return $this->_translate->t($domain, $key, $number, $parameters, $locale);
-            }, Fenom::ACCESSOR_CALL);
+            });
 
             $this->_renderer->addFunction('t', function($params) {
                 return call_user_func_array([$this->_translate, 't'], $params);
@@ -346,14 +346,15 @@ class TemplateManager implements RendererInterface
         if (is_null($extensions) && $this->_modules) {
             $activeModules = $this->_modules->getModulesClasses();
             $classes = [];
-            foreach ($activeModules as $name => $class) {
+            $extensions = [];
+            foreach ($activeModules as $moduleName => $class) {
                 $path = implode(DIRECTORY_SEPARATOR, [$class::getPath(), $this->librariesFolder]);
                 if (is_dir($path)) {
                     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename) {
                         // filter out "." and ".."
                         if ($filename->isDir()) continue;
                         $name = $filename->getBasename('.php');
-                        $classes[] = implode('\\', ['Modules', $name, $this->librariesFolder, $name]);
+                        $classes[] = implode('\\', ['Modules', $moduleName, $this->librariesFolder, $name]);
                     }
                 }
             }
@@ -366,6 +367,7 @@ class TemplateManager implements RendererInterface
                 $this->_cacheDriver->set($cacheKey, $extensions, $this->librariesCacheTimeout);
             }
         }
+        $this->_renderer;
         if (is_array($extensions)) {
             foreach ($extensions as $extension) {
                 $this->addExtension($extension['class'], $extension['method'], $extension['name'], $extension['kind']);
@@ -399,7 +401,7 @@ class TemplateManager implements RendererInterface
                 $renderer->addAccessorCallback($name, $callable);
                 break;
             case 'accessorFunction':
-                $renderer->addAccessorSmart($name, implode('::', $callable), $renderer::ACCESSOR_CALL);
+                $renderer->addAccessorCallable($name, $callable);
                 break;
             case 'blockFunction':
                 $renderer->addBlockFunction($name, $callable);

@@ -26,6 +26,9 @@ class DatabaseTest extends AppTest
 
         $connections = $this->getConnections();
         $connectionManager = new ConnectionManager();
+        if (!isset($connections[$this->defaultConnection])) {
+            $this->markTestSkipped('There is no connection '. $this->defaultConnection);
+        }
         $connectionManager->setConnections([
             'default' => $connections[$this->defaultConnection]
         ]);

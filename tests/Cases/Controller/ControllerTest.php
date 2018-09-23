@@ -26,14 +26,15 @@ use Phact\Router\Router;
  */
 class ControllerTest extends AppTest
 {
-    public function _testSimple()
+    public function testSimple()
     {
         $this->expectOutputString('test');
-        $controller = new TestController(new HttpRequest());
-        $controller->run('test');
+        Phact::app()->handleMatch([
+            'target' => [TestController::class, 'test']
+        ]);
     }
 
-    public function _testMatchSimple()
+    public function testMatchSimple()
     {
         $this->expectOutputString('test');
 
@@ -41,13 +42,7 @@ class ControllerTest extends AppTest
         $matches = $router->match('/test_route', 'GET');
         $match = $matches[0];
 
-        $controllerClass = $match['target'][0];
-        $action = $match['target'][1];
-        $params = $match['params'];
-
-        /** @var Controller $controller */
-        $controller = new $controllerClass(new HttpRequest());
-        $controller->run($action, $params);
+        Phact::app()->handleMatch($match);
     }
 
     public function _testParams()
@@ -57,7 +52,7 @@ class ControllerTest extends AppTest
         $controller->run('testParam', ['name' => 'params_test']);
     }
 
-    public function _testMatchParams()
+    public function testMatchParams()
     {
         $this->expectOutputString('Name: params_test');
 
@@ -67,32 +62,20 @@ class ControllerTest extends AppTest
         
         $controllerClass = $match['target'][0];
         $action = $match['target'][1];
-        $params = $match['params'];
 
         $this->assertEquals(TestController::class, $controllerClass);
         $this->assertEquals($action, 'testParam');
 
-        /** @var Controller $controller */
-        $controller = new $controllerClass(new HttpRequest());
-        $controller->run($action, $params);
+        Phact::app()->handleMatch($match);
     }
 
     /**
-     * @expectedException \Phact\Exceptions\InvalidConfigException
+     * @expectedException \Phact\Exceptions\InvalidAttributeException
      */
-    public function _testInvalidParams()
+    public function testInvalidParams()
     {
-        $controller = new TestController(new HttpRequest());
-        $controller->run('testParam', ['id' => 'params_test']);
-    }
-
-
-    /**
-     * @expectedException \Phact\Exceptions\InvalidConfigException
-     */
-    public function _testUnknownAction()
-    {
-        $controller = new TestController(new HttpRequest());
-        $controller->run('unknownAction');
+        Phact::app()->handleMatch([
+            'target' => [TestController::class, 'unknownAction']
+        ]);
     }
 }

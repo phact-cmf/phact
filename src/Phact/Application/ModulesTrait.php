@@ -143,7 +143,7 @@ trait ModulesTrait
     {
         $result = [];
         foreach ($this->getModulesConfig() as $name => $config) {
-            $result[] = $config['class'];
+            $result[$name] = $config['class'];
         }
         return $result;
     }
