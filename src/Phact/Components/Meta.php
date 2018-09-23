@@ -16,7 +16,7 @@ use Exception;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 
-class Meta
+class Meta implements MetaInterface
 {
     use SmartProperties;
 

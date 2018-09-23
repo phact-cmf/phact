@@ -13,9 +13,6 @@
 
 namespace Phact\Tests;
 
-use Phact\Application\Application;
-use Phact\Helpers\Configurator;
-use Phact\Helpers\Paths;
 use Phact\Main\Phact;
 
 class ApplicationTest extends TestCase

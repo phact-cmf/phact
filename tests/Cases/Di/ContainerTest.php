@@ -22,6 +22,7 @@ use Modules\Test\Components\SlaveComponentByClass;
 use Modules\Test\Components\SlaveComponentByInterface;
 use Modules\Test\Components\SlaveSetterComponent;
 use Modules\Test\Components\StandaloneComponent;
+use Modules\Test\Components\StandaloneComponentInterface;
 use Phact\Di\Container;
 use Phact\Exceptions\CircularContainerException;
 
@@ -252,5 +253,52 @@ class ContainerTest extends TestCase
             ]
         ]);
         $this->assertNull($container->get('setter')->getStandalone());
+    }
+
+    public function testInvoke()
+    {
+        $container = new Container();
+        $container->addDefinition('standalone', StandaloneComponent::class);
+        $standalone = $container->get('standalone');
+        $container->invoke(function (StandaloneComponentInterface $component) use ($standalone) {
+            $this->assertInstanceOf(StandaloneComponentInterface::class, $component);
+            $this->assertEquals($standalone, $component);
+        });
+    }
+
+    public function testInvokeWithArguments()
+    {
+        $container = new Container();
+        $container->addDefinition('standalone', StandaloneComponent::class);
+        $standalone = $container->get('standalone');
+        $container->invoke(function (StandaloneComponentInterface $component, $num = 20) use ($standalone) {
+            $this->assertInstanceOf(StandaloneComponentInterface::class, $component);
+            $this->assertEquals($standalone, $component);
+            $this->assertEquals(10, $num);
+        }, [
+            'num' => 10
+        ]);
+    }
+
+    public function testConstruct()
+    {
+        $container = new Container();
+        $container->addDefinition('standalone', StandaloneComponent::class);
+        $standalone = $container->get('standalone');
+        /** @var OptionalComponent $optional */
+        $optional = $container->construct(OptionalComponent::class);
+        $this->assertEquals($standalone, $optional->getComponent());
+    }
+
+    public function testConstructWithArgument()
+    {
+        $container = new Container();
+        $container->addDefinition('standalone', StandaloneComponent::class);
+        $standalone = $container->get('standalone');
+        /** @var ArgumentsComponent $arguments */
+        $arguments = $container->construct(ArgumentsComponent::class, [
+            'attribute' => 10
+        ]);
+        $this->assertEquals(10, $arguments->getAttribute());
     }
 }

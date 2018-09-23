@@ -21,7 +21,7 @@ use Phact\Helpers\SmartProperties;
  * Class Path
  * @package Phact\Helpers
  */
-class Path
+class Path implements PathInterface
 {
     use SmartProperties;
 

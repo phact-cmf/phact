@@ -31,8 +31,6 @@ Phact::app()->event->trigger('someEvent', [$firstParam, $secondParam], $sender);
 
 ## Встроенные события
 
-**application.beforeInit** - $sender - экземпляр Application, $params - []
-
 **application.afterInit** - $sender - экземпляр Application, $params - []
 
 **application.beforeRun** - $sender - экземпляр Application, $params - []
@@ -47,9 +45,9 @@ Phact::app()->event->trigger('someEvent', [$firstParam, $secondParam], $sender);
 
 **router.afterMatch** - $sender - экземпляр Router, $params - [$requestUrl, $requestMethod, $matches]
 
-**controller.beforeAction** - $sender - экземпляр Controller, $params - [$prepared, $raw], где $prepared - подготовленные параметры в том порядке, которые принимает action, а $raw - параметры, как они пришли из Router
+**controller.beforeAction** - $sender - экземпляр Controller, $params - [$routeParams], где $routeParams - параметры, как они пришли из Router
 
-**controller.afterAction** - $sender - экземпляр Controller, $params - [$prepared, $raw, $response], где $prepared - подготовленные параметры в том порядке, которые принимает action, а $raw - параметры, как они пришли из Router, $response - возвращенное значение из action
+**controller.afterAction** - $sender - экземпляр Controller, $params - [$routeParams, $response], где $routeParams - параметры, как они пришли из Router, $response - возвращенное значение из action
 
 **model.beforeInsert** - $sender - экземпляр Model, $params - []
 

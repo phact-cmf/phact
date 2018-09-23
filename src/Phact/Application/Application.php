@@ -12,7 +12,9 @@
 
 namespace Phact\Application;
 
+use Phact\Commands\Command;
 use Phact\Components\PathInterface;
+use Phact\Controller\ControllerInterface;
 use Phact\Di\Container;
 use Phact\Helpers\SmartProperties;
 use Exception;
@@ -24,7 +26,9 @@ use Phact\Helpers\Configurator;
 use Phact\Interfaces\AuthInterface;
 use Phact\Log\LoggerHandle;
 use Phact\Request\CliRequest;
-use Phact\Request\HttpRequest;
+use Phact\Request\CliRequestInterface;
+use Phact\Request\HttpRequestInterface;
+use Phact\Router\RouterInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -242,27 +246,38 @@ class Application implements ModulesInterface
 
     public function handleWebRequest()
     {
-        /** @var HttpRequest $request */
-        $request = $this->getComponent(Request::class);
-        $router = $this->getComponent(Router::class);
+        /** @var HttpRequestInterface $request */
+        $request = $this->getComponent(HttpRequestInterface::class);
+        /** @var RouterInterface $router */
+        $router = $this->getComponent(RouterInterface::class);
+
         $url = $request->getUrl();
         $method = $request->getMethod();
         $this->logDebug("Matching route for url '{$url}' and method '{$method}'");
         $matches = $router->match($url, $method);
+
         foreach ($matches as $match) {
             $matched = false;
-            if (is_array($match['target']) && isset($match['target'][0])) {
+            if (is_array($match['target']) &&
+                isset($match['target'][0]) &&
+                is_a($match['target'][0], ControllerInterface::class, true))
+            {
                 $controllerClass = $match['target'][0];
-                $action = isset($match['target'][1]) ? $match['target'][1] : null;
+                $action = $match['target'][1];
                 $params = $match['params'];
                 $name = $match['name'];
+
                 $router->setCurrentName($name);
 
                 $this->logDebug("Processing route to controller '{$controllerClass}' and action '{$action}'", ['params' => $params]);
                 /** @var Controller $controller */
-                $controller = new $controllerClass($this->request);
+                $controller = $this->_container->construct($controllerClass);
+                $action = $action ?: $controller->defaultAction;
+
                 $this->eventTrigger("application.beforeRunController", [$controller, $action, $name, $params], $this);
-                $matched = $controller->run($action, $params);
+                $controller->beforeActionInternal($action, $params);
+                $matched = $this->_container->invoke([$controller, $action], $params);
+                $controller->afterActionInternal($action, $params, $matched);
                 $this->eventTrigger("application.afterRunController", [$controller, $action, $name, $params, $matched], $this);
             } elseif (is_callable($match['target'])) {
                 $fn = $match['target'];
@@ -279,33 +294,24 @@ class Application implements ModulesInterface
     public function handleCliRequest()
     {
         /** @var CliRequest $request */
-        $request = $this->getComponent(CliRequest::class);
-        list($module, $command, $action, $arguments) = $request->parse();
-        $this->logDebug("Try to find command '{$command}' for module '{$module}'");
-        if ($module && $command) {
-            $module = ucfirst($module);
-            $commandName = ucfirst($command);
-            $class = '\\Modules\\' . $module . '\\Commands\\' . $commandName . 'Command';
-            if (class_exists($class)) {
-                $command = new $class();
-                if (method_exists($command, $action)) {
-                    $this->logDebug("Run command '{$commandName}' for module '{$module}'");
-                    $command->{$action}($arguments);
-                } else {
-                    throw new Exception("Method '{$action}' of class '{$class}' does not exist");
-                }
+        $request = $this->getComponent(CliRequestInterface::class);
+        $this->logDebug("Try to find command");
+
+        if (!$request->isEmpty()) {
+            list($class, $action, $arguments) = $request->match();
+            /** @var Command $command */
+            $command = $this->_container->construct($class);
+            if (method_exists($command, $action)) {
+                $this->logDebug("Run command '{$class}' action '{$action}'");
+                $command->{$action}($arguments);
             } else {
-                throw new Exception("Class '{$class}' does not exist");
+                throw new Exception("Method '{$action}' of class '{$class}' does not exist");
             }
         } else {
             $data = $request->getCommandsList();
             echo 'List of available commands' . PHP_EOL . PHP_EOL;
-            foreach ($data as $name => $commands) {
-                echo 'Module: ' . $name . PHP_EOL;
-                foreach ($commands as $command => $description) {
-                    echo $command . ($description ? ' - '. $description : '') . PHP_EOL;
-                }
-                echo PHP_EOL;
+            foreach ($data as $command) {
+                echo $command->getVerbose() . PHP_EOL;
             }
             echo  'Usage example:' . PHP_EOL . 'php index.php Base Db';
         }

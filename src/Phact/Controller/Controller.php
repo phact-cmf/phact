@@ -12,28 +12,30 @@
 
 namespace Phact\Controller;
 
+use Phact\Di\Container;
+use Phact\Di\ContainerInterface;
 use Phact\Event\Events;
 use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Model;
-use Phact\Request\Request;
+use Phact\Request\HttpRequestInterface;
 use ReflectionMethod;
 
 /**
  * Class Controller
  *
- * @property \Phact\Request\HttpRequest $request
+ * @property \Phact\Request\HttpRequestInterface $request
  *
  * @package Phact\Controller
  */
-class Controller
+class Controller implements ControllerInterface
 {
     use SmartProperties, Events;
 
     /**
-     * @var Request
+     * @var HttpRequestInterface
      */
     protected $_request;
 
@@ -42,7 +44,7 @@ class Controller
      */
     public $defaultAction;
 
-    public function __construct($request)
+    public function __construct(HttpRequestInterface $request)
     {
         $this->_request = $request;
     }
@@ -50,53 +52,6 @@ class Controller
     public function getRequest()
     {
         return $this->_request;
-    }
-
-    public function run($action = null, $params = [])
-    {
-        if (!$action) {
-            $action = $this->defaultAction;
-        }
-        $this->beforeAction($action, $params);
-        if (method_exists($this, $action)) {
-            return $this->runAction($action, $params);
-        } else {
-            $class = self::class;
-            throw new InvalidConfigException("There is no action {$action} in controller {$class}");
-        }
-    }
-
-    public function runAction($action, $params = [])
-    {
-        $method = new ReflectionMethod($this, $action);
-        $ps = [];
-        $response = null;
-        if ($method->getNumberOfParameters() > 0) {
-            foreach ($method->getParameters() as $param) {
-                $name = $param->getName();
-                if (isset($params[$name])) {
-                    if ($param->isArray()) {
-                        $ps[] = is_array($params[$name]) ? $params[$name] : [$params[$name]];
-                    } elseif (!is_array($params[$name])) {
-                        $ps[] = $params[$name];
-                    } else {
-                        return false;
-                    }
-                } elseif ($param->isDefaultValueAvailable()) {
-                    $ps[] = $param->getDefaultValue();
-                } else {
-                    $class = self::class;
-                    throw new InvalidConfigException("Param {$name} for action {$action} in controller {$class} must be defined. Please, check your routes.");
-                }
-            }
-            $this->eventTrigger("controller.beforeAction", [$ps, $params], $this);
-            $response = $method->invokeArgs($this, $ps);
-        } else {
-            $this->eventTrigger("controller.beforeAction", [$ps, $params], $this);
-            $response = $this->{$action}();
-        }
-        $this->eventTrigger("controller.afterAction", [$ps, $params, $response], $this);
-        return $response;
     }
 
     /**
@@ -111,16 +66,33 @@ class Controller
 
     public function redirect($url, $data = [], $status = 302)
     {
-        $this->request->redirect($url, $data, $status);
+        $this->_request->redirect($url, $data, $status);
     }
 
     public function refresh()
     {
-        $this->request->refresh();
+        $this->_request->refresh();
+    }
+
+    public function beforeActionInternal($action, $params)
+    {
+        $this->beforeAction($action, $params);
+        $this->eventTrigger("controller.beforeAction", [$params], $this);
+    }
+
+    public function afterActionInternal($action, $params, $response)
+    {
+        $this->afterAction($action, $params, $response);
+        $this->eventTrigger("controller.afterAction", [$params, $response], $this);
     }
 
     public function beforeAction($action, $params)
     {
+    }
+
+    public function afterAction($action, $params, $response)
+    {
+
     }
 
     public function error($code = 404, $message = null)
@@ -138,8 +110,9 @@ class Controller
      * @param $class string|Model
      * @param $filter array|string|int
      * @return Model
+     * @throws HttpException
      */
-    public function getOr404($class, $filter)
+    public function getOr404(Model $class, $filter)
     {
         if (!is_array($filter)) {
             $filter = ['id' => $filter];

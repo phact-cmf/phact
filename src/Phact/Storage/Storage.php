@@ -1,15 +1,26 @@
 <?php
+/**
+ *
+ *
+ * All rights reserved.
+ *
+ * @author Okulov Anton
+ * @email qantus@mail.ru
+ * @version 1.0
+ * @date 23/09/2018 14:21
+ */
+
 namespace Phact\Storage;
 
 use Phact\Storage\Files\StorageFile;
 
 /**
- * Created by PhpStorm.
- * User: aleksandrgordeev
- * Date: 08.08.16
- * Time: 14:03
+ * Abstract storage for saving files
+ *
+ * Class Storage
+ * @package Phact\Storage
  */
-abstract class Storage
+abstract class Storage implements StorageInterface
 {
     protected $_name;
 
@@ -105,10 +116,9 @@ abstract class Storage
     }
 
     /**
-     * @param $from
-     * @param $to
+     * @param $fromPath
+     * @param $toPath
      * @return string file path after save
      */
-    abstract public function copy($from, $to);
-
+    abstract public function copy($fromPath, $toPath);
 }

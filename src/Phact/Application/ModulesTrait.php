@@ -97,7 +97,11 @@ trait ModulesTrait
             $this->logDebug("Loading module '{$name}'");
             $config = $this->getModuleConfig($name);
             if (!is_null($config)) {
-                $this->_modules[$name] = Configurator::create($config);
+                $this->_modules[$name] = $this->_container->create($config['class']);
+                unset($config['class']);
+                foreach ($config as $property => $value) {
+                    $this->_modules[$name]->{$property} = $value;
+                }
             } else {
                 throw new UnknownPropertyException("Module with name" . $name . " not found");
             }

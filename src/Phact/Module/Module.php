@@ -14,6 +14,7 @@ namespace Phact\Module;
 
 
 use Phact\Cache\Cache;
+use Phact\Cache\CacheDriverInterface;
 use Phact\Form\ModelForm;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
@@ -28,6 +29,16 @@ abstract class Module
     use ClassNames, SmartProperties;
 
     public $settingsModelCache = 3600;
+
+    /**
+     * @var CacheDriverInterface
+     */
+    protected $_cacheDriver;
+
+    public function __construct(CacheDriverInterface $cacheDriver = null)
+    {
+        $this->_cacheDriver = $cacheDriver;
+    }
 
     /**
      * Before application init
@@ -95,14 +106,12 @@ abstract class Module
             return null;
         }
         $settings = null;
-        if (Phact::app()->hasComponent('cache') && $this->settingsModelCache) {
-            /** @var Cache $cache */
-            $cache = Phact::app()->getComponent('cache');
+        if ($this->_cacheDriver && $this->settingsModelCache) {
             $settingsKey = static::class . '__' . $model->className();
-            $settings = $cache->get($settingsKey, false);
+            $settings = $this->_cacheDriver->get($settingsKey, false);
             if ($settings === false) {
                 $settings = $model->objects()->get();
-                $cache->set($settingsKey, $settings, $this->settingsModelCache);
+                $this->_cacheDriver->set($settingsKey, $settings, $this->settingsModelCache);
             }
         } else {
             $settings = $model->objects()->get();
@@ -115,14 +124,11 @@ abstract class Module
 
     public function afterSettingsUpdate()
     {
-        if (Phact::app()->hasComponent('cache') && $this->settingsModelCache) {
+        if ($this->_cacheDriver && $this->settingsModelCache) {
             $model = $this->getSettingsModel();
-            /** @var Cache $cache */
-            $cache = Phact::app()->getComponent('cache');
             $settingsKey = static::class . '__' . $model->className();
-
             $settings = $model->objects()->get();
-            $cache->set($settingsKey, $settings, $this->settingsModelCache);
+            $this->_cacheDriver->set($settingsKey, $settings, $this->settingsModelCache);
         }
     }
 

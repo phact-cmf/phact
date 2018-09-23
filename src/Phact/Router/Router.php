@@ -14,7 +14,7 @@ use Phact\Helpers\Text;
 use Phact\Main\Phact;
 use Traversable;
 
-class Router
+class Router implements RouterInterface
 {
     use SmartProperties, Events;
 
@@ -76,7 +76,7 @@ class Router
      */
     protected $_path;
 
-    public function __construct(string $configPath = null, PathInterface $path = null, CacheDriverInterface $cacheDriver = null, EventManagerInterface $eventManager)
+    public function __construct(string $configPath = null, PathInterface $path = null, CacheDriverInterface $cacheDriver = null, EventManagerInterface $eventManager = null)
     {
         $this->_cacheDriver = $cacheDriver;
         $this->_eventManager = $eventManager;
@@ -108,6 +108,7 @@ class Router
     }
 
     /**
+     * Set current handling route name
      * @param $name
      */
     public function setCurrentName($name)
@@ -116,6 +117,7 @@ class Router
     }
 
     /**
+     * Get current handling route name
      * @return string
      */
     public function getCurrentName()
@@ -124,6 +126,7 @@ class Router
     }
 
     /**
+     * Get current handling route namespace
      * @return string
      */
     public function getCurrentNamespace()
@@ -171,6 +174,7 @@ class Router
     /**
      * Set the base path.
      * Useful if you are running your application from a subdirectory.
+     * @param $basePath
      */
     public function setBasePath($basePath)
     {
@@ -198,7 +202,6 @@ class Router
      */
     public function map($method, $route, $target, $name = null)
     {
-
         if ($route == '') {
             $route = '/';
         }
@@ -211,7 +214,6 @@ class Router
             } else {
                 $this->_namedRoutes[$name] = $route;
             }
-
         }
 
         return;
@@ -291,6 +293,7 @@ class Router
      * @param string $requestUrl
      * @param string $requestMethod
      * @return array|boolean Array with route information on success, false on failure (no match).
+     * @throws Exception
      */
     public function match($requestUrl = null, $requestMethod = null)
     {

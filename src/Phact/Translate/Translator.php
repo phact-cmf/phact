@@ -20,11 +20,12 @@ trait Translator
     /**
      * @return Translate
      * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Exception
      */
     public static function getTranslator()
     {
-        if (Phact::app()->hasComponent('translate', Translate::class)) {
-            return Phact::app()->getComponent('translate');
+        if (Phact::app()->hasComponent(Translate::class)) {
+            return Phact::app()->getComponent(Translate::class);
         }
         return null;
     }

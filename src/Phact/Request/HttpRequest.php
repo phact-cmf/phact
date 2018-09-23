@@ -25,11 +25,12 @@ use Phact\Router\Router;
  *
  * @property \Phact\Helpers\Collection $get
  * @property \Phact\Helpers\Collection $post
+ * @property \Phact\Request\CookieCollection $cookie
  *
  * @package Phact\Request
  *
  */
-class HttpRequest
+class HttpRequest implements HttpRequestInterface
 {
     use SmartProperties;
 
@@ -58,45 +59,64 @@ class HttpRequest
     protected $_router = null;
 
     /**
+     * @var Session|null
+     */
+    protected $_session = null;
+
+    /**
      * @var CookieCollection
      */
-    public $cookie;
+    protected $_cookie;
 
     /**
      * @var Collection
      */
-    public $get;
+    protected $_get;
 
     /**
      * @var Collection
      */
-    public $post;
+    protected $_post;
 
-    public $enableCsrfValidation = false;
+    /**
+     * For retrieving token from request body
+     * @var string
+     */
+    protected $_csrfTokenName = "CSRF_TOKEN";
 
-    public $csrfTokenName = "CSRF_TOKEN";
+    /**
+     * For retrieving token from header
+     * @var string
+     */
+    protected $_csrfTokenHeader = "X-CSRF-Token";
 
-    public $csrfTokenHeader = "X-CSRF-Token";
-
+    /**
+     * CSRF Token
+     * @var string
+     */
     protected $_csrfToken;
 
-    public function __construct(Router $router = null)
+    public function __construct($enableCsrfValidation = false, Router $router = null, Session $session = null)
     {
         $this->_router = $router;
-        $this->get = new Collection($_GET);
-        $this->post = new Collection($_POST);
-        $this->cookie = new CookieCollection();
-        if ($this->enableCsrfValidation) {
+        $this->_session = $session;
+        $this->_get = new Collection($_GET);
+        $this->_post = new Collection($_POST);
+        $this->_cookie = new CookieCollection();
+        if ($enableCsrfValidation) {
             $this->validateCsrfToken();
         }
     }
 
+    /**
+     * @throws HttpException
+     */
     public function validateCsrfToken()
     {
         $method = $this->getMethod();
         if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
             // @TODO: PUT, PATCH, DELETE check
-            $userToken = $this->post->get($this->csrfTokenName);
+            $userToken = $this->_post->get($this->getCsrfTokenName());
             $validToken = $this->getCsrfToken();
 
             if (!$userToken) {
@@ -110,35 +130,97 @@ class HttpRequest
         }
     }
 
-    public function getCsrfTokenFromHeader()
+    /**
+     * Fetch csrf-token from request header
+     *
+     * @return null
+     */
+    protected function getCsrfTokenFromHeader()
     {
-        return $this->getHeaderValue($this->csrfTokenHeader);
+        return $this->getHeaderValue($this->getCsrfTokenHeader());
     }
 
-    public function getHeaderValue($key)
+    /**
+     * Get value from header by name
+     *
+     * @param $key
+     * @return null
+     */
+    protected function getHeaderValue($key)
     {
         $key = 'HTTP_' . str_replace('-', '_', strtoupper($key));
         return isset($_SERVER[$key]) ? $_SERVER[$key] : null;
     }
 
+    /**
+     * Get CSRF Token
+     *
+     * @return null|string
+     */
     public function getCsrfToken()
     {
-        // Write to cookie
         if (!$this->_csrfToken) {
-            $this->_csrfToken = $this->cookie->get($this->csrfTokenName);
+            $this->_csrfToken = $this->_cookie->get($this->getCsrfTokenName());
             if (!$this->_csrfToken) {
                 $this->_csrfToken = sha1(uniqid(mt_rand(), true));
-                $this->cookie->add($this->csrfTokenName, $this->_csrfToken);
+                $this->_cookie->add($this->getCsrfTokenName(), $this->_csrfToken);
             }
         }
         return $this->_csrfToken;
     }
 
+    /**
+     * Get CSRF Token name for retrieve token from request header
+     * @return string
+     */
+    public function getCsrfTokenHeader()
+    {
+        return $this->_csrfTokenHeader;
+    }
+
+    /**
+     * Set CSRF Token name for retrieve token from request header
+     * @param string $csrfTokenHeader
+     */
+    public function setCsrfTokenHeader(string $csrfTokenHeader)
+    {
+        $this->_csrfTokenHeader = $csrfTokenHeader;
+    }
+
+    /**
+     * Get CSRF Token name for retrieve token from request body
+     * @return string
+     */
+    public function getCsrfTokenName()
+    {
+        return $this->_csrfTokenName;
+    }
+
+    /**
+     * Set CSRF Token name for retrieve token from request body
+     * @param string $csrfTokenName
+     */
+    public function setCsrfTokenName(string $csrfTokenName)
+    {
+        $this->_csrfTokenName = $csrfTokenName;
+    }
+
+    /**
+     * Proxy method
+     *
+     * @deprecated
+     * @return null|Session
+     */
     public function getSession()
     {
         return $this->_session;
     }
 
+    /**
+     * Get request method (POST,GET,PUT, etc)
+     *
+     * @return string
+     */
     public function getMethod()
     {
         if (isset($_POST[$this->methodParam])) {
@@ -240,7 +322,6 @@ class HttpRequest
      * You may explicitly specify it by setting the [[setHostInfo()|hostInfo]] property.
      * @return string schema and hostname part (with port number if needed) of the request URL (e.g. `http://www.yiiframework.com`),
      * null if can't be obtained from `$_SERVER` and wasn't set.
-     * @see setHostInfo()
      */
     public function getHostInfo()
     {
@@ -258,6 +339,15 @@ class HttpRequest
             }
         }
         return $this->_hostInfo;
+    }
+
+    /**
+     * Sets the fully-qualified host information, (e.g. `http://www.yiiframework.com`, `http://127.0.0.1:8004`)
+     * @param $info
+     */
+    public function setHostInfo($info)
+    {
+        $this->_hostInfo = rtrim($info, '/');
     }
 
     /**
@@ -320,6 +410,7 @@ class HttpRequest
      * Returns the currently requested absolute URL.
      * This is a shortcut to the concatenation of [[hostInfo]] and [[url]].
      * @return string the currently requested absolute URL.
+     * @throws InvalidConfigException
      */
     public function getAbsoluteUrl()
     {
@@ -345,6 +436,7 @@ class HttpRequest
     /**
      * Returns part of the request URL that is before the question mark.
      * @return string part of the request URL that is before the question mark
+     * @throws InvalidConfigException
      */
     public function getPath()
     {
@@ -408,6 +500,7 @@ class HttpRequest
         return isset($_SERVER['HTTPS']) && (strcasecmp($_SERVER['HTTPS'], 'on') === 0 || $_SERVER['HTTPS'] == 1)
         || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strcasecmp($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') === 0;
     }
+
     /**
      * Returns the server name.
      * @return string server name, null if not available
@@ -485,6 +578,7 @@ class HttpRequest
         }
         return $this->_port;
     }
+
     /**
      * Sets the port to use for insecure requests.
      * This setter is provided in case a custom port is necessary for certain
@@ -513,6 +607,7 @@ class HttpRequest
         }
         return $this->_securePort;
     }
+
     /**
      * Sets the port to use for secure requests.
      * This setter is provided in case a custom port is necessary for certain
@@ -555,6 +650,7 @@ class HttpRequest
      * @param array $data Data for create url
      * @param integer $statusCode the HTTP status code. Defaults to 302. See {@link http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html}
      * for details about HTTP status code.
+     * @throws \Exception
      */
     public function redirect($url, $data = [], $statusCode = 302)
     {
@@ -568,8 +664,38 @@ class HttpRequest
         exit();
     }
 
+    /**
+     * Redirect browser to the current page.
+     *
+     * @throws InvalidConfigException
+     * @throws \Exception
+     */
     public function refresh()
     {
         $this->redirect($this->getUrl());
+    }
+
+    /**
+     * @return Collection
+     */
+    public function getGet()
+    {
+        return $this->_get;
+    }
+
+    /**
+     * @return Collection
+     */
+    public function getPost()
+    {
+        return $this->_post;
+    }
+
+    /**
+     * @return CookieCollection
+     */
+    public function getCookie()
+    {
+        return $this->_cookie;
     }
 }

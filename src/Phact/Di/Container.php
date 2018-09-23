@@ -16,7 +16,6 @@ use Phact\Exceptions\CircularContainerException;
 use Phact\Exceptions\ContainerException;
 use Phact\Exceptions\NotFoundContainerException;
 use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use ReflectionClass;
 use ReflectionException;
@@ -207,6 +206,12 @@ class Container implements ContainerInterface
         $this->_autowire = $autowire;
     }
 
+    /**
+     * Set config of services
+     *
+     * @param array $config
+     * @throws ContainerException
+     */
     public function setConfig(array $config)
     {
         if (isset($config['_references'])) {
@@ -520,7 +525,7 @@ class Container implements ContainerInterface
                 break;
             } elseif ($c = $param->getClass()) {
                 $type = self::DEPENDENCY_OBJECT_VALUE_REQUIRED;
-                if ($param->isOptional()) {
+                if ($param->allowsNull()) {
                     $type = self::DEPENDENCY_OBJECT_VALUE_OPTIONAL;
                 }
                 $value = $c->getName();
@@ -601,6 +606,21 @@ class Container implements ContainerInterface
         } else {
             return call_user_func($callable);
         }
+    }
+
+    /**
+     * Construct instance of class with constructor arguments
+     *
+     * @param string $className
+     * @param $arguments array
+     * @return object
+     * @throws ContainerException
+     * @throws NotFoundContainerException
+     * @throws ReflectionException
+     */
+    public function construct(string $className, $arguments = [])
+    {
+        return $this->make($className, $arguments);
     }
 
     /**

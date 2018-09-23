@@ -181,9 +181,9 @@ class TemplateManager implements RendererInterface
     protected function collectTemplatesPaths()
     {
         $paths = [];
-        if ($this->_application) {
+        if ($this->_modules && $this->_paths) {
             $paths = [
-                $this->_application->getBasePath() . DIRECTORY_SEPARATOR . $this->templateFolder
+                $this->_paths->get('base') . DIRECTORY_SEPARATOR . $this->templateFolder
             ];
             $activeModules = $this->_modules->getModulesClasses();
             foreach ($activeModules as $name => $class) {

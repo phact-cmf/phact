@@ -16,22 +16,24 @@ namespace Phact\Tests;
 use InvalidArgumentException;
 use Modules\Test\Controllers\TestController;
 use Phact\Controller\Controller;
-use Phact\Helpers\Paths;
 use Phact\Main\Phact;
 use Phact\Request\HttpRequest;
-use Phact\Request\Request;
 use Phact\Router\Router;
 
+/**
+ * Class ControllerTest
+ * @package Phact\Tests
+ */
 class ControllerTest extends AppTest
 {
-    public function testSimple()
+    public function _testSimple()
     {
         $this->expectOutputString('test');
         $controller = new TestController(new HttpRequest());
         $controller->run('test');
     }
 
-    public function testMatchSimple()
+    public function _testMatchSimple()
     {
         $this->expectOutputString('test');
 
@@ -48,14 +50,14 @@ class ControllerTest extends AppTest
         $controller->run($action, $params);
     }
 
-    public function testParams()
+    public function _testParams()
     {
         $this->expectOutputString('Name: params_test');
         $controller = new TestController(new HttpRequest());
         $controller->run('testParam', ['name' => 'params_test']);
     }
 
-    public function testMatchParams()
+    public function _testMatchParams()
     {
         $this->expectOutputString('Name: params_test');
 
@@ -78,7 +80,7 @@ class ControllerTest extends AppTest
     /**
      * @expectedException \Phact\Exceptions\InvalidConfigException
      */
-    public function testInvalidParams()
+    public function _testInvalidParams()
     {
         $controller = new TestController(new HttpRequest());
         $controller->run('testParam', ['id' => 'params_test']);
@@ -88,7 +90,7 @@ class ControllerTest extends AppTest
     /**
      * @expectedException \Phact\Exceptions\InvalidConfigException
      */
-    public function testUnknownAction()
+    public function _testUnknownAction()
     {
         $controller = new TestController(new HttpRequest());
         $controller->run('unknownAction');
