@@ -143,7 +143,25 @@ class TemplateManager implements RendererInterface
         $this->_settings = $settings;
         $this->_router = $router;
         $this->_translate = $translate;
+    }
 
+    /**
+     * @extension modifier
+     * @return ExtendedFenom
+     */
+    public function getRenderer()
+    {
+        if (!$this->_renderer) {
+            $this->initRenderer();
+        }
+        return $this->_renderer;
+    }
+
+    /**
+     * Initializing renderer
+     */
+    public function initRenderer()
+    {
         $paths = $this->collectTemplatesPaths();
         $provider = new PhactFenomTemplateProvider($paths);
         $this->_renderer = new ExtendedFenom($provider);
@@ -164,15 +182,6 @@ class TemplateManager implements RendererInterface
 
         $this->extendRenderer();
         $this->loadLibraries();
-    }
-
-    /**
-     * @extension modifier
-     * @return ExtendedFenom
-     */
-    public function getRenderer()
-    {
-        return $this->_renderer;
     }
 
     /**
