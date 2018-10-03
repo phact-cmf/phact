@@ -93,17 +93,17 @@ class ErrorHandler
             header("HTTP/1.0 {$code} " . Http::getMessage($code));
         }
 
-//        try {
-//            if (ob_get_length()) ob_clean();
-//            $this->renderException($exception, $code, $traceRaw);
-//        } catch (Exception $e) {
-//            if ($this->debug) {
-//                echo PHP_EOL;
-//                echo debug_print_backtrace();
-//            } else {
-//                echo 'Internal server error';
-//            }
-//        }
+        try {
+            if (ob_get_length()) ob_clean();
+            $this->renderException($exception, $code, $traceRaw);
+        } catch (Exception $e) {
+            if ($this->debug) {
+                echo PHP_EOL;
+                echo debug_print_backtrace();
+            } else {
+                echo 'Internal server error';
+            }
+        }
     }
 
     /**

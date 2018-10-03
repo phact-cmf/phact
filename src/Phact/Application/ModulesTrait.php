@@ -97,7 +97,7 @@ trait ModulesTrait
             $this->logDebug("Loading module '{$name}'");
             $config = $this->getModuleConfig($name);
             if (!is_null($config)) {
-                $this->_modules[$name] = $this->_container->create($config['class']);
+                $this->_modules[$name] = $this->_container->construct($config['class']);
                 unset($config['class']);
                 foreach ($config as $property => $value) {
                     $this->_modules[$name]->{$property} = $value;

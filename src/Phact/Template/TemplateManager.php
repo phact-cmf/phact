@@ -212,7 +212,7 @@ class TemplateManager implements RendererInterface
     public function render($template, $params = [])
     {
         $this->eventTrigger('template.beforeRender', [$template, $params], $this);
-        $result = $this->_renderer->fetch($template, $params);
+        $result = $this->getRenderer()->fetch($template, $params);
         $this->eventTrigger('template.afterRender', [$template, $params, $result], $this);
         return $result;
     }
@@ -222,15 +222,15 @@ class TemplateManager implements RendererInterface
      */
     public function extendRenderer()
     {
-        $this->_renderer->addModifier('safe_element', function($variable, $param, $default = '') {
+        $this->getRenderer()->addModifier('safe_element', function($variable, $param, $default = '') {
             return isset($variable[$param]) ? $variable[$param] : $default;
         });
 
-        $this->_renderer->addModifier('not_in', function($variable, $array) {
+        $this->getRenderer()->addModifier('not_in', function($variable, $array) {
             return !array_key_exists($variable, $array);
         });
 
-        $this->_renderer->addModifier('class', function($object) {
+        $this->getRenderer()->addModifier('class', function($object) {
             if (is_object($object)) {
                 return get_class($object);
             }
@@ -238,29 +238,29 @@ class TemplateManager implements RendererInterface
         });
 
         if ($this->_auth) {
-            $this->_renderer->addAccessorProp("user", function () {
+            $this->getRenderer()->addAccessorProp("user", function () {
                 return $this->_auth->getUser();
             });
         }
 
         if ($this->_request) {
-            $this->_renderer->addAccessorProp("request", function () {
+            $this->getRenderer()->addAccessorProp("request", function () {
                 return $this->_request;
             });
         }
 
         if ($this->_settings) {
-            $this->_renderer->addAccessorSmart("setting", function ($name) {
+            $this->getRenderer()->addAccessorCallable("setting", function ($name) {
                 return $this->_settings->get($name);
-            }, Fenom::ACCESSOR_CALL);
+            });
         }
 
         if ($this->_router) {
-            $this->_renderer->addAccessorCallable('url', function($routeName, $params = array()) {
+            $this->getRenderer()->addAccessorCallable('url', function($routeName, $params = array()) {
                 return $this->_router->url($routeName, $params);
             });
 
-            $this->_renderer->addFunction('url', function($params) {
+            $this->getRenderer()->addFunction('url', function($params) {
                 $route = isset($params['route']) ? $params['route'] : null;
                 if (!$route) {
                     $route = isset($params[0]) ? $params[0] : null;
@@ -275,31 +275,31 @@ class TemplateManager implements RendererInterface
         }
 
         if ($this->_translate) {
-            $this->_renderer->addAccessorCallable("t", function ($domain, $key = "", $number = null, $parameters = [], $locale = null) {
+            $this->getRenderer()->addAccessorCallable("t", function ($domain, $key = "", $number = null, $parameters = [], $locale = null) {
                 return $this->_translate->t($domain, $key, $number, $parameters, $locale);
             });
 
-            $this->_renderer->addFunction('t', function($params) {
+            $this->getRenderer()->addFunction('t', function($params) {
                 return call_user_func_array([$this->_translate, 't'], $params);
             });
         }
 
         if ($this->_cacheDriver) {
-            $this->_renderer->addBlockFunction("__internal_cache_set", function ($params, $content) {
+            $this->getRenderer()->addBlockFunction("__internal_cache_set", function ($params, $content) {
                 if (count($params) == 2) {
                     $this->_cacheDriver->set($params[0], $content, $params[1]);
                 }
                 return $content;
             });
 
-            $this->_renderer->addBlockFunction("__internal_cache_get", function ($params, $content) {
+            $this->getRenderer()->addBlockFunction("__internal_cache_get", function ($params, $content) {
                 if (count($params) == 1 && $this->_cacheDriver) {
                     return $this->_cacheDriver->get($params[0]);
                 }
                 return "";
             });
 
-            $this->_renderer->addBlockCompiler("cache", function ($tokenizer, Tag $tag) {
+            $this->getRenderer()->addBlockCompiler("cache", function ($tokenizer, Tag $tag) {
                 $params = $tag->tpl->parseParams($tokenizer);
                 if (count($params) == 2) {
                     $tag['params'] = $params;
@@ -376,7 +376,7 @@ class TemplateManager implements RendererInterface
                 $this->_cacheDriver->set($cacheKey, $extensions, $this->librariesCacheTimeout);
             }
         }
-        $this->_renderer;
+        $this->getRenderer();
         if (is_array($extensions)) {
             foreach ($extensions as $extension) {
                 $this->addExtension($extension['class'], $extension['method'], $extension['name'], $extension['kind']);

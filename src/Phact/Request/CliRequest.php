@@ -56,7 +56,7 @@ class CliRequest implements CliRequestInterface
      */
     public function isEmpty()
     {
-        return empty($this->getArgs());
+        return count($this->getArgs()) <= 1;
     }
 
     /**
