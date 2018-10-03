@@ -102,6 +102,4 @@ abstract class Command implements CommandInterface
     {
         return $this->getVerbose();
     }
-
-    abstract public function handle($arguments = []);
 }

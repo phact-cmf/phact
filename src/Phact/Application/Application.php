@@ -318,12 +318,13 @@ class Application implements ModulesInterface
                 throw new Exception("Method '{$action}' of class '{$class}' does not exist");
             }
         } else {
-            $data = $request->getCommandsList();
+            $commandsConfigs = $request->getCommandsList();
             echo 'List of available commands' . PHP_EOL . PHP_EOL;
-            foreach ($data as $command) {
+            foreach ($commandsConfigs as $class) {
+                $command = $this->_container->construct($class);
                 echo $command->getVerbose() . PHP_EOL;
             }
-            echo  'Usage example:' . PHP_EOL . 'php index.php Base Db';
+            echo PHP_EOL . 'Usage example:' . PHP_EOL . 'php index.php Base Db';
         }
     }
 
