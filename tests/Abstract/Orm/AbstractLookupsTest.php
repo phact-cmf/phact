@@ -103,7 +103,7 @@ abstract class AbstractLookupsTest extends DatabaseTest
     {
         $objects = $this->createObjects();
         $this->assertEquals(1, count(NoteThesis::objects()->filter(['name__regex' => '^Fir.*$'])->all()));
-        $this->assertEquals(1, count(NoteThesis::objects()->filter(['name__regex' => '^.+nd.+si.+$'])->allSql()));
+        $this->assertEquals(1, count(NoteThesis::objects()->filter(['name__regex' => '^.+nd.+si.+$'])->all()));
     }
 
     public function createObjects()
