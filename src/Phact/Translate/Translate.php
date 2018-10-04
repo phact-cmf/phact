@@ -45,9 +45,6 @@ class Translate
      */
     protected $_localeDetector;
 
-    /** @var string */
-    public $default = 'en';
-
     /**
      * @var PathInterface
      */
@@ -62,9 +59,11 @@ class Translate
     {
         $this->_localeDetector = $localeDetector;
         $this->_locale = $this->detect();
-        $this->_translator = $translator ?: new SymfonyTranslator($this->_locale);
         $this->_modules = $modules;
         $this->_path = $path;
+
+        $this->_translator = $translator ?: new SymfonyTranslator($this->_locale);
+
         $this->initLoaders();
         $this->loadMessages();
     }
@@ -74,6 +73,9 @@ class Translate
      */
     public function getTranslator()
     {
+        if (is_null($this->_translator)) {
+            $this->initTranslator();
+        }
         return $this->_translator;
     }
 
@@ -92,7 +94,7 @@ class Translate
                 $locale = call_user_func($this->_localeDetector);
             }
         }
-        return $locale ?: $this->default;
+        return $locale ?: 'en';
     }
 
     /**

@@ -99,7 +99,7 @@ class ErrorHandler
         } catch (Exception $e) {
             if ($this->debug) {
                 echo PHP_EOL;
-                echo debug_print_backtrace();
+                debug_print_backtrace();
             } else {
                 echo 'Internal server error';
             }

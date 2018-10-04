@@ -90,7 +90,7 @@ class TableManager
         } else {
             $tableExists = $schemaManager->listTableDetails($tableName);
             $comparator = new Comparator();
-            if ($diff = $comparator->diffTable($table, $tableExists)) {
+            if ($diff = $comparator->diffTable($tableExists, $table)) {
                 $schemaManager->alterTable($diff);
             }
         }

@@ -12,16 +12,53 @@
 
 namespace Phact\Interfaces;
 
-
 use Phact\Orm\Model;
 
 interface AuthInterface
 {
-    public function login(Model $user);
+    /**
+     * Authorise user
+     * @param UserInterface $user
+     * @return mixed
+     */
+    public function login(UserInterface $user);
 
+    /**
+     * De-authorise user
+     * @param bool $clearSession
+     * @return mixed
+     */
     public function logout($clearSession = true);
 
+    /**
+     * Get current user
+     * @return UserInterface
+     */
     public function getUser();
 
-    public function setUser(Model $user);
+    /**
+     * Set current user
+     * @param UserInterface $user
+     * @return mixed
+     */
+    public function setUser(UserInterface $user);
+
+    /**
+     * Find user by uniquie login (email/phone)
+     * @return UserInterface|null
+     */
+    public function findUserByLogin($login);
+
+    /**
+     * Find user by uniquie id
+     * @return UserInterface|null
+     */
+    public function findUserById($id);
+
+    /**
+     * @param UserInterface $user
+     * @param string $password
+     * @return bool
+     */
+    public function verifyPassword(UserInterface $user, string $password);
 }
