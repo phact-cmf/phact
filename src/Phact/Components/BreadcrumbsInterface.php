@@ -56,7 +56,6 @@ interface BreadcrumbsInterface
      * @param $name
      * @param null $url
      * @param array $params
-     * @throws \Exception
      */
     public function add($name, $url = null, $params = []);
 

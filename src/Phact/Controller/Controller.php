@@ -21,6 +21,7 @@ use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Model;
 use Phact\Request\HttpRequestInterface;
+use Phact\Template\RendererInterface;
 use ReflectionMethod;
 
 /**
@@ -40,13 +41,19 @@ class Controller implements ControllerInterface
     protected $_request;
 
     /**
+     * @var RendererInterface
+     */
+    protected $_renderer;
+
+    /**
      * @var string|null Default action
      */
     public $defaultAction;
 
-    public function __construct(HttpRequestInterface $request)
+    public function __construct(HttpRequestInterface $request, RendererInterface $renderer)
     {
         $this->_request = $request;
+        $this->_renderer = $renderer;
     }
 
     public function getRequest()
@@ -61,7 +68,7 @@ class Controller implements ControllerInterface
      */
     public function render($template, $params = [])
     {
-        return Phact::app()->template->render($template, $params);
+        return $this->_renderer->render($template, $params);
     }
 
     public function redirect($url, $data = [], $status = 302)
@@ -92,7 +99,6 @@ class Controller implements ControllerInterface
 
     public function afterAction($action, $params, $response)
     {
-
     }
 
     public function error($code = 404, $message = null)

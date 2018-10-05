@@ -12,19 +12,26 @@
 
 namespace Phact\Module;
 
-
 use Phact\Cache\Cache;
 use Phact\Cache\CacheDriverInterface;
+use Phact\Event\EventManagerInterface;
 use Phact\Form\ModelForm;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Model;
+use Phact\Translate\Translate;
 use ReflectionClass;
 
+/**
+ * Class Module
+ * @package Phact\Module
+ */
 abstract class Module
 {
     protected static $_paths = [];
+
+    protected $_name;
 
     use ClassNames, SmartProperties;
 
@@ -35,43 +42,65 @@ abstract class Module
      */
     protected $_cacheDriver;
 
-    public function __construct(CacheDriverInterface $cacheDriver = null)
+    /**
+     * @var Translate
+     */
+    protected $_translate;
+
+
+    public function __construct(string $name, CacheDriverInterface $cacheDriver = null, Translate $translate = null)
     {
+        $this->_name = $name;
         $this->_cacheDriver = $cacheDriver;
+        $this->_translate = $translate;
     }
 
     /**
      * Before application init
      */
-    public static function onApplicationInit()
+    public function onApplicationInit()
     {
     }
 
     /**
      * Before application run
      */
-    public static function onApplicationRun()
+    public function onApplicationRun()
     {
     }
 
     /**
      * Before application end
      */
-    public static function onApplicationEnd()
+    public function onApplicationEnd()
     {
     }
 
-    public static function getVerboseName()
+    /**
+     * Module verbose (human-readable) name
+     * @return mixed
+     */
+    public function getVerboseName()
     {
-        return static::getName();
+        return $this->getName();
     }
 
-    public static function getName()
+    /**
+     * Module name
+     *
+     * @return mixed
+     */
+    public function getName()
     {
-        return str_replace('Module', '', static::classNameShort());
+        return $this->_name;
     }
 
-    public static function getPath()
+    /**
+     * Get module base path
+     * @return mixed
+     * @throws \ReflectionException
+     */
+    public function getPath()
     {
         $class = static::class;
         if (!isset(static::$_paths[$class])) {
@@ -81,24 +110,28 @@ abstract class Module
         return static::$_paths[$class];
     }
 
-    public static function getAdminMenu()
-    {
-        return [];
-    }
-
     /**
+     * Settings model
      * @return Model|null
      */
-    public static function getSettingsModel()
+    public function getSettingsModel()
     {
         return null;
     }
 
-    public static function getSettingsForm()
+    /**
+     * Settings form
+     * @return ModelForm
+     */
+    public function getSettingsForm()
     {
         return new ModelForm();
     }
 
+    /**
+     * Settings model instance
+     * @return null|Model
+     */
     public function getSettings()
     {
         $model = $this->getSettingsModel();
@@ -107,7 +140,7 @@ abstract class Module
         }
         $settings = null;
         if ($this->_cacheDriver && $this->settingsModelCache) {
-            $settingsKey = static::class . '__' . $model->className();
+            $settingsKey = $this->getSettingsCacheKey();
             $settings = $this->_cacheDriver->get($settingsKey, false);
             if ($settings === false) {
                 $settings = $model->objects()->get();
@@ -122,19 +155,53 @@ abstract class Module
         return $settings;
     }
 
+    /**
+     * Triggered after settings model update
+     */
     public function afterSettingsUpdate()
     {
         if ($this->_cacheDriver && $this->settingsModelCache) {
             $model = $this->getSettingsModel();
-            $settingsKey = static::class . '__' . $model->className();
             $settings = $model->objects()->get();
-            $this->_cacheDriver->set($settingsKey, $settings, $this->settingsModelCache);
+            $this->_cacheDriver->set($this->getSettingsCacheKey(), $settings, $this->settingsModelCache);
         }
     }
 
+    /**
+     * Settings cache key
+     * @return string
+     */
+    protected function getSettingsCacheKey()
+    {
+        return static::class . '__' . $model->className();
+    }
+
+    /**
+     * Get settings instance property
+     * @param $name
+     * @return bool|mixed|null
+     */
     public function getSetting($name)
     {
         $settings = $this->getSettings();
         return $settings->{$name};
+    }
+
+    /**
+     * Translate
+     *
+     * @param $domain
+     * @param string $key
+     * @param null $number
+     * @param array $parameters
+     * @param null $locale
+     * @return string
+     */
+    public function t($domain, $key = "", $number = null, $parameters = [], $locale = null)
+    {
+        if ($this->_translate) {
+            return $this->_translate->t($domain, $key, $number, $parameters, $locale);
+        }
+        return $key;
     }
 }

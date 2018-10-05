@@ -26,6 +26,11 @@ trait ClassNames
         return substr(static::class, strrpos(static::class, '\\')+1);
     }
 
+    public static function classNamespace()
+    {
+        return substr(static::class, 0, strrpos(static::class, '\\'));
+    }
+
     public static function classNameUnderscore()
     {
         return Text::camelCaseToUnderscores(static::classNameShort());

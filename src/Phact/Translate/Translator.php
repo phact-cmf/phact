@@ -17,8 +17,6 @@ use Phact\Main\Phact;
 
 trait Translator
 {
-    use ComponentFetcher;
-
     /**
      * @param string $domain If $key is not set, uses as $key, $domain is empty
      * @param string $key
@@ -29,7 +27,10 @@ trait Translator
      */
     public static function t($domain, $key = "", $number = null, $parameters = [], $locale = null)
     {
-        $translator = self::fetchComponent(Translate::class);
+        $translator = null;
+        if (($app = Phact::app()) && ($app->hasComponent(Translate::class))) {
+            return $app->getComponent(Translate::class);
+        }
         if ($translator) {
             if (!$key) {
                 $key = $domain;

@@ -27,14 +27,13 @@ interface ModulesInterface
     /**
      * Return list of modules
      *
+     * @return Module[]
+     */
+    public function getModules();
+
+    /**
+     * Get modules names
      * @return string[]
      */
     public function getModulesList();
-
-    /**
-     * Return list of modules classes by module name
-     *
-     * @return string[]
-     */
-    public function getModulesClasses();
 }

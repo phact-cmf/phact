@@ -90,10 +90,11 @@ class Application implements ModulesInterface
      */
     public function init()
     {
-        $this->provideModuleEvent('onApplicationInit');
         $this->initContainer();
         $this->setUpPaths();
         $this->autoload();
+        $this->initModules();
+        $this->provideModuleEvent('onApplicationInit');
         $this->eventTrigger("application.afterInit", [], $this);
     }
 
@@ -184,8 +185,8 @@ class Application implements ModulesInterface
             if (!$modulesPath && ($modulesPath = $paths->get('base.Modules')) && is_dir($modulesPath)) {
                 $paths->add('Modules', $modulesPath);
             }
-            foreach ($this->getModulesClasses() as $name => $class) {
-                $paths->add("Modules.{$name}", $class::getPath());
+            foreach ($this->getModules() as $name => $module) {
+                $paths->add("Modules.{$name}", $module->getPath());
             }
             if (!is_dir($modulesPath)) {
                 throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');
@@ -405,16 +406,15 @@ class Application implements ModulesInterface
     }
 
     /**
-     * Call modules static methods
+     * Call modules events
      *
      * @param $event
      * @param array $args
      */
     protected function provideModuleEvent($event, $args = [])
     {
-        foreach ($this->getModulesConfig() as $name => $config) {
-            $class = $config['class'];
-            forward_static_call_array([$class, $event], $args);
+        foreach ($this->getModules() as $name => $module) {
+            call_user_func_array([$module, $event], $args);
         }
     }
 

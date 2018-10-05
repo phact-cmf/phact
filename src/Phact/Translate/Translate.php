@@ -16,7 +16,9 @@ namespace Phact\Translate;
 
 use Phact\Application\ModulesInterface;
 use Phact\Components\PathInterface;
+use Phact\Event\EventManagerInterface;
 use Phact\Helpers\SmartProperties;
+use Phact\Module\Module;
 use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\Loader\MoFileLoader;
@@ -55,17 +57,36 @@ class Translate
      */
     protected $_modules;
 
-    public function __construct($localeDetector = null, PathInterface $path = null, TranslatorInterface $translator = null, ModulesInterface $modules = null)
+    /***
+     * @var EventManagerInterface|null
+     */
+    protected $_eventManager;
+
+    public function __construct($localeDetector = null, PathInterface $path = null, TranslatorInterface $translator = null, ModulesInterface $modules = null, EventManagerInterface $eventManager = null)
     {
         $this->_localeDetector = $localeDetector;
         $this->_locale = $this->detect();
         $this->_modules = $modules;
         $this->_path = $path;
+        $this->_eventManager = $eventManager;
 
         $this->_translator = $translator ?: new SymfonyTranslator($this->_locale);
 
         $this->initLoaders();
         $this->loadMessages();
+        $this->subscribe();
+    }
+
+    /**
+     * Subscribe on module init
+     */
+    protected function subscribe()
+    {
+        if ($this->_eventManager) {
+            $this->_eventManager->on('module.afterInit', function ($module) {
+                $this->loadModuleMessages($module);
+            });
+        }
     }
 
     /**
@@ -115,8 +136,8 @@ class Translate
     public function loadMessages()
     {
         $this->loadSystemMessages();
-        $this->loadModulesMessages();
         $this->loadApplicationMessages();
+        $this->loadModulesMessages();
     }
 
     /**
@@ -136,13 +157,22 @@ class Translate
     public function loadModulesMessages()
     {
         if ($this->_modules) {
-            foreach ($this->_modules->getModulesClasses() as $moduleName => $class) {
-                $modulePath = $class::getPath();
-                $moduleMessagesPath = realpath(implode(DIRECTORY_SEPARATOR, [$modulePath, 'messages']));
-                if ($moduleMessagesPath) {
-                    $this->loadFileSystemMessages($moduleMessagesPath, "{$moduleName}.");
-                }
+            foreach ($this->_modules->getModules() as $moduleName => $module) {
+                $this->loadModuleMessages($module);
             }
+        }
+    }
+
+    /**
+     * Load module-located resources
+     * @param $module Module
+     */
+    public function loadModuleMessages($module)
+    {
+        $modulePath = $module->getPath();
+        $moduleMessagesPath = realpath(implode(DIRECTORY_SEPARATOR, [$modulePath, 'messages']));
+        if ($moduleMessagesPath) {
+            $this->loadFileSystemMessages($moduleMessagesPath, "{$module->getName()}.");
         }
     }
 

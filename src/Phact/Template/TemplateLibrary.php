@@ -66,7 +66,7 @@ class TemplateLibrary
     public static function getExtensionName($methodName = null)
     {
         $prefix = static::getPrefix();
-        return $prefix . '_' . Text::camelCaseToUnderscores($methodName);
+        return ($prefix ? $prefix . '_' : '') . Text::camelCaseToUnderscores($methodName);
     }
 
     public static function getPrefix()

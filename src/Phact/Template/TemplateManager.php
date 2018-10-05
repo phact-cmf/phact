@@ -194,9 +194,9 @@ class TemplateManager implements RendererInterface
             $paths = [
                 $this->_paths->get('base') . DIRECTORY_SEPARATOR . $this->templateFolder
             ];
-            $activeModules = $this->_modules->getModulesClasses();
-            foreach ($activeModules as $name => $class) {
-                $paths[] = implode(DIRECTORY_SEPARATOR, [$class::getPath(), $this->templateFolder]);
+            $activeModules = $this->_modules->getModules();
+            foreach ($activeModules as $name => $module) {
+                $paths[] = implode(DIRECTORY_SEPARATOR, [$module->getPath(), $this->templateFolder]);
             }
         }
         return $paths;
@@ -353,17 +353,17 @@ class TemplateManager implements RendererInterface
             $extensions = $this->_cacheDriver->get($cacheKey);
         }
         if (is_null($extensions) && $this->_modules) {
-            $activeModules = $this->_modules->getModulesClasses();
+            $activeModules = $this->_modules->getModules();
             $classes = [];
             $extensions = [];
-            foreach ($activeModules as $moduleName => $class) {
-                $path = implode(DIRECTORY_SEPARATOR, [$class::getPath(), $this->librariesFolder]);
+            foreach ($activeModules as $moduleName => $module) {
+                $path = implode(DIRECTORY_SEPARATOR, [$module->getPath(), $this->librariesFolder]);
                 if (is_dir($path)) {
                     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename) {
                         // filter out "." and ".."
                         if ($filename->isDir()) continue;
                         $name = $filename->getBasename('.php');
-                        $classes[] = implode('\\', ['Modules', $moduleName, $this->librariesFolder, $name]);
+                        $classes[] = implode('\\', [$module::classNamespace(), $this->librariesFolder, $name]);
                     }
                 }
             }

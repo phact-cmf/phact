@@ -111,13 +111,13 @@ class CliRequest implements CliRequestInterface
     public function getCommandsList()
     {
         $commands = [];
-        foreach ($this->_modules->getModulesClasses() as $moduleName => $class) {
-            $path = implode(DIRECTORY_SEPARATOR, [$class::getPath(), 'Commands']);
+        foreach ($this->_modules->getModules() as $moduleName => $module) {
+            $path = implode(DIRECTORY_SEPARATOR, [$module->getPath(), 'Commands']);
             if (is_dir($path)) {
                 foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename) {
                     if ($filename->isDir()) continue;
                     $name = $filename->getBasename('.php');
-                    $class = implode('\\', ['Modules', $moduleName, 'Commands', $name]);
+                    $class = implode('\\', [$module::classNamespace(), 'Commands', $name]);
                     try {
                         $reflection = new ReflectionClass($class);
                         if (!$reflection->isAbstract()) {

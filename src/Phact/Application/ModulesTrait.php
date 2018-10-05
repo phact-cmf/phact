@@ -28,21 +28,18 @@ trait ModulesTrait
 {
     /**
      * Initialized modules
-     *
      * @var Module[]
      */
     protected $_modules = [];
 
     /**
-     * Modules configuration
-     *
+     * Modules config
      * @var array
      */
     protected $_modulesConfig = [];
 
     /**
      * Set modules config
-     *
      * @param array $config
      * @throws InvalidConfigException
      */
@@ -53,12 +50,11 @@ trait ModulesTrait
 
     /**
      * Normalize modules configs
-     *
      * @param $rawConfig
      * @return array
      * @throws InvalidConfigException
      */
-    public function normalizeModulesConfig($rawConfig)
+    protected function normalizeModulesConfig($rawConfig)
     {
         $configs = [];
         foreach ($rawConfig as $key => $module) {
@@ -84,8 +80,32 @@ trait ModulesTrait
     }
 
     /**
+     * Modules initialization
+     */
+    protected function initModules()
+    {
+        foreach ($this->_modulesConfig as $name => $config) {
+            $this->initModule($name, $config);
+        }
+    }
+
+    /**
+     * Module initialization
+     * @param $name
+     * @param $config
+     */
+    protected function initModule($name, $config)
+    {
+        $this->_modules[$name] = $this->_container->construct($config['class'], [$name]);
+        unset($config['class']);
+        foreach ($config as $property => $value) {
+            $this->_modules[$name]->{$property} = $value;
+        }
+        $this->eventTrigger('module.afterInit', [], $this->_modules[$name]);
+    }
+
+    /**
      * Return initialized instance of \Phact\Module\Module by name
-     *
      * @param $name
      * @return mixed|Module
      * @throws InvalidConfigException
@@ -94,67 +114,26 @@ trait ModulesTrait
     public function getModule($name)
     {
         if (!isset($this->_modules[$name])) {
-            $this->logDebug("Loading module '{$name}'");
-            $config = $this->getModuleConfig($name);
-            if (!is_null($config)) {
-                $this->_modules[$name] = $this->_container->construct($config['class']);
-                unset($config['class']);
-                foreach ($config as $property => $value) {
-                    $this->_modules[$name]->{$property} = $value;
-                }
-            } else {
-                throw new UnknownPropertyException("Module with name" . $name . " not found");
-            }
+            throw new UnknownPropertyException("Module with name" . $name . " not found");
         }
-
         return $this->_modules[$name];
     }
 
     /**
-     * Get configuration of module
-     *
-     * @param $name
-     * @return mixed|null
+     * All initialized modules
+     * @return Module[]
      */
-    protected function getModuleConfig($name)
+    public function getModules()
     {
-        if (array_key_exists($name, $this->_modulesConfig)) {
-            return $this->_modulesConfig[$name];
-        }
-        return null;
+        return $this->_modules;
     }
 
     /**
      * Get modules names
-     *
      * @return string[]
      */
     public function getModulesList()
     {
-        return array_keys($this->getModulesConfig());
-    }
-
-    /**
-     * Return list of modules classes by module name
-     *
-     * @return string[]
-     */
-    public function getModulesClasses()
-    {
-        $result = [];
-        foreach ($this->getModulesConfig() as $name => $config) {
-            $result[$name] = $config['class'];
-        }
-        return $result;
-    }
-
-    /**
-     * Get modules configuration
-     *
-     * @return array
-     */
-    protected function getModulesConfig()
-    {
-        return $this->_modulesConfig;
+        return array_keys($this->_modules);
     }
 }
