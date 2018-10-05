@@ -86,6 +86,9 @@ class Translate
             $this->_eventManager->on('module.afterInit', function ($module) {
                 $this->loadModuleMessages($module);
             });
+            $this->_eventManager->on('application.afterModulesInit', function () {
+                $this->loadApplicationMessages();
+            });
         }
     }
 
@@ -94,9 +97,6 @@ class Translate
      */
     public function getTranslator()
     {
-        if (is_null($this->_translator)) {
-            $this->initTranslator();
-        }
         return $this->_translator;
     }
 
@@ -136,7 +136,6 @@ class Translate
     public function loadMessages()
     {
         $this->loadSystemMessages();
-        $this->loadApplicationMessages();
         $this->loadModulesMessages();
     }
 

@@ -15,6 +15,7 @@ namespace Phact\Controller;
 use Phact\Di\Container;
 use Phact\Di\ContainerInterface;
 use Phact\Event\Events;
+use Phact\Exceptions\DependencyException;
 use Phact\Exceptions\HttpException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\SmartProperties;
@@ -41,7 +42,7 @@ class Controller implements ControllerInterface
     protected $_request;
 
     /**
-     * @var RendererInterface
+     * @var RendererInterface|null
      */
     protected $_renderer;
 
@@ -50,7 +51,7 @@ class Controller implements ControllerInterface
      */
     public $defaultAction;
 
-    public function __construct(HttpRequestInterface $request, RendererInterface $renderer)
+    public function __construct(HttpRequestInterface $request, RendererInterface $renderer = null)
     {
         $this->_request = $request;
         $this->_renderer = $renderer;
@@ -68,7 +69,10 @@ class Controller implements ControllerInterface
      */
     public function render($template, $params = [])
     {
-        return $this->_renderer->render($template, $params);
+        if ($this->_renderer) {
+            return $this->_renderer->render($template, $params);
+        }
+        throw new DependencyException(sprintf('Dependency %s is not loaded', RendererInterface::class));
     }
 
     public function redirect($url, $data = [], $status = 302)

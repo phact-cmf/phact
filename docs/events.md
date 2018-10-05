@@ -41,6 +41,10 @@ Phact::app()->event->trigger('someEvent', [$firstParam, $secondParam], $sender);
 
 **application.afterRunController** - $sender - экземпляр Application, $params - [$controller, $action, $routeName, $routeParams, $actionResponse], где $controller - экземпляр Controller, $action - имя action, $routeName - имя route (н-р: "user:login"), $params - параметры route, $actionResponse - данные, вернувшиеся из action
 
+**application.beforeModulesInit** - $sender - экземпляр Application, $params - []
+
+**application.afterModulesInit** - $sender - экземпляр Application, $params - []
+
 **module.afterInit** - $sender - экземпляр Module, $params - []
 
 **router.beforeMatch** - $sender - экземпляр Router, $params - [$requestUrl, $requestMethod]

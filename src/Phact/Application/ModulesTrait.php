@@ -84,9 +84,11 @@ trait ModulesTrait
      */
     protected function initModules()
     {
+        $this->eventTrigger('application.beforeModulesInit', [], $this);
         foreach ($this->_modulesConfig as $name => $config) {
             $this->initModule($name, $config);
         }
+        $this->eventTrigger('application.afterModulesInit', [], $this);
     }
 
     /**

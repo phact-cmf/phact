@@ -29,7 +29,7 @@ trait Translator
     {
         $translator = null;
         if (($app = Phact::app()) && ($app->hasComponent(Translate::class))) {
-            return $app->getComponent(Translate::class);
+            $translator = $app->getComponent(Translate::class);
         }
         if ($translator) {
             if (!$key) {
