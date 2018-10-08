@@ -20,6 +20,11 @@ use Psr\Log\LoggerInterface;
 
 trait Logger
 {
+    /**
+     * @var LoggerInterface|null
+     */
+    protected $_logger;
+
     use LoggerHandle;
 
     /**
@@ -28,9 +33,6 @@ trait Logger
      */
     public function getLogger($name = 'default')
     {
-        if (Phact::app()->hasComponent('log')) {
-            return Phact::app()->getComponent('log')->getLogger($name);
-        }
-        return null;
+        return $this->_logger ?: null;
     }
 }

@@ -12,13 +12,18 @@
 
 namespace Phact\Orm;
 
+use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Query\Expression\CompositeExpression;
+use Doctrine\DBAL\Types\Type;
 use Exception;
 use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
 use Phact\Orm\Aggregations\Aggregation;
+use Phact\Orm\Aggregations\Max;
 use Phact\Orm\Having\Having;
-use Phact\Orm\Raw;
+use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
+use Doctrine\DBAL\Connection as DBALConnection;
 
 /**
  * Class QueryLayer
@@ -49,6 +54,16 @@ class QueryLayer
     protected $_model;
 
     protected $_isBuiltQuerySet = false;
+
+    protected $_paramsCounter = 0;
+
+    /**
+     * Prefix for values in query that required by SQL, but not requested by user
+     * Eg: order columns, having attributes
+     *
+     * @var string
+     */
+    protected $_servicePrefix = '_service__';
 
     public function __construct($querySet, $key = null)
     {
@@ -106,37 +121,35 @@ class QueryLayer
         return $this->getQuery()->getQueryBuilder();
     }
 
+    /**
+     * @return DBALQueryBuilder
+     */
     public function getQueryBuilder()
     {
         $qb = $this->getQueryBuilderRaw();
-        return $qb->table([$this->getTableName()]);
+        return $qb->from($this->getTableName());
     }
 
-    public function getQueryAdapter()
+    public function quoteValue($value)
     {
-        return $this->getQuery()->getAdapter();
+        return $this->getQuery()->getConnection()->quote($value);
     }
 
-    public function sanitize($value)
+    public function quote($value)
     {
-        return $this->getQueryAdapter()->wrapSanitizer($value);
+        return $this->getQuery()->getConnection()->quoteIdentifier($value);
     }
 
     public function setAliases()
     {
         $this->_aliases = [];
-        $tables = [$this->getTableName() => '__this'];
         $relations = $this->getQuerySet()->getRelations();
         foreach ($relations as $relationName => $relation) {
             if (isset($relation['joins']) && is_array($relation['joins'])) {
                 foreach ($relation['joins'] as $join) {
                     if (is_array($join) && isset($join['table'])) {
                         $tableName = $join['table'];
-                        if (isset($tables[$tableName])) {
-                            $this->setAlias($relationName, $tableName);
-                        } else {
-                            $tables[$join['table']] = $relationName;
-                        }
+                        $this->setAlias($relationName, $tableName);
                     }
                 }
             }
@@ -195,10 +208,10 @@ class QueryLayer
         return null;
     }
 
-    public function relationColumnAlias($column, $addTablePrefix = false)
+    public function relationColumnAlias($column)
     {
         list($relationName, $attribute) = $this->getQuerySet()->getRelationColumn($column);
-        return $this->columnAlias($relationName, $attribute, null, $addTablePrefix);
+        return $this->columnAlias($relationName, $attribute, null);
     }
 
     public function relationColumnAttribute($relationName, $attribute)
@@ -218,7 +231,7 @@ class QueryLayer
         }
     }
 
-    public function columnAlias($relationName, $attribute, $tableName = null, $addTablePrefix = false)
+    public function columnAlias($relationName, $attribute, $tableName = null)
     {
         $key = implode('-', [$this->_model->className(), $relationName, $attribute, $tableName]);
         if (!isset(static::$_columnAliases[$key])) {
@@ -226,25 +239,22 @@ class QueryLayer
                 $attribute = $this->relationColumnAttribute($relationName, $attribute);
             }
             $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
-            static::$_columnAliases[$key] = $this->column($tableName, $attribute, $addTablePrefix);
+            static::$_columnAliases[$key] = $this->column($tableName, $attribute);
         }
         return static::$_columnAliases[$key];
     }
 
-    public function column($tableName, $attribute, $addTablePrefix = false)
+    public function column($tableName, $attribute)
     {
-        if ($addTablePrefix) {
-            $tableName = $this->getQueryBuilderRaw()->addTablePrefix($tableName);
-        }
         return $tableName . '.' . $attribute;
     }
 
     /**
-     * @param $query QueryBuilder
-     * @return QueryBuilder
+     * @param $queryBuilder DBALQueryBuilder
+     * @return DBALQueryBuilder
      * @throws Exception
      */
-    public function processJoins($query)
+    public function processJoins($queryBuilder)
     {
         $relations = $this->getQuerySet()->getRelations();
         foreach ($relations as $relationName => $relation) {
@@ -261,22 +271,21 @@ class QueryLayer
                             $attributeTo = $join['to'];
 
                             $tableName = $join['table'];
-                            $connectTable = $tableName;
 
-                            if ($alias = $this->getAlias($relationName, $tableName)) {
-                                $aliasedTable = $query->addTablePrefix($tableName);
-                                $connectTable = $this->sanitize($aliasedTable) . ' AS ' . $this->sanitize($alias);
-                                $connectTable = $query->raw($connectTable);
-                            }
+                            $alias = $this->getAlias($relationName, $tableName);
+                            $fromColumn = $this->column($currentAlias ?: $currentTable, $attributeFrom);
+                            $toColumn = $this->column($alias ?: $tableName, $attributeTo);
 
-                            $query->join(
-                                $connectTable,
-                                $this->column($currentAlias ?: $currentTable, $attributeFrom),
-                                '=',
-                                $this->column($alias ?: $tableName, $attributeTo),
-                                isset($join['type']) ? $join['type'] : 'left'
-                            );
+                            $attributes = [
+                                $currentAlias ?: $currentTable,
+                                $tableName,
+                                $alias,
+                                $fromColumn . ' = ' . $toColumn
+                            ];
+                            $type = isset($join['type']) ? $join['type'] : 'left';
+                            $typeMethod = mb_strtolower($type, 'UTF-8') . 'Join';
 
+                            call_user_func_array([$queryBuilder, $typeMethod], $attributes);
                             // We change the current join
                             $currentTable = $tableName;
                             $currentRelationName = $relationName;
@@ -289,106 +298,108 @@ class QueryLayer
                         $model = $joinRelation['model'];
                         $currentRelationName = $join;
                         $currentTable = $model->getTableName();
+                        $currentAlias = $this->getAlias($currentRelationName, $currentTable);
                     }
                 }
             }
         }
-        return $query;
+        return $queryBuilder;
     }
 
-    public function buildQuery($query, $buildOrder = true, $buildLimitOffset = true, $buildConditions = true, $buildGroup = true)
+    /**
+     * @param DBALQueryBuilder $queryBuilder
+     * @param bool $buildOrder
+     * @param bool $buildLimitOffset
+     * @param bool $buildConditions
+     * @param bool $buildGroup
+     * @return DBALQueryBuilder
+     * @throws Exception
+     */
+    public function buildQuery($queryBuilder, $buildOrder = true, $buildLimitOffset = true, $buildConditions = true, $buildGroup = true)
     {
         $qs = $this->getQuerySet();
-        $query = $this->processJoins($query);
+        $queryBuilder = $this->processJoins($queryBuilder);
         if ($buildConditions) {
-            $wheres = $this->buildConditions($query, $qs->getWhere(), 'and', true);
-            $query->setWhere($wheres);
+            $wheres = $this->processConditions($queryBuilder, $qs->getWhere(), 'and', true);
+            if ($wheres) {
+                $queryBuilder->where($wheres);
+            }
         }
         if ($buildOrder) {
-            $this->buildOrder($query, $qs->getOrderBy());
+            $this->processOrder($queryBuilder, $qs->getOrderBy());
         }
         if ($buildGroup) {
-            $this->buildGroup($query, $qs->getGroupBy());
-            $this->buildHaving($query, $qs->getHaving());
+            $this->processGroup($queryBuilder, $qs->getGroupBy());
+            $this->processHaving($queryBuilder, $qs->getHaving());
         }
         if ($buildLimitOffset) {
-            $this->buildLimitOffset($query, $qs->getLimit(), $qs->getOffset());
+            $this->processLimitOffset($queryBuilder, $qs->getLimit(), $qs->getOffset());
         }
-        return $query;
+        return $queryBuilder;
     }
 
     public function all($sql = false)
     {
-        $key = $this->getCacheKey('all');
-        $query = $this->getQueryBuilder()->setCacheKey($key);
-        if ($builtQuery = $this->getCachedQuery('all')) {
-            if ($sql) {
-                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
-            }
-            return $query->get($builtQuery);
-        }
-
+        $queryBuilder = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
 
         $select = $qs->getSelect();
         if (!$select) {
             $select = $this->defaultSelect();
         }
-        $select = $this->buildSelect($select);
+        list($select, $bindings) = $this->buildSelect($select);
         if ($qs->getHasManyRelations()) {
             if (!$qs->getGroupBy() && $qs->getAutoGroup()) {
-                $query->select($select);
-                $query->groupBy($this->column($this->getTableName(), 'id'));
+                $queryBuilder->select($select);
+                $queryBuilder->groupBy($this->column($this->getTableName(), 'id'));
             } elseif ($qs->getAutoDistinct()) {
-                $query->selectDistinct($select);
+                reset($select);
+                $first = key($select);
+                $select[$first] = "DISTINCT {$select[$first]}";
+                $queryBuilder->select($select);
             }
         } else {
-            $query->select($select);
+            $queryBuilder->select($select);
         }
-        $this->buildQuery($query);
+        $this->addBindings($queryBuilder, $bindings);
+        $this->buildQuery($queryBuilder);
         if ($sql) {
-            return $query->getRawQuery();
+            return $this->getSQL($queryBuilder);
         }
-        $result = $query->get();
+        $result = $queryBuilder->execute()->fetchAll();
         return $result;
     }
 
     public function rawAll($query, $bindings = [])
     {
-        return $this->getQueryBuilder()->rawAll($query, $bindings);
+        return $this->getQueryBuilder()->getConnection()->fetchAll($query, $bindings);
     }
 
     public function rawGet($query, $bindings = [])
     {
-        return $this->getQueryBuilder()->rawGet($query, $bindings);
+        return $this->getQueryBuilder()->getConnection()->fetchAssoc($query, $bindings);
     }
 
     public function get($sql = false)
     {
-        $query = $this->getQueryBuilder()->setCacheKey($this->getCacheKey('get'));
-        if ($builtQuery = $this->getCachedQuery('get')) {
-            if ($sql) {
-                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
-            }
-            return $query->first($builtQuery);
-        }
-
+        $queryBuilder = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
 
-        $this->buildQuery($query);
+        $this->buildQuery($queryBuilder);
 
         $select = $qs->getSelect();
         if (!$select) {
             $select = $this->defaultSelect();
         }
-        $select = $this->buildSelect($select);
-        $query->select($select);
+        list($select, $bindings) = $this->buildSelect($select);
+        $queryBuilder->select($select);
+        $this->addBindings($queryBuilder, $bindings);
 
         if ($sql) {
-            return $query->getRawQuery();
+            return $this->getSQL($queryBuilder);
         }
 
-        $result = $query->first();
+        $result = $queryBuilder->execute()->fetch();
         return $result;
     }
 
@@ -408,49 +419,49 @@ class QueryLayer
     }
 
 
+    /**
+     * @param $select
+     * @return array
+     */
     public function buildSelect($select)
     {
         $result = [];
+        $bindings = [];
+        if (!$select) {
+            $select = $this->defaultSelect();
+        }
         foreach ($select as $key => $value) {
             if ($value instanceof Expression) {
-                $value = $this->convertExpression($value);
+                list($query, $rawBindings) = $this->convertExpression($value);
+                $value = $query;
+                $bindings = array_merge($bindings, $rawBindings);
             }
             if ($value == '*') {
                 $value = $this->column($this->getTableName(), '*');
             }
-            $result[$key] = $value;
+            if (is_string($key)) {
+                $result[$key] = $key . " AS " . $value;
+            } else {
+                $result[$key] = $value;
+            }
         }
-        return $result;
+        return [$result, $bindings];
     }
 
     public function aggregate(Aggregation $aggregation, $sql = false)
     {
-        $aKey = 'aggregate' . $aggregation::getSql($aggregation->getField());
-        $key = $this->getCacheKey($aKey);
-        $query = $this->getQueryBuilder()->setCacheKey($key);
-        if ($builtQuery = $this->getCachedQuery($aKey)) {
-            if ($sql) {
-                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
-            }
-            $item = $query->first($builtQuery);
-            if (isset($item['aggregation'])) {
-                return $item['aggregation'];
-            }
-            return null;
-        }
-
-        $this->buildQuery($query, false);
+        $queryBuilder = $this->getQueryBuilder();
+        $this->buildQuery($queryBuilder, false);
 
         $field = $aggregation->getField();
         if (!$aggregation->getRaw()) {
-            $field = $this->relationColumnAlias($field, true);
-            $field = $this->sanitize($field);
+            $field = $this->relationColumnAlias($field);
         }
-        $query->select(new Raw($aggregation->getSql($field) . ' as aggregation'));
+        $queryBuilder->select($aggregation->getSql($field) . ' as aggregation');
         if ($sql) {
-            return $query->getRawQuery();
+            return $this->getSQL($queryBuilder);
         }
-        $item = $query->first();
+        $item = $queryBuilder->execute()->fetch();
         if (isset($item['aggregation'])) {
             return $item['aggregation'];
         }
@@ -459,92 +470,99 @@ class QueryLayer
 
     public function update($data = [], $sql = false)
     {
-        $query = $this->getQueryBuilder();
-        $this->buildQuery($query, false, false);
+        $queryBuilder = $this->getQueryBuilder();
+        $this->buildQuery($queryBuilder, false, false, true, false);
 
         if ($this->getQuerySet()->hasRelations()) {
-            $query = $this->wrapQuery($query);
+            $queryBuilder = $this->wrapQuery($queryBuilder);
         }
 
-        $updateData = [];
+        $queryBuilder->update($this->getTableName());
         foreach ($data as $attribute => $value) {
-            $column = $this->relationColumnAlias($attribute);
+            $column = $attribute;
             if ($value instanceof Expression) {
-                $value = $this->convertExpression($value);
+                list($value, $bindings) = $this->convertExpression($value);
+                $this->addBindings($queryBuilder, $bindings);
+                $queryBuilder->set($column, $value);
+            } else {
+                $placeholder = $queryBuilder->createNamedParameter($value);
+                $queryBuilder->set($column, $placeholder);
             }
-            $updateData[$column] = $value;
         }
+
         if ($sql) {
-            return $query->getRawQuery('update', $updateData);
+            return $this->getSQL($queryBuilder);
         }
-        $pdoStatement = $query->update($updateData);
-        return $pdoStatement->rowCount();
+        return $queryBuilder->execute();
     }
 
     public function delete($sql = false)
     {
-        $query = $this->getQueryBuilder();
-        $this->buildQuery($query, false, false);
+        $queryBuilder = $this->getQueryBuilder();
+        $this->buildQuery($queryBuilder, false, false, true, false);
 
         if ($this->getQuerySet()->hasRelations()) {
-            $query = $this->wrapQuery($query);
+            $queryBuilder = $this->wrapQuery($queryBuilder);
         }
 
+        $queryBuilder->delete($this->getTableName());
         if ($sql) {
-            return $query->getRawQuery('delete');
+            return $this->getSQL($queryBuilder);
         }
-        $pdoStatement = $query->delete();
-        return $pdoStatement->rowCount();
+        return $queryBuilder->execute();
     }
 
     public function values($columns = [], $distinct = true, $sql = false)
     {
-        $key = $this->getCacheKey('values');
-        $query = $this->getQueryBuilder()->setCacheKey($key);
-        if ($builtQuery = $this->getCachedQuery('values')) {
-            if ($sql) {
-                return $query->interpolateQuery($builtQuery[0], $builtQuery[1]);
-            }
-            return $query->get($builtQuery);
-        }
-
+        $queryBuilder = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
 
         if (!$columns) {
-            $select = $this->column($this->getTableName(), '*');
+            $select = [$this->column($this->getTableName(), '*')];
         } else {
             $select = [];
             foreach ($columns as $attribute) {
                 if ($attribute instanceof Expression) {
-                    $select[] = $this->convertExpression($attribute);
+                    list($value, $bindings) = $this->convertExpression($attribute);
+                    $this->addBindings($bindings);
+                    $select[] = $value;
                 } else {
-                    $column = $this->relationColumnAlias($attribute, true);
-                    $column = $this->sanitize($column);
-                    $attribute = $this->sanitize($attribute);
-                    $select[] = $query->raw($column . ' as ' . $attribute);
+                    $column = $this->relationColumnAlias($attribute);
+                    $select[] = $column . ' AS ' . $attribute;
                 }
-
             }
         }
 
         if ($qs->getHasManyRelations() && $distinct) {
-            $query->selectDistinct($select);
+            reset($select);
+            $first = key($select);
+            $select[$first] = "DISTINCT {$select[$first]}";
+            $queryBuilder->select($select);
         } else {
-            $query->select($select);
+            $queryBuilder->select($select);
         }
-
-        $this->buildQuery($query);
+        $this->buildQuery($queryBuilder);
         if ($sql) {
-            return $query->getRawQuery();
+            return $this->getSQL($queryBuilder);
         }
-        $result = $query->get();
+        $result = [];
+        foreach ($queryBuilder->execute()->fetchAll() as $key => $row) {
+            foreach ($row as $column => $value) {
+                if (strpos($column, $this->_servicePrefix) === 0) {
+                    unset($row[$column]);
+                }
+            }
+            $result[$key] = $row;
+        }
         return $result;
     }
 
     /**
      * Wrap query for update/delete
+     * @param $queryBuilder DBALQueryBuilder
+     * @return DBALQueryBuilder
      */
-    public function wrapQuery($query)
+    public function wrapQuery($queryBuilder)
     {
         // Create a temporary table for correct operation with JOIN
         $queryUpdate = $this->getQueryBuilder();
@@ -555,11 +573,17 @@ class QueryLayer
 
         $tempTable = 'temp_table_wrapper';
 
-        $query->select($pk);
+        $queryBuilder->select($pk);
+
+        $subQueryFrom = $this->prepareSubQuery($queryBuilder, $queryUpdate);
+
         $queryWrapper
-            ->from($query->subQuery($query, $this->sanitize($tempTable)))
+            ->from( '(' . $subQueryFrom . ') AS ' . $tempTable)
             ->select($this->column($tempTable, $pkAttribute));
-        $queryUpdate->where($pk, 'IN', $query->subQuery($queryWrapper));
+
+        $subQueryIn = $this->prepareSubQuery($queryWrapper, $queryUpdate);
+
+        $queryUpdate->where($pk . ' IN (' . $subQueryIn . ')');
         return $queryUpdate;
     }
 
@@ -573,153 +597,252 @@ class QueryLayer
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $queryBuilder DBALQueryBuilder
      * @param $conditions
      * @param string $operator
      * @param bool $clear
+     * @return CompositeExpression
      */
-    public function buildConditions($query, $conditions, $operator = 'and', $clear = false)
+    public function processConditions($queryBuilder, $conditions, $operator = 'and', $clear = false)
     {
-        $result = [];
         if ($clear) {
             $conditions = $this->clearConditions($conditions);
         }
         if (!is_array($conditions) || isset($conditions['relation'])) {
             $conditions = [$conditions];
         }
-        if (isset($conditions[0]) && in_array($conditions[0], ['not', 'and', 'or'])) {
-            $operator = array_shift($conditions);
+        if (isset($conditions[0]) && is_string($conditions[0]) && in_array(mb_strtolower($conditions[0], 'UTF-8'), ['not', 'and', 'or'])) {
+            $operator = mb_strtolower(array_shift($conditions), 'UTF-8');
         }
+        $result = [];
         foreach ($conditions as $key => $condition) {
             if (is_array($condition) && isset($condition['relation'])) {
                 $lookupManager = $this->getQuerySet()->getLookupManager();
                 $column = $this->columnAlias($condition['relation'], $condition['field']);
-                $value = $condition['value'];
-                if ($value instanceof Expression) {
-                    $value = $this->convertExpression($value);
-                }
-                $result[] = $lookupManager->processCondition($query, $column, $condition['lookup'], $value, $operator);
+                $result[] = $lookupManager->processCondition($queryBuilder, $column, $condition['lookup'], $condition['value'], $operator);
             } elseif ($condition instanceof Expression) {
-                $expression = $this->convertExpression($condition);
-                $joiner = 'AND';
-                if ($operator == 'or') {
-                    $joiner = 'OR';
-                } elseif ($operator == 'not') {
-                    $joiner = 'AND NOT';
-                }
-                $result[] = $query->buildWhere($expression, null, null, $joiner);
+                list($expression, $bindings) = $this->convertExpression($condition);
+                $this->addBindings($queryBuilder, $bindings);
+                $result[] = $this->buildWhere($expression);
             } elseif (is_array($condition)) {
-                $joiner = 'AND';
-                if ($operator == 'or') {
-                    $joiner = 'OR';
-                } elseif ($operator == 'not') {
-                    $joiner = 'AND NOT';
+                $subConditions = $this->processConditions($queryBuilder, $condition, 'and', true);
+                if ($subConditions) {
+                    $result[] = $this->buildWhere($subConditions);
                 }
-                $result[] = $query->buildWhere($this->buildConditions($query, $condition, 'and'), null, null, $joiner);
             }
         }
-        return $result;
+        return $this->composeConditions($queryBuilder, $operator, $result);
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $queryBuilder DBALQueryBuilder
+     * @param $operator
+     * @param $conditions
+     * @return CompositeExpression
+     */
+    public function composeConditions($queryBuilder, $operator, $conditions)
+    {
+        if (!$conditions) {
+            return null;
+        }
+        $compositeExpression = $queryBuilder->expr()->andX();
+        if ($operator == 'or') {
+            $compositeExpression = $queryBuilder->expr()->orX();
+        } elseif ($operator == 'not') {
+            $compositeExpression = new WrappedCompositeExpression(CompositeExpression::TYPE_AND);
+            $compositeExpression->setWrapper("NOT");
+        }
+        foreach ($conditions as $condition) {
+            $key = $condition['key'];
+            $value = $condition['value'];
+            $valueExpression = false;
+            if ($key instanceof Expression) {
+                list($key, $bindings) = $this->convertExpression($key);
+                $this->addBindings($queryBuilder, $bindings);
+            }
+            if ($value instanceof Expression) {
+                $valueExpression = true;
+                list($value, $bindings) = $this->convertExpression($value);
+                $this->addBindings($queryBuilder, $bindings);
+            }
+            if (is_null($condition['operator']) && is_null($value)) {
+                $compositeExpression->add($key);
+            } else {
+                if ($valueExpression) {
+                    $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], $value);
+                } elseif ($condition['operator'] == 'IN') {
+                    if (is_array($value)) {
+                        $placeholders = [];
+                        foreach ($value as $item) {
+                            $placeholders[] = $queryBuilder->createNamedParameter($item);
+                        }
+                        $value = implode(',', $placeholders);
+                    }
+                    $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], '(' . $value . ')');
+                } elseif (is_array($value) && count($value) == 2 && $condition['operator'] == 'BETWEEN') {
+                    $placeholder1 = $queryBuilder->createNamedParameter($value[0]);
+                    $placeholder2 = $queryBuilder->createNamedParameter($value[1]);
+                    $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], "{$placeholder1} AND {$placeholder2}");
+                } else {
+                    $placeholder = $queryBuilder->createNamedParameter($value);
+                    $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], $placeholder);
+                }
+                $compositeExpression->add($comparison);
+            }
+        }
+
+        return $compositeExpression;
+    }
+
+    public static function buildWhere($key, $operator = null, $value = null, $joiner = 'AND')
+    {
+        return [
+            'key' => $key,
+            'operator' => $operator,
+            'value' => $value,
+            'joiner' => $joiner
+        ];
+    }
+
+    /**
+     * @param $queryBuilder DBALQueryBuilder
      * @param $order array
      * @return array
      */
-    public function buildOrder($query, $order)
+    public function processOrder($queryBuilder, $order)
     {
         foreach ($order as $item) {
             if ($item instanceof Expression) {
-                $value = $this->convertExpression($item);
-                $query->orderBy($value);
+                list($value, $bindings) = $this->convertExpression($item);
+                $queryBuilder->add('orderBy', $value, true);
+                $this->addBindings($queryBuilder, $bindings);
             } elseif (is_array($item)) {
                 $column = $this->columnAlias($item['relation'], $item['field']);
-
                 if ($this->getQuerySet()->getHasManyRelations()) {
-                    $alias = implode('__', ['order', $item['relation'], $item['field']]);
-                    $query->select([$column => $alias]);
-                    $query->orderBy($alias, $item['direction']);
+                    $alias = $this->_servicePrefix . implode('__', ['order', $item['relation'], $item['field']]);
+                    $queryBuilder->add('select', "{$column} as {$alias}", true);
+                    $queryBuilder->addOrderBy($alias, $item['direction']);
                 } else {
-                    $query->orderBy($column, $item['direction']);
+                    $queryBuilder->addOrderBy($column, $item['direction']);
                 }
-
             }
         }
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $queryBuilder DBALQueryBuilder
      * @param $group array
-     * @return array
      */
-    public function buildGroup($query, $group)
+    public function processGroup($queryBuilder, $group)
     {
         foreach ($group as $item) {
             if ($item instanceof Expression) {
-                $value = $this->convertExpression($item);
-                $query->groupBy($value);
+                list($value, $bindings) = $this->convertExpression($item);
+                $queryBuilder->addGroupBy($value);
+                $this->addBindings($queryBuilder, $bindings);
             } elseif (is_array($item)) {
-                $query->groupBy($this->columnAlias($item['relation'], $item['field']));
+                $queryBuilder->addGroupBy($this->columnAlias($item['relation'], $item['field']));
             }
         }
     }
 
     /**
-     * @param $query QueryBuilder
-     * @param $having Expression
-     * @return array
+     * @param $queryBuilder DBALQueryBuilder
+     * @param $having Expression|Having
+     * @throws Exception
      */
-    public function buildHaving($query, $having)
+    public function processHaving($queryBuilder, $having)
     {
         if ($having instanceof Expression) {
-            $value = $this->convertExpression($having);
-            $query->having($value);
+            list($value, $bindings) = $this->convertExpression($having);
+            $queryBuilder->having($value);
+            $this->addBindings($queryBuilder, $bindings);
         } elseif ($having instanceof Having) {
             $aggregation = $having->getAggregation();
             $field = $aggregation->getField();
-            $name = 'hav';
+            $name = $this->_servicePrefix . implode('__', ['having']);
             if (!$aggregation->getRaw()) {
-                $field = $this->relationColumnAlias($field, true);
-                $field = $this->sanitize($field);
+                $field = $this->relationColumnAlias($field);
             }
-            $query->select(new Raw($aggregation->getSql($field) . ' as ' . $name));
-            $query->having(new Raw($name . ' ' . $having->getCondition()));
-            if (!$query->getStatement('groupBys')) {
-                $query->groupBy($this->columnAlias(null, $this->getModel()->getPkAttribute()));
+            $queryBuilder->add('select', $aggregation->getSql($field) . ' as ' . $name, true);
+            $queryBuilder->having($aggregation->getSql($field) . ' ' . $having->getCondition());
+            if (!$queryBuilder->getQueryPart('groupBy')) {
+                $queryBuilder->groupBy($this->columnAlias(null, $this->getModel()->getPkAttribute()));
             }
         }
     }
 
     /**
-     * @param $query QueryBuilder
+     * @param $queryBuilder DBALQueryBuilder
      * @param $limit int|null
      * @param $offset int|null
-     * @return array
-     * @internal param array $order
      */
-    public function buildLimitOffset($query, $limit, $offset)
+    public function processLimitOffset($queryBuilder, $limit, $offset)
     {
         if (isset($limit)) {
-            $query->limit($limit);
+            $queryBuilder->setMaxResults($limit);
         }
 
         if (isset($offset)) {
-            $query->offset($offset);
+            $queryBuilder->setFirstResult($offset);
         }
     }
 
+    /**
+     * @param Expression $expression
+     * @return array
+     */
     public function convertExpression(Expression $expression)
     {
         $value = $expression->getExpression();
+        $params = $expression->getParams();
+        $bindings = [];
+
         if ($expression->getUseAliases() && ($aliases = $expression->getAliases())) {
             $replaces = [];
             foreach ($aliases as $relationColumn) {
-                $column = $this->relationColumnAlias($relationColumn, true);
-                $replaces['{' . $relationColumn . '}'] = $this->sanitize($column);
+                $column = $this->relationColumnAlias($relationColumn);
+                $replaces['{' . $relationColumn . '}'] = $column;
             }
             $value = strtr($value, $replaces);
+            if ($params) {
+                $counter = 0;
+                $value = preg_replace_callback('/\?/', function ($matches) use ($counter, &$bindings, $params) {
+                    if (isset($params[$counter])) {
+                        $name = $this->fetchBindingName();
+                        $bindings[$name] = $params[$counter];
+                        $counter++;
+                        return ':' . $name;
+                    }
+                    return $matches[0];
+                }, $value);
+
+                foreach ($params as $name => $param) {
+                    if (is_string($name)) {
+                        $bindings[$name] = $param;
+                    }
+                }
+            }
         }
-        return new Raw($value, $expression->getParams());
+        return [$value, $bindings];
+    }
+
+    public function fetchBindingName()
+    {
+        $name = 'query_param__' . $this->_paramsCounter;
+        $this->_paramsCounter++;
+        return $name;
+    }
+
+    /**
+     * @param $queryBuilder DBALQueryBuilder
+     * @param array $bindings
+     */
+    public function addBindings($queryBuilder, $bindings = [])
+    {
+        foreach ($bindings as $name => $value) {
+            $queryBuilder->setParameter($name, $value);
+        }
     }
 
     public function getCacheKey($type)
@@ -732,5 +855,24 @@ class QueryLayer
         $key = $this->getCacheKey($type);
         $cacheTimeout = Phact::app()->db->getCacheQueriesTimeout();
         return is_null($cacheTimeout) ? null : Phact::app()->cache->get($key);
+    }
+
+    /**
+     * @param $queryBuilder DBALQueryBuilder
+     * @return string
+     */
+    public function getSQL($queryBuilder)
+    {
+        return $this->getQuery()->getSQL($queryBuilder);
+    }
+
+    /**
+     * @param $srcQueryBuilder DBALQueryBuilder
+     * @param $dstQueryBuilder DBALQueryBuilder
+     * @return string
+     */
+    public function prepareSubQuery($srcQueryBuilder, $dstQueryBuilder)
+    {
+        return $this->getQuery()->prepareSubQuery($srcQueryBuilder, $dstQueryBuilder);
     }
 }

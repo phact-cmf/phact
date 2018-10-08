@@ -8,21 +8,12 @@
 
 namespace Phact\Event;
 
-use Phact\Main\Phact;
-
 trait Events
 {
     /**
-     * @param $name
-     * @return null|EventManager
+     * @var EventManagerInterface
      */
-    public static function getEventManager()
-    {
-        if (Phact::app()->hasComponent('event')) {
-            return Phact::app()->getComponent('event');
-        }
-        return null;
-    }
+    protected $_eventManager;
 
     /**
      * @param $name string Event name
@@ -30,11 +21,10 @@ trait Events
      * @param null $sender string|object|null Sender object or sender class name or null
      * @param null $callback callable|null Callback function that calls after event callback function and takes result of event callback function
      */
-    public static function eventTrigger($name, $params = array(), $sender = null, $callback = null)
+    protected function eventTrigger($name, $params = array(), $sender = null, $callback = null)
     {
-        $manager = static::getEventManager();
-        if ($manager) {
-            $manager->trigger($name, $params, $sender, $callback);
+        if ($this->_eventManager) {
+            $this->_eventManager->trigger($name, $params, $sender, $callback);
         }
     }
 }

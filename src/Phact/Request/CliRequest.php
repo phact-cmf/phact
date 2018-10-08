@@ -12,27 +12,79 @@
 
 namespace Phact\Request;
 
-use Phact\Commands\Command;
-use Phact\Helpers\Paths;
-use Phact\Main\Phact;
+use Exception;
+use Phact\Application\ModulesInterface;
+use Phact\Commands\CommandInterface;
+use Phact\Helpers\SmartProperties;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
 
-class CliRequest extends Request
+/**
+ * Command-line interface request
+ *
+ * Class CliRequest
+ * @package Phact\Request
+ */
+class CliRequest implements CliRequestInterface
 {
-    public function parse()
+    use SmartProperties;
+
+    /**
+     * @var ModulesInterface
+     */
+    protected $_modules;
+
+    public function __construct(ModulesInterface $modules)
+    {
+        $this->_modules = $modules;
+    }
+
+    protected function getArgs()
     {
         $args = [];
         if (isset($_SERVER['argv'])) {
             $args = $_SERVER['argv'];
         }
+        return $args;
+    }
 
+    /**
+     * Check is empty request
+     *
+     * @return bool
+     */
+    public function isEmpty()
+    {
+        return count($this->getArgs()) <= 1;
+    }
+
+    /**
+     * @return array[]
+     * @throws Exception
+     */
+    public function match()
+    {
+        list($module, $commandName, $action, $arguments) = $this->parse();
+        $class = '\\Modules\\' . $module . '\\Commands\\' . $commandName . 'Command';
+        if (!class_exists($class) || !is_a($class, CommandInterface::class, true)) {
+            throw new Exception("There is no {$commandName} command in module {$module}");
+        }
+        return [$class, $action, $arguments];
+    }
+
+    /**
+     * Retrieve module, command, action and arguments from cli request
+     * @return array
+     */
+    protected function parse()
+    {
         $module = null;
         $command = null;
         $action = 'handle';
         $arguments = [];
 
+        $args = $this->getArgs();
         foreach ($args as $key => $arg) {
             if ($key == 1) {
                 $module = $arg;
@@ -45,36 +97,37 @@ class CliRequest extends Request
             }
         }
 
+        $module = ucfirst($module);
+        $command = ucfirst($command);
+
         return [$module, $command, $action, $arguments];
     }
 
+    /**
+     * Get available commands list
+     *
+     * @return CommandInterface[]
+     */
     public function getCommandsList()
     {
-        $modulesPath = Paths::get('Modules');
-        $activeModules = Phact::app()->getModulesConfig();
-        $data = [];
-        foreach ($activeModules as $moduleName => $module) {
-            $moduleClass = $module['class'];
-            $path = implode(DIRECTORY_SEPARATOR, [$moduleClass::getPath(), 'Commands']);
+        $commands = [];
+        foreach ($this->_modules->getModules() as $moduleName => $module) {
+            $path = implode(DIRECTORY_SEPARATOR, [$module->getPath(), 'Commands']);
             if (is_dir($path)) {
-                foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename)
-                {
+                foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $filename) {
                     if ($filename->isDir()) continue;
                     $name = $filename->getBasename('.php');
-                    if (!isset($data[$moduleName])) {
-                        $data[$moduleName] = [];
-                    }
-                    $class = implode('\\', ['Modules', $moduleName, 'Commands', $name]);
-                    $reflection = new ReflectionClass($class);
-                    if (!$reflection->isAbstract()) {
-                        /** @var Command $command */
-                        $command = new $class();
-                        $name = preg_replace('/Command$/', '', $name);
-                        $data[$moduleName][$name] = $command->getDescription();
+                    $class = implode('\\', [$module::classNamespace(), 'Commands', $name]);
+                    try {
+                        $reflection = new ReflectionClass($class);
+                        if (!$reflection->isAbstract()) {
+                            $commands[] = $class;
+                        }
+                    } catch (\ReflectionException $exception) {
                     }
                 }
             }
         }
-        return $data;
+        return $commands;
     }
 }

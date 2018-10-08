@@ -12,23 +12,11 @@
 
 namespace Phact\Translate;
 
-
+use Phact\Di\ComponentFetcher;
 use Phact\Main\Phact;
 
 trait Translator
 {
-    /**
-     * @return Translate
-     * @throws \Phact\Exceptions\UnknownPropertyException
-     */
-    public static function getTranslator()
-    {
-        if (Phact::app()->hasComponent('translate', Translate::class)) {
-            return Phact::app()->getComponent('translate');
-        }
-        return null;
-    }
-
     /**
      * @param string $domain If $key is not set, uses as $key, $domain is empty
      * @param string $key
@@ -36,11 +24,13 @@ trait Translator
      * @param null|array $parameters
      * @param null|string $locale
      * @return string
-     * @throws \Phact\Exceptions\UnknownPropertyException
      */
     public static function t($domain, $key = "", $number = null, $parameters = [], $locale = null)
     {
-        $translator = self::getTranslator();
+        $translator = null;
+        if (($app = Phact::app()) && ($app->hasComponent(Translate::class))) {
+            $translator = $app->getComponent(Translate::class);
+        }
         if ($translator) {
             if (!$key) {
                 $key = $domain;

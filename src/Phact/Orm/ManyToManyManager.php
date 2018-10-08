@@ -85,7 +85,6 @@ class ManyToManyManager extends RelationManager
             ]);
         }
 
-
         return $qs;
     }
 
@@ -108,12 +107,10 @@ class ManyToManyManager extends RelationManager
 
         $model = $this->getModel();
         $data = [];
+        $ids = [];
         foreach ($raw as $item) {
             if (is_int($item) || is_string($item)) {
-                $object = $model::objects()->filter([$this->toField => $item])->get();
-                if ($object) {
-                    $data[] = $object;
-                }
+                $ids[] = $item;
             } elseif (is_a($item, $model::className())) {
                 $data[] = $item;
             } else {
@@ -121,13 +118,17 @@ class ManyToManyManager extends RelationManager
             }
         }
 
+        if ($ids) {
+            $objects = $model::objects()->filter([$this->toField . '__in' => $ids])->all();
+            $data = array_merge($data, $objects);
+        }
+
         return $data;
     }
 
     public function clean()
     {
-        $qb = $this->getQb();
-        $qb->from($this->throughTable)->where($this->throughFromField, '=', $this->getKey())->delete();
+        $this->getQuery()->delete($this->throughTable, [$this->throughFromField => $this->getKey()]);
     }
 
     public function set($raw = [], $throughAttributes = [])
@@ -143,9 +144,18 @@ class ManyToManyManager extends RelationManager
             foreach ($models as $model) {
                 $data[] = $this->makeInsertStatement($model);
             }
-            $qb = $this->getQb();
             if ($data) {
-                return $qb->from($this->throughTable)->insert($data);
+                $connection = $this->getQuery()->getConnection();
+                $connection->beginTransaction();
+                try {
+                    foreach ($data as $item) {
+                        $this->getQuery()->insert($this->throughTable, $item);
+                    }
+                    $connection->commit();
+                } catch (\Exception $exception) {
+                    $connection->rollBack();
+                    throw $exception;
+                }
             }
         }
         return true;
@@ -161,10 +171,8 @@ class ManyToManyManager extends RelationManager
         if ($this->through) {
             $this->createThroughModel($model, $throughAttributes);
         } else {
-            $qb = $this->getQb();
-            $qb->from($this->throughTable)->insert(
-                $this->makeInsertStatement($model)
-            );
+            $data = $this->makeInsertStatement($model);
+            return $this->getQuery()->insert($this->throughTable, $data);
         }
     }
 
@@ -174,11 +182,10 @@ class ManyToManyManager extends RelationManager
         if (!is_a($model, $class)) {
             throw new InvalidArgumentException("Method unlink argument must be instance of {$class}");
         }
-        $qb = $this->getQb();
-        $qb->from($this->throughTable)
-            ->where($this->throughFromField, '=', $this->getKey())
-            ->where($this->throughToField, '=', $model->{$this->toField})
-            ->delete();
+        $this->getQuery()->delete($this->throughTable, [
+            $this->throughFromField => $this->getKey(),
+            $this->throughToField => $model->{$this->toField}
+        ]);
     }
 
     public function makeInsertStatement($model)
@@ -201,12 +208,10 @@ class ManyToManyManager extends RelationManager
     }
 
     /**
-     * @return QueryBuilder
+     * @return Query
      */
-    public function getQb()
+    public function getQuery()
     {
-        $model = $this->getModel();
-        $query = $model->getQuery();
-        return $query->getQueryBuilder();
+        return $this->getModel()->getQuery();
     }
 }

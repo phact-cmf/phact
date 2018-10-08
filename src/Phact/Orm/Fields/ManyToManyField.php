@@ -221,7 +221,7 @@ class ManyToManyField extends RelationField
         if ($through = $this->getThrough()) {
             $throughName = $this->getThroughName();
             return [
-                "$throughName" => [
+                $throughName => [
                     'class' => HasManyField::class,
                     'modelClass' => $through,
                     'throughFor' => $this->getName(),

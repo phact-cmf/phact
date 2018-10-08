@@ -14,30 +14,64 @@ namespace Phact\Components;
 
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
-use Phact\Orm\Model;
+use Phact\Request\Session;
 
-class Flash
+/**
+ * Flash messages (short-life messages)
+ *
+ * A flash message is used in order to keep a message in session through one or several requests of the same user
+ *
+ * Class Flash
+ * @package Phact\Components
+ */
+class Flash implements FlashInterface
 {
     use SmartProperties;
 
     const SESSION_KEY = 'FLASH';
 
+    /**
+     * @var Session
+     */
+    protected $_session;
+
+    public function __construct(Session $session)
+    {
+        $this->_session = $session;
+    }
+
+    /**
+     * Add message with type success
+     * @param $message
+     * @return mixed
+     */
     public function success($message)
     {
         $this->add($message, 'success');
     }
 
+    /**
+     * Add message with type error
+     * @param $message
+     * @return mixed
+     */
     public function error($message)
     {
         $this->add($message, 'error');
     }
 
+    /**
+     * Add message with type info
+     * @param $message
+     * @return mixed
+     */
     public function info($message)
     {
         $this->add($message, 'info');
     }
-    
+
     /**
+     * Add message with given type
      * @param $message
      * @param string $type "success"|"error"|"info"
      */
@@ -51,21 +85,37 @@ class Flash
         $this->setMessages($messages);
     }
 
+    /**
+     * Reads messages from the session, but doesn't delete them
+     * @return mixed
+     */
     public function getMessages()
     {
-        return array_merge(Phact::app()->request->session->get(self::SESSION_KEY, []), []);
+        return array_merge($this->_session->get(self::SESSION_KEY, []), []);
     }
 
-    public function setMessages($messages = [])
+    /**
+     * Add messages to session
+     * @param array $messages
+     */
+    protected function setMessages($messages = [])
     {
-        Phact::app()->request->session->add(self::SESSION_KEY, $messages);
+        $this->_session->add(self::SESSION_KEY, $messages);
     }
 
+    /**
+     * Clear all messages
+     * @return mixed
+     */
     public function clearMessages()
     {
-        Phact::app()->request->session->remove(self::SESSION_KEY);
+        $this->_session->remove(self::SESSION_KEY);
     }
 
+    /**
+     * Reads messages from the session and delete them from session
+     * @return mixed
+     */
     public function read()
     {
         $messages = $this->getMessages();

@@ -12,6 +12,10 @@
 
 namespace Phact\Orm;
 
+use Doctrine\DBAL\Configuration;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\SmartProperties;
@@ -48,9 +52,9 @@ class ConnectionManager
 
     /**
      * @param null $name
-     * @return \Phact\Orm\Connection
+     * @return \Doctrine\DBAL\Connection
      * @throws UnknownPropertyException
-     * @throws \Phact\Exceptions\InvalidConfigException
+     * @throws \Doctrine\DBAL\DBALException
      */
     public function getConnection($name = null)
     {
@@ -60,10 +64,9 @@ class ConnectionManager
         if (!isset($this->_connections[$name])) {
             if (isset($this->_connectionsConfig[$name])) {
                 $config = $this->_connectionsConfig[$name];
-                if (!isset($config['class'])) {
-                    $config['class'] = Connection::class;
-                }
-                $this->_connections[$name] = Configurator::create($config);
+                /** @var Connection $connection */
+                $connection = DriverManager::getConnection($config, new Configuration());
+                $this->_connections[$name] = $connection;
             } else {
                 throw new UnknownPropertyException("Connection with name " . $name . " not found");
             }

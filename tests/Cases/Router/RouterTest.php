@@ -15,16 +15,14 @@ namespace Phact\Tests;
 
 use InvalidArgumentException;
 use Phact\Helpers\Paths;
+use Phact\Main\Phact;
 use Phact\Router\Router;
 
 class RouterTest extends AppTest
 {
     public function testCollectFromFile()
     {
-        $router = new Router();
-        $routesPath = Paths::file('base.config.routes', 'php');
-        $routes = include $routesPath;
-        $router->collect($routes);
+        $router = Phact::app()->getContainer()->construct(Router::class, ['base.config.routes']);
         $this->assertEquals([[
                 'GET|POST',
                 '/test_route',

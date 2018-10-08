@@ -19,12 +19,15 @@ class VarDumper
     private static $_output;
     private static $_depth;
 
-    public static function dump($var, $depth = 10, $highlight = true)
+    public static function dump($var, $depth = 10, $highlight = null)
     {
         self::$_output = '';
         self::$_objects = [];
         self::$_depth = $depth;
         self::dumpInternal($var, 0);
+        if (is_null($highlight)) {
+            $highlight = !(php_sapi_name() == 'cli');
+        }
         if ($highlight) {
             $result = highlight_string("<?php\n" . self::$_output, true);
             self::$_output = preg_replace('/&lt;\\?php<br \\/>/', '', $result, 1);

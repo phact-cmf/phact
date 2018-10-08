@@ -18,6 +18,11 @@ use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
 use Phact\Helpers\SmartProperties;
 
+/**
+ * Trait ComponentsLibrary
+ * @package Phact\Main
+ * @deprecated
+ */
 trait ComponentsLibrary
 {
     use SmartProperties;

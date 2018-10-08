@@ -23,6 +23,6 @@ class TimeField extends DateTimeField
 
     public function getSqlType()
     {
-        return "TIME({$this->fsp})";
+        return "time";
     }
 }

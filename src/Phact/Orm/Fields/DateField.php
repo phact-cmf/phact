@@ -80,11 +80,6 @@ class DateField extends Field
         return DateTime::createFromFormat($this->format, $date) !== false;
     }
 
-    public function getSqlType()
-    {
-        return "DATE";
-    }
-
     public function beforeSave()
     {
         if ($this->autoNow) {
@@ -97,5 +92,10 @@ class DateField extends Field
                 $this->setValue(date($this->format));
             }
         }
+    }
+
+    public function getType()
+    {
+        return "date";
     }
 }

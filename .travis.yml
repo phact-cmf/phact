@@ -1,12 +1,17 @@
 language: php
 php:
-  - '5.6'
   - '7.1'
-  - hhvm
+  - '7.2'
+  - nightly
 services:
   - mysql
+  - postgresql
+matrix:
+  - allow_failures:
+    - php: nightly
 before_install:
   - mysql -e 'CREATE DATABASE phact;'
+  - psql -c 'CREATE DATABASE phact;' -U postgres
   - echo 'date.timezone = "Europe/Moscow"' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 install:
   - travis_retry composer install --prefer-source --no-interaction

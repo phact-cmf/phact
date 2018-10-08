@@ -19,6 +19,8 @@ use Phact\Main\Phact;
 
 class AppTest extends TestCase
 {
+    protected $app;
+
     protected function getComponents()
     {
         return [];
@@ -27,7 +29,6 @@ class AppTest extends TestCase
     protected function setUp()
     {
         $config = include implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'sandbox', 'app', 'config', 'settings.php']);
-        $config['components'] = array_merge($config['components'], $this->getComponents());
         Phact::init($config);
     }
 }

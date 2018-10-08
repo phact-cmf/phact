@@ -97,6 +97,7 @@ abstract class Form
                         'form' => $this,
                         'name' => $name
                     ]));
+                    $field->init();
                     $this->_initFields[$name] = $field;
                 }
             }

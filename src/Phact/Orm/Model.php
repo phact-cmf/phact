@@ -583,7 +583,7 @@ class Model implements Serializable
         }
 
         $query = $this->getQuery();
-        $result = $query->updateByPk($this->getTableName(), $this->getPkAttribute(), $this->getPk(), $prepared);
+        $result = $query->update($this->getTableName(), [$this->getPkAttribute() => $this->getPk()], $prepared);
 
         $this->_provideEvent('afterUpdate');
         $this->_mergeOldAttributes($data);
@@ -595,7 +595,7 @@ class Model implements Serializable
     {
         $this->_provideEvent('beforeDelete');
         $query = $this->getQuery();
-        $result = $query->delete($this->getTableName(), $this->getPkAttribute(), $this->getPk());
+        $result = $query->delete($this->getTableName(), [$this->getPkAttribute() => $this->getPk()]);
         $this->_provideEvent('afterDelete');
         return $result;
     }

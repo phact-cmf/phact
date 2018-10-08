@@ -13,27 +13,69 @@
 namespace Phact\Cache\Drivers;
 
 use Phact\Cache\CacheDriver;
+use Phact\Components\PathInterface;
 use Phact\Helpers\Paths;
 
 class File extends CacheDriver
 {
+    /**
+     * Path for store cache files
+     *
+     * @var string
+     */
     public $path = 'runtime.cache';
 
+    /**
+     * Extension of cache files
+     *
+     * @var string
+     */
     public $extension = '.cache';
 
+    /**
+     * Clean probability items from 1 million
+     *
+     * @var int
+     */
     public $gcProbability = 10;
 
+    /**
+     * Directory levels for cache files
+     *
+     * @var int
+     */
     public $directoryLevel = 0;
 
+    /**
+     * File mode
+     *
+     * @var int
+     */
     public $mode = 0755;
 
+    /**
+     * Base path
+     *
+     * @var string
+     */
     protected $_basePath;
 
-    public function __construct()
+    /**
+     * @var PathInterface
+     */
+    protected $_pathHandler;
+
+    public function __construct(PathInterface $pathHandler = null)
     {
-        $this->_basePath = Paths::get($this->path);
+        $this->_pathHandler = $pathHandler;
     }
 
+    /**
+     * Read cache value from file
+     *
+     * @param $key
+     * @return bool|null|string
+     */
     protected function getValue($key)
     {
         $filePath = $this->getFileName($key);
@@ -50,6 +92,14 @@ class File extends CacheDriver
         return null;
     }
 
+    /**
+     * Store cache value to disk
+     *
+     * @param $key
+     * @param $data
+     * @param $timeout
+     * @return bool
+     */
     protected function setValue($key, $data, $timeout)
     {
         $this->gc();
@@ -67,11 +117,29 @@ class File extends CacheDriver
         return false;
     }
 
+    /**
+     * Get base cache path
+     *
+     * @return string
+     */
     protected function getBasePath()
     {
+        if (is_null($this->_basePath)) {
+            if ($this->_pathHandler) {
+                $this->_basePath = $this->_pathHandler->get($this->path);
+            } else {
+                $this->_basePath = "/tmp";
+            }
+        }
         return $this->_basePath;
     }
 
+    /**
+     * Make file name by key
+     *
+     * @param $key
+     * @return string
+     */
     protected function getFileName($key)
     {
         $filePath = $key;
@@ -87,6 +155,12 @@ class File extends CacheDriver
         return $this->getBasePath() . DIRECTORY_SEPARATOR . $filePath . $this->extension;
     }
 
+    /**
+     * Checks clear
+     *
+     * @param bool $force
+     * @param bool $expiredOnly
+     */
     public function gc($force = false, $expiredOnly = true)
     {
         if ($force || mt_rand(0, 1000000) < $this->gcProbability) {
@@ -94,6 +168,12 @@ class File extends CacheDriver
         }
     }
 
+    /**
+     * Clean recursive
+     *
+     * @param $path
+     * @param bool $expiredOnly
+     */
     protected function gcRecursive($path, $expiredOnly = true)
     {
         if (($handle = opendir($path)) !== false) {
@@ -115,11 +195,24 @@ class File extends CacheDriver
         }
     }
 
+    /**
+     * Set expiration time to file
+     *
+     * @param $fullPath
+     * @param $timeout
+     * @return bool
+     */
     protected function setExpirationTime($fullPath, $timeout)
     {
         return @touch($fullPath, $timeout);
     }
 
+    /**
+     * Check expiration of cache file
+     *
+     * @param $fullPath
+     * @return bool
+     */
     protected function isExpire($fullPath)
     {
         return @filemtime($fullPath) < time();

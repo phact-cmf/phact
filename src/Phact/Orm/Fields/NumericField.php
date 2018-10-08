@@ -29,18 +29,4 @@ abstract class NumericField extends Field
     {
         return (int) $value;
     }
-
-    public function getSqlType()
-    {
-        $sql = [$this->mainSqlType()];
-        if ($this->unsigned) {
-            $sql[] = "UNSIGNED";
-        }
-        if ($this->zerofill) {
-            $sql[] = "ZEROFILL";
-        }
-        return implode(' ', $sql);
-    }
-    
-    abstract public function mainSqlType();
 }

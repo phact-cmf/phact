@@ -49,4 +49,24 @@ class DecimalField extends NumericField
     {
         return "DECIMAL({$this->precision}, {$this->scale})";
     }
+
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return "DECIMAL";
+    }
+
+    public function getColumnOptions()
+    {
+        $options = parent::getColumnOptions();
+        if ($this->precision) {
+            $options['precision'] = $this->precision;
+        }
+        if ($this->scale) {
+            $options['scale'] = $this->scale;
+        }
+        return $options;
+    }
 }

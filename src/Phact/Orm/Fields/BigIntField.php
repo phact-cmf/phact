@@ -23,8 +23,8 @@ class BigIntField extends IntField
         return (float) $value;
     }
 
-    public function mainSqlType()
+    public function getType()
     {
-        return "BIGINT({$this->length})";
+        return 'bigint';
     }
 }

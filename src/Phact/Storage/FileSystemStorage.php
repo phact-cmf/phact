@@ -2,12 +2,12 @@
 
 namespace Phact\Storage;
 
-
 use DirectoryIterator;
 use FilesystemIterator;
+use Phact\Components\PathInterface;
+use Phact\Exceptions\DependencyException;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\FileHelper;
-use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Storage\Files\File;
@@ -26,31 +26,59 @@ class FileSystemStorage extends Storage
     /**
      * @var string
      */
-    public $basePath = '';
+    public $baseUrl = '/media/';
+
     /**
      * @var string
      */
-    public $baseUrl = '/media/';
-
+    protected $_basePath;
 
     /**
-     * @throws InvalidConfigException
+     * @var PathInterface
      */
-    public function init()
-    {
-        if (!is_dir($this->basePath)) {
-            if (!$this->createBaseDirectory()) {
-                throw new InvalidConfigException("Directory for file storage system not found. Base path: {$this->basePath}");
-            }
-            $this->basePath = $this->getBaseDir();
-        }
+    protected $_path;
 
-        $this->basePath = realpath(rtrim($this->basePath, DIRECTORY_SEPARATOR));
+    public function __construct(PathInterface $path = null)
+    {
+        $this->_path = $path;
     }
 
     /**
-     * @return bool, true if directory success
-     * created
+     * @param string $path
+     * @throws InvalidConfigException
+     */
+    public function setBasePath(string $path)
+    {
+        if (!is_dir($path) || !is_writable($path)) {
+            throw new InvalidConfigException("Path $path must be writable and directory");
+        }
+        $this->_basePath = $path;
+    }
+
+    /**
+     * @return bool|string
+     * @throws InvalidConfigException
+     * @throws DependencyException
+     */
+    public function getBasePath()
+    {
+        if (is_null($this->_basePath)) {
+            if (!is_dir($this->_basePath)) {
+                if (!$this->createBaseDirectory()) {
+                    throw new InvalidConfigException("Directory for file storage system not found. Base path: {$this->basePath}");
+                }
+                $this->_basePath = $this->getBaseDir();
+            }
+
+            $this->_basePath = realpath(rtrim($this->_basePath, DIRECTORY_SEPARATOR));
+        }
+        return $this->_basePath;
+    }
+
+    /**
+     * @throws InvalidConfigException
+     * @return bool, true if directory successfully created
+     * @throws DependencyException
      */
     public function createBaseDirectory()
     {
@@ -64,11 +92,14 @@ class FileSystemStorage extends Storage
     /**
      * @return null|string path to media directory
      * @throws InvalidConfigException
+     * @throws DependencyException
      */
     public function getBaseDir()
     {
-
-        $path = Paths::get($this->folderName);
+        if (!$this->_path) {
+            throw new DependencyException("Required dependency " . PathInterface::class . " is not injected");
+        }
+        $path = $this->_path->get($this->folderName);
 
         if ($path === null || $path === false) {
             throw new InvalidConfigException("Folder name {$path} must be valid path");
@@ -80,13 +111,16 @@ class FileSystemStorage extends Storage
     }
 
     /**
+     * Read file
+     *
      * @param $name
      * @param string $mode
      * @return null|string
+     * @throws InvalidConfigException
      */
     public function readFile($name, $mode = 'r')
     {
-        if (!$this->exists($name)) {
+        if (!$this->isFile($name)) {
             return null;
         }
 
@@ -103,9 +137,12 @@ class FileSystemStorage extends Storage
     }
 
     /**
+     * Write content to file
+     *
      * @param $name
      * @param $content
      * @return bool
+     * @throws InvalidConfigException
      */
     public function writeFile($name, $content)
     {
@@ -114,8 +151,11 @@ class FileSystemStorage extends Storage
     }
 
     /**
+     * Get file size
+     *
      * @param $name
      * @return int|null
+     * @throws InvalidConfigException
      */
     public function getSize($name)
     {
@@ -128,17 +168,33 @@ class FileSystemStorage extends Storage
     }
 
     /**
+     * Check that file is exist
+     *
      * @param $name
      * @return bool
+     * @throws InvalidConfigException
      */
-    public function exists($name)
+    public function isFile($name)
     {
         return is_file($this->getPath($name));
     }
 
     /**
+     * Check that directory is exist
+     *
+     * @param $name
+     * @return bool
+     * @throws InvalidConfigException
+     */
+    public function isDir($name)
+    {
+        return is_dir($this->getPath($name));
+    }
+
+    /**
      * @param $name
      * @return string
+     * @throws InvalidConfigException
      */
     public function getPath($name)
     {
@@ -149,6 +205,7 @@ class FileSystemStorage extends Storage
     /**
      * @param $path string
      * @return bool
+     * @throws InvalidConfigException
      */
     public function createDirectory($path)
     {
@@ -166,7 +223,6 @@ class FileSystemStorage extends Storage
      */
     public function getUrl($name)
     {
-
         return $this->baseUrl . str_replace('\\', '/', $name);
     }
 
@@ -237,6 +293,7 @@ class FileSystemStorage extends Storage
      * @param $content
      * @param $fileName
      * @return mixed save method
+     * @throws InvalidConfigException
      */
     public function save($fileName, $content)
     {
@@ -279,7 +336,7 @@ class FileSystemStorage extends Storage
             '{ext}' => $ext
         ]);
 
-        while ($this->exists($name)) {
+        while ($this->isFile($name)) {
             $count += 1;
             $name = strtr("{dirname}/{filename}_{count}.{ext}", [
                 '{dirname}' => $dirname,
@@ -313,6 +370,11 @@ class FileSystemStorage extends Storage
         return copy($this->getAbsolutePath($from), $this->getAbsolutePath($to));
     }
 
+    /**
+     * @param $filename
+     * @return string
+     * @throws InvalidConfigException
+     */
     public function prepareFilePath($filename)
     {
         $directory = $this->getAbsolutePath(dirname($filename));
@@ -323,11 +385,23 @@ class FileSystemStorage extends Storage
         return $directory;
     }
 
+    /**
+     * @param $path
+     * @return string
+     * @throws InvalidConfigException
+     */
     public function getAbsolutePath($path)
     {
-        return $this->basePath . DIRECTORY_SEPARATOR . $path;
+        return $this->getBasePath() . DIRECTORY_SEPARATOR . $path;
     }
 
+    /**
+     * Fetch items list from directory
+     *
+     * @param $path
+     * @return array
+     * @throws InvalidConfigException
+     */
     public function dir($path)
     {
         $path = $this->getPath($path);
@@ -339,7 +413,7 @@ class FileSystemStorage extends Storage
         foreach (new DirectoryIterator($path) as $iteratedPath) {
             if (!$iteratedPath->isDot() && !Text::startsWith(basename($iteratedPath->getPathname()), '.')) {
                 $key = $iteratedPath->isDir() ? 'directories' : 'files';
-                $path = str_replace($this->basePath . DIRECTORY_SEPARATOR, '', $iteratedPath->getPathname());
+                $path = str_replace($this->getBasePath() . DIRECTORY_SEPARATOR, '', $iteratedPath->getPathname());
                 $folderStructure[$key][] = [
                     'path' => $path,
                     'url' => $this->getUrl($path),
@@ -351,9 +425,16 @@ class FileSystemStorage extends Storage
         return $folderStructure;
     }
 
+    /**
+     * Make directory by path
+     *
+     * @param $path
+     * @return bool
+     * @throws InvalidConfigException
+     */
     public function mkDir($path)
     {
-        $path = $this->basePath . DIRECTORY_SEPARATOR . $path;
+        $path = $this->getBasePath() . DIRECTORY_SEPARATOR . $path;
         return file_exists($path) ? false : mkdir($path);
     }
 }

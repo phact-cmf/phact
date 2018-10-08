@@ -14,13 +14,14 @@ namespace Phact\Main;
 
 use ErrorException;
 use Exception;
+use Phact\Components\PathInterface;
 use Phact\Exceptions\HttpException;
 use Phact\Helpers\Http;
-use Phact\Helpers\Paths;
 use Phact\Helpers\SmartProperties;
-use Phact\Helpers\Text;
 use Phact\Log\Logger;
 use Phact\Template\Renderer;
+use Phact\Template\RendererInterface;
+use Psr\Log\LoggerInterface;
 
 class ErrorHandler
 {
@@ -31,8 +32,24 @@ class ErrorHandler
 
     public $debug = false;
 
-    public function init()
+    /**
+     * @var RendererInterface
+     */
+    protected $_renderer;
+
+    /**
+     * @var PathInterface
+     */
+    protected $_path;
+
+    public function __construct(
+        PathInterface $path = null,
+        RendererInterface $renderer = null,
+        LoggerInterface $logger = null)
     {
+        $this->_path = $path;
+        $this->_renderer = $renderer;
+        $this->_logger = $logger;
         $this->setHandlers();
     }
 
@@ -82,7 +99,7 @@ class ErrorHandler
         } catch (Exception $e) {
             if ($this->debug) {
                 echo PHP_EOL;
-                echo debug_print_backtrace();
+                debug_print_backtrace();
             } else {
                 echo 'Internal server error';
             }
@@ -104,8 +121,11 @@ class ErrorHandler
         $trace = [];
         $traceRaw = $traceRaw ?: $exception->getTrace();
         $closestLines = 5;
-        $basePath = realpath(Paths::get('base'));
-
+        if ($this->_path && ($base = $this->_path->get('base'))) {
+            $basePath = realpath($base);
+        } else {
+            $basePath = '';
+        }
         foreach ($traceRaw as $traceItem) {
             if (isset($traceItem['line'])) {
                 $line = $traceItem['line'];
@@ -127,7 +147,9 @@ class ErrorHandler
 
                 }
 
-                $fileName = Text::removePrefix($basePath, $fileName);
+                if (substr($fileName, 0, strlen($basePath)) == $basePath) {
+                    $fileName = substr($fileName, strlen($basePath));
+                }
 
                 $trace[] = [
                     'fileName' => $fileName,
@@ -145,12 +167,12 @@ class ErrorHandler
             $this->logError((string) $exception);
         }
 
-        if (Phact::app()->getIsCliMode()) {
+        if (php_sapi_name() == 'cli') {
             echo "Exception: " . $exception->getMessage() . PHP_EOL;
             echo "Trace: " . PHP_EOL;
             print_r($trace);
         } else {
-            echo self::renderTemplate($template, [
+            echo $this->_renderer->render($template, [
                 'exception' => $exception,
                 'code' => $code,
                 'trace' => $trace

@@ -13,7 +13,7 @@
 namespace Phact\Cache;
 
 
-abstract class CacheDriver
+abstract class CacheDriver implements CacheDriverInterface
 {
     public $serializer;
 

@@ -18,18 +18,16 @@ use Phact\Exceptions\InvalidConfigException;
 use Phact\Helpers\Configurator;
 use SessionHandlerInterface;
 
-class Session implements ArrayAccess, Countable
+class Session implements ArrayAccess, Countable, SessionInterface
 {
     public $debug = false;
-
-    public $autoStart = true;
 
     /**
      * @var null|SessionHandlerInterface
      */
     public $handler = null;
 
-    public function init()
+    public function __construct()
     {
         register_shutdown_function([$this, 'close']);
         $this->open();

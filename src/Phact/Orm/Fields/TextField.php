@@ -17,9 +17,11 @@ use Phact\Form\Fields\TextAreaField;
 
 class TextField extends CharField
 {
-    public function getSqlType()
+    public $length = null;
+
+    public function getType()
     {
-        return "TEXT";
+        return "text";
     }
 
     public function getFormField()

@@ -12,6 +12,8 @@
 
 namespace Phact\Orm\Fields;
 
+use Phact\Form\Fields\TextAreaField;
+
 class JsonField extends TextField
 {
     public $editable = false;

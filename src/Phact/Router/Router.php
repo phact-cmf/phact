@@ -4,14 +4,17 @@ namespace Phact\Router;
 
 use Exception;
 use InvalidArgumentException;
+use Phact\Cache\CacheDriverInterface;
+use Phact\Components\PathInterface;
+use Phact\Event\EventManagerInterface;
 use Phact\Event\Events;
-use Phact\Helpers\Paths;
+use Phact\Exceptions\DependencyException;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Main\Phact;
 use Traversable;
 
-class Router
+class Router implements RouterInterface
 {
     use SmartProperties, Events;
 
@@ -36,11 +39,6 @@ class Router
      * @var string Can be used to ignore leading part of the Request URL (if main file lives in subdirectory of host)
      */
     protected $_basePath = '';
-
-    /**
-     * @var string|null Path to routes file (ex: base.config.routes)
-     */
-    public $pathRoutes;
 
     /**
      * @var int Cache timeout
@@ -68,12 +66,26 @@ class Router
         '' => '[^/\.]++'
     );
 
-    public function init()
+    /**
+     * @var CacheDriverInterface
+     */
+    protected $_cacheDriver;
+
+    /**
+     * @var PathInterface
+     */
+    protected $_path;
+
+    public function __construct(string $configPath = null, PathInterface $path = null, CacheDriverInterface $cacheDriver = null, EventManagerInterface $eventManager = null)
     {
+        $this->_cacheDriver = $cacheDriver;
+        $this->_eventManager = $eventManager;
+        $this->_path = $path;
+
         $routes = null;
         $cacheKey = 'PHACT__ROUTER';
         if (!is_null($this->cacheTimeout)) {
-            $routes = Phact::app()->cache->get($cacheKey);
+            $routes = $this->_cacheDriver->get($cacheKey);
             if ($routes) {
                 $this->_namedRoutes = $routes['named'];
                 $this->_routes = $routes['all'];
@@ -82,20 +94,21 @@ class Router
         }
 
         if (!$routes) {
-            if ($this->pathRoutes) {
-                $this->collectFromFile($this->pathRoutes);
+            if ($configPath) {
+                $this->collectFromFile($configPath);
             }
             if (!is_null($this->cacheTimeout)) {
                 $routes = [
                     'named' => $this->_namedRoutes,
                     'all' => $this->_routes
                 ];
-                Phact::app()->cache->set($cacheKey, $routes, $this->cacheTimeout);
+                $this->_cacheDriver->set($cacheKey, $routes, $this->cacheTimeout);
             }
         }
     }
 
     /**
+     * Set current handling route name
      * @param $name
      */
     public function setCurrentName($name)
@@ -104,6 +117,7 @@ class Router
     }
 
     /**
+     * Get current handling route name
      * @return string
      */
     public function getCurrentName()
@@ -112,6 +126,7 @@ class Router
     }
 
     /**
+     * Get current handling route namespace
      * @return string
      */
     public function getCurrentNamespace()
@@ -159,6 +174,7 @@ class Router
     /**
      * Set the base path.
      * Useful if you are running your application from a subdirectory.
+     * @param $basePath
      */
     public function setBasePath($basePath)
     {
@@ -186,7 +202,6 @@ class Router
      */
     public function map($method, $route, $target, $name = null)
     {
-
         if ($route == '') {
             $route = '/';
         }
@@ -199,7 +214,6 @@ class Router
             } else {
                 $this->_namedRoutes[$name] = $route;
             }
-
         }
 
         return;
@@ -279,6 +293,7 @@ class Router
      * @param string $requestUrl
      * @param string $requestMethod
      * @return array|boolean Array with route information on success, false on failure (no match).
+     * @throws Exception
      */
     public function match($requestUrl = null, $requestMethod = null)
     {
@@ -387,6 +402,9 @@ class Router
         }
 
         if (!$matches && $requestUrl != '/' && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
+            /**
+             * @TODO: kill me, please
+             */
             Phact::app()->request->redirect(rtrim($requestUrl, '/'));
         }
 
@@ -400,7 +418,7 @@ class Router
         if (!$this->cacheTimeout) {
             return [];
         }
-        return Phact::app()->cache->get('PHACT__ROUTER_COMPILED', []);
+        return $this->_cacheDriver->get('PHACT__ROUTER_COMPILED');
     }
 
     protected function setCompiledRoutes($routes)
@@ -408,7 +426,7 @@ class Router
         if (!$this->cacheTimeout) {
             return true;
         }
-        Phact::app()->cache->set('PHACT__ROUTER_COMPILED', $routes, $this->cacheTimeout);
+        $this->_cacheDriver->set('PHACT__ROUTER_COMPILED', $routes, $this->cacheTimeout);
         return true;
     }
 
@@ -417,15 +435,19 @@ class Router
         if (!$this->cacheTimeout) {
             return [];
         }
-        return Phact::app()->cache->get('PHACT__ROUTER_MATCHED', []);
+        return $this->_cacheDriver->get('PHACT__ROUTER_MATCHED', []);
     }
 
+    /**
+     * @param $routes
+     * @return bool
+     */
     protected function setMatchedRoutes($routes)
     {
         if (!$this->cacheTimeout) {
             return true;
         }
-        Phact::app()->cache->set('PHACT__ROUTER_MATCHED', $routes, $this->cacheTimeout);
+        $this->_cacheDriver->set('PHACT__ROUTER_MATCHED', $routes, $this->cacheTimeout);
         return true;
     }
 
@@ -469,12 +491,17 @@ class Router
      * Append routes from file
      *
      * @param $path
+     * @throws Exception
      */
     public function collectFromFile($path)
     {
-        $routesPath = Paths::file($path, 'php');
-        $routes = include $routesPath;
-        $this->collect($routes);
+        if ($this->_path) {
+            $routesPath = $this->_path->file($path, 'php');
+            $routes = include $routesPath;
+            $this->collect($routes);
+        } else {
+            throw new DependencyException('Required dependency ' . PathInterface::class . ' is not injected');
+        }
     }
 
     /**
@@ -483,11 +510,11 @@ class Router
      * @param array $configuration
      * @param string $namespace
      * @param string $route
+     * @throws Exception
      */
     public function collect($configuration = [], $namespace = '', $route = '')
     {
         foreach ($configuration as $item) {
-
             if (isset($item['route']) && isset($item['path'])) {
                 $this->appendRoutes($item, $namespace, $route);
             } elseif (isset($item['route']) && isset($item['target'])) {
@@ -502,10 +529,14 @@ class Router
      * @param $item
      * @param string $namespace
      * @param string $route
+     * @throws Exception
      */
     public function appendRoutes($item, $namespace = '', $route = '')
     {
         if (isset($item['path'])) {
+            if (!$this->_path) {
+                throw new DependencyException('Required dependency ' . PathInterface::class . ' is not injected');
+            }
             $itemNamespace = isset($item['namespace']) ? $item['namespace'] : '';
             if ($itemNamespace && $namespace) {
                 $itemNamespace = $namespace . ':' . $itemNamespace;
@@ -514,7 +545,8 @@ class Router
             if ($path && $route) {
                 $path = $route . $path;
             }
-            $routesFile = Paths::file($item['path'], 'php');
+
+            $routesFile = $this->_path->file($item['path'], 'php');
             if (!$routesFile) {
                 return;
             }

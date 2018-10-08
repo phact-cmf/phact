@@ -31,20 +31,8 @@ class Configurator
     public static function create($class, $config = [])
     {
         list($class, $config) = self::split($class, $config);
-        if (isset($config['__construct']) && is_array($config['__construct'])) {
-            $obj = new $class(...$config['__construct']);
-            unset($config['__construct']);
-        } else {
-            $obj = new $class;
-        }
-        if (isset($config['__afterConstruct']) && is_callable($config['__afterConstruct'])) {
-            call_user_func($config['__afterConstruct'], $obj);
-            unset($config['__afterConstruct']);
-        }
+        $obj = new $class;
         $obj = self::configure($obj, $config);
-        if (method_exists($obj, 'init')) {
-            $obj->init();
-        }
         return $obj;
     }
 

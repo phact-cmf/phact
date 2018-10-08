@@ -65,6 +65,7 @@ abstract class Field
     /**
      * Zerofill operator for table column
      * @var bool
+     * @deprecated
      */
     public $zerofill = false;
 
@@ -73,6 +74,17 @@ abstract class Field
      */
     public $default = null;
 
+    /**
+     * Autoincrement
+     * @var bool
+     */
+    public $autoincrement = false;
+
+    /**
+     * Table column length attribute
+     * @var null
+     */
+    public $length = null;
     /**
      * @var array
      */
@@ -326,7 +338,9 @@ abstract class Field
 
     public function beforeInsert()
     {
-        $this->setDefaultDbValue();
+        if (!$this->autoincrement) {
+            $this->setDefaultDbValue();
+        }
     }
 
     public function beforeUpdate()
@@ -383,10 +397,42 @@ abstract class Field
     }
 
     /**
+     * @deprecated
      * @return string
      */
-    abstract public function getSqlType();
+    public function getSqlType()
+    {
+        return null;
+    }
 
+    /**
+     * @return string
+     */
+    abstract public function getType();
+
+    /**
+     * @return array
+     */
+    public function getColumnOptions()
+    {
+        $options = [];
+        if ($this->unsigned) {
+            $options['unsigned'] = true;
+        }
+        if ($this->null) {
+            $options['notnull'] = !$this->null;
+        }
+        if ($this->default) {
+            $options['default'] = $this->default;
+        }
+        if ($this->autoincrement) {
+            $options['autoincrement'] = true;
+        }
+        if (!is_null($this->length)) {
+            $options['length'] = $this->length;
+        }
+        return $options;
+    }
 
     /**
      * Getting config form field

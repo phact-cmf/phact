@@ -33,9 +33,9 @@ class BooleanField extends IntField
         return $value ? 1 : 0;
     }
 
-    public function mainSqlType()
+    public function getType()
     {
-        return "TINYINT({$this->length})";
+        return "smallint";
     }
 
     public function getFormField()

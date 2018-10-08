@@ -207,9 +207,9 @@ abstract class TreeModel extends Model
                     'root' => $this->root
                 ])
                 ->update([
-                    'lft' => new Expression('lft' . sprintf('%+d', $delta)),
-                    'rgt' => new Expression('rgt' . sprintf('%+d', $delta)),
-                    'depth' => new Expression('depth' . sprintf('%+d', $depthDelta)),
+                    'lft' => new Expression('{lft}' . sprintf('%+d', $delta)),
+                    'rgt' => new Expression('{rgt}' . sprintf('%+d', $delta)),
+                    'depth' => new Expression('{depth}' . sprintf('%+d', $depthDelta)),
                     'root' => $this->getNextRoot()
                 ]);
             $this->shiftLeftRight($right + 1, $left - $right - 1);
@@ -223,7 +223,7 @@ abstract class TreeModel extends Model
         foreach (['lft', 'rgt'] as $attribute) {
             $this->objects()
                 ->filter([$attribute . '__gte' => $key, 'root' => $this->root])
-                ->update([$attribute => new Expression($attribute . sprintf('%+d', $delta))]);
+                ->update([$attribute => new Expression("{{$attribute}}" . sprintf('%+d', $delta))]);
         }
     }
 
@@ -295,16 +295,16 @@ abstract class TreeModel extends Model
             foreach (['lft', 'rgt'] as $attribute) {
                 $this->objects()
                     ->filter([$attribute . '__gte' => $key, 'root' => $target->root])
-                    ->update([$attribute => new Expression($attribute . sprintf('%+d', $right - $left + 1))]);
+                    ->update([$attribute => new Expression("{{$attribute}}" . sprintf('%+d', $right - $left + 1))]);
             }
 
             $delta = $key - $left;
             $this->objects()
                 ->filter(['lft__gte' => $left, 'rgt__lte' => $right, 'root' => $this->root])
                 ->update([
-                    'lft' => new Expression('lft' . sprintf('%+d', $delta)),
-                    'rgt' => new Expression('rgt' . sprintf('%+d', $delta)),
-                    'depth' => new Expression('depth' . sprintf('%+d', $depthDelta)),
+                    'lft' => new Expression('{lft}' . sprintf('%+d', $delta)),
+                    'rgt' => new Expression('{rgt}' . sprintf('%+d', $delta)),
+                    'depth' => new Expression('{depth}' . sprintf('%+d', $depthDelta)),
                     'root' => $target->root,
                 ]);
 
@@ -322,13 +322,13 @@ abstract class TreeModel extends Model
             $this->objects()
                 ->filter(['lft__gte' => $left, 'rgt__lte' => $right, 'root' => $this->root])
                 ->update([
-                    'depth' => new Expression('depth' . sprintf('%+d', $depthDelta))
+                    'depth' => new Expression('{depth}' . sprintf('%+d', $depthDelta))
                 ]);
 
             foreach (['lft', 'rgt'] as $attribute) {
                 $this->objects()
                     ->filter([$attribute . '__gte' => $left, $attribute . '__lte' => $right, 'root' => $this->root])
-                    ->update([$attribute => new Expression($attribute . sprintf('%+d', $key - $left))]);
+                    ->update([$attribute => new Expression("{{$attribute}}" . sprintf('%+d', $key - $left))]);
             }
 
             $this->shiftLeftRight($right + 1, -$delta);

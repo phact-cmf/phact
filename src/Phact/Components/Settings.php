@@ -12,20 +12,31 @@
 
 namespace Phact\Components;
 
+use Phact\Application\ModulesInterface;
 
-use Phact\Main\Phact;
-use Phact\Module\Module;
-
+/**
+ * Settings of modules component
+ *
+ * Class Settings
+ * @package Phact\Components
+ */
 class Settings
 {
+    /** @var ModulesInterface */
+    protected $_modules;
+
+    public function __construct(ModulesInterface $modules)
+    {
+        $this->_modules = $modules;
+    }
+
     public function get($name)
     {
         $info = explode('.', $name);
         if (count($info) == 2) {
             $moduleName = $info[0];
             $attributeName = $info[1];
-            /** @var Module $module */
-            $module = Phact::app()->getModule($moduleName);
+            $module = $this->_modules->getModule($moduleName);
             if ($module && $attributeName) {
                 return $module->getSetting($attributeName);
             }
