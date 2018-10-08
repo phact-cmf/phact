@@ -65,5 +65,5 @@ interface BreadcrumbsInterface
      * @param string $name
      * @return array|mixed
      */
-    public function get($name);
+    public function get($name = null);
 }

@@ -121,4 +121,18 @@ abstract class Storage implements StorageInterface
      * @return string file path after save
      */
     abstract public function copy($fromPath, $toPath);
+
+    /**
+     * Check that file exists
+     * @param $path
+     * @return bool
+     */
+    abstract public function isFile($path);
+
+    /**
+     * Check that file exists
+     * @param $path
+     * @return bool
+     */
+    abstract public function isDir($path);
 }

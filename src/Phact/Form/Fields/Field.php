@@ -13,12 +13,13 @@
 namespace Phact\Form\Fields;
 
 
+use Phact\Di\ComponentFetcher;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Form\Form;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Main\Phact;
-use Phact\Template\Renderer;
+use Phact\Template\RendererInterface;
 use Phact\Validators\FormFieldValidator;
 use Phact\Validators\RequiredValidator;
 use Phact\Validators\Validator;
@@ -34,7 +35,7 @@ use Phact\Validators\Validator;
  */
 abstract class Field
 {
-    use SmartProperties, Renderer, ClassNames;
+    use SmartProperties, ClassNames, ComponentFetcher;
 
     /**
      * @var string
@@ -594,5 +595,13 @@ abstract class Field
         $key = is_null($form->key) ? '' : "[{$form->key}]";
         $name = $form->getName() . $key . "[{$this->getName()}]";
         return $this->multiple ? $name . '[]' : $name;
+    }
+
+    public function renderTemplate($template, $data = [])
+    {
+        /** @var RendererInterface $renderer */
+        if ($renderer = self::fetchComponent(RendererInterface::class)) {
+            return $renderer->render($template, $data);
+        }
     }
 }

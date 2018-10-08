@@ -61,4 +61,16 @@ interface AuthInterface
      * @return bool
      */
     public function verifyPassword(UserInterface $user, string $password);
+
+    /**
+     * @param UserInterface $user
+     * @param string $password
+     */
+    public function setPassword(UserInterface $user, string $password);
+
+    /**
+     * @param UserInterface $user
+     * @param string $login
+     */
+    public function setLogin(UserInterface $user, string $login);
 }

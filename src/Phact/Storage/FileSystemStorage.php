@@ -120,7 +120,7 @@ class FileSystemStorage extends Storage
      */
     public function readFile($name, $mode = 'r')
     {
-        if (!$this->exists($name)) {
+        if (!$this->isFile($name)) {
             return null;
         }
 
@@ -174,9 +174,21 @@ class FileSystemStorage extends Storage
      * @return bool
      * @throws InvalidConfigException
      */
-    public function exists($name)
+    public function isFile($name)
     {
         return is_file($this->getPath($name));
+    }
+
+    /**
+     * Check that directory is exist
+     *
+     * @param $name
+     * @return bool
+     * @throws InvalidConfigException
+     */
+    public function isDir($name)
+    {
+        return is_dir($this->getPath($name));
     }
 
     /**
@@ -324,7 +336,7 @@ class FileSystemStorage extends Storage
             '{ext}' => $ext
         ]);
 
-        while ($this->exists($name)) {
+        while ($this->isFile($name)) {
             $count += 1;
             $name = strtr("{dirname}/{filename}_{count}.{ext}", [
                 '{dirname}' => $dirname,

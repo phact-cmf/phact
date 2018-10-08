@@ -120,8 +120,9 @@ class Breadcrumbs implements BreadcrumbsInterface
      * @param string $name
      * @return array|mixed
      */
-    public function get($name = self::DEFAULT_LIST)
+    public function get($name = null)
     {
+        $name = $name ?: self::DEFAULT_LIST;
         return isset($this->_lists[$name]) ? $this->_lists[$name] : [];
     }
 }

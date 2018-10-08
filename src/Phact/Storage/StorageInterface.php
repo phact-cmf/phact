@@ -96,4 +96,18 @@ interface StorageInterface
      * @return string file path after save
      */
     public function copy($fromPath, $toPath);
+
+    /**
+     * Check that file exists
+     * @param $path
+     * @return bool
+     */
+    public function isFile($path);
+
+    /**
+     * Check that file exists
+     * @param $path
+     * @return bool
+     */
+    public function isDir($path);
 }

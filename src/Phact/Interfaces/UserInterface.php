@@ -28,6 +28,11 @@ interface UserInterface
     public function getLogin();
 
     /**
+     * Set uniquie login for user
+     */
+    public function setLogin(string $login);
+
+    /**
      * Is user guest (not authorised)
      * @return bool
      */
@@ -38,4 +43,14 @@ interface UserInterface
      * @return bool
      */
     public function getIsSuperuser();
+
+    /**
+     * Set hashed password
+     */
+    public function setPassword(string $hashedPassword);
+
+    /**
+     * Get hashed password
+     */
+    public function getPassword();
 }
