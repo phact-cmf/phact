@@ -70,6 +70,12 @@ class File extends CacheDriver
         $this->_pathHandler = $pathHandler;
     }
 
+    public function has($key)
+    {
+        $filePath = $this->getFileName($key);
+        return is_file($filePath) && @filemtime($filePath) > time();
+    }
+
     public function delete($key)
     {
         $unlink = true;

@@ -41,7 +41,7 @@ abstract class CacheDriver implements CacheInterface
     public function setMultiple($values, $ttl = null)
     {
         $result = true;
-        foreach ($keys as $key => $value) {
+        foreach ($values as $key => $value) {
             $result = $this->set($key, $value, $ttl) && $result;
         }
         return $result;
