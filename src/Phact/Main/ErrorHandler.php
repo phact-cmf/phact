@@ -22,15 +22,18 @@ use Phact\Log\Logger;
 use Phact\Template\Renderer;
 use Phact\Template\RendererInterface;
 use Psr\Log\LoggerInterface;
+use Whoops\RunInterface;
+use Whoops\Run;
+use Whoops\Handler\PrettyPageHandler;
+use Whoops\Handler\PlainTextHandler;
 
 class ErrorHandler
 {
     use SmartProperties, Renderer, Logger;
 
     public $errorTemplate = 'error.tpl';
-    public $exceptionTemplate = 'exception.tpl';
 
-    public $debug = false;
+    protected $_debug = false;
 
     /**
      * @var RendererInterface
@@ -42,48 +45,46 @@ class ErrorHandler
      */
     protected $_path;
 
+    /**
+     * @var RunInterface
+     */
+    protected $_run;
+
     public function __construct(
+        $debug = false,
         PathInterface $path = null,
         RendererInterface $renderer = null,
-        LoggerInterface $logger = null)
+        LoggerInterface $logger = null,
+        RunInterface $run = null)
     {
+        $this->_debug = $debug;
         $this->_path = $path;
         $this->_renderer = $renderer;
         $this->_logger = $logger;
-        $this->setHandlers();
-    }
 
-    public function setHandlers()
-    {
-        ini_set('display_errors', 0);
-        set_exception_handler([$this, 'handleException']);
-        set_error_handler([$this, 'handleError']);
-        register_shutdown_function([$this, 'handleFatal']);
-    }
-
-    public function unsetHandlers()
-    {
-        restore_error_handler();
-        restore_exception_handler();
-    }
-
-    public function handleFatal()
-    {
-        $error = error_get_last();
-        if( $error !== NULL) {
-            $this->handleError($error["type"], $error["message"], $error["file"], $error["line"]);
+        if (!$run) {
+            $this->_run = new Run;
+            if (!$this->_debug) {
+                $handler = function ($exception, $inspector, $run) {
+                    $this->handleException($exception);
+                };
+            } else {
+                if (php_sapi_name() == 'cli') {
+                    $handler = new PlainTextHandler();
+                } else {
+                    $handler = new PrettyPageHandler();
+                }
+            }
+            $this->_run->pushHandler($handler);
         }
+        $this->_run->register();
     }
 
-    public function handleError($code, $message, $file, $line)
+    /**
+     * @param $exception
+     */
+    public function handleException($exception)
     {
-        $this->handleException(new ErrorException($message, $code, $code, $file, $line), debug_backtrace());
-    }
-
-    public function handleException($exception, $traceRaw = null)
-    {
-        $this->unsetHandlers();
-
         $code = 500;
         if ($exception instanceof HttpException) {
             $code = $exception->status;
@@ -95,14 +96,9 @@ class ErrorHandler
 
         try {
             if (ob_get_length()) ob_clean();
-            $this->renderException($exception, $code, $traceRaw);
+            $this->renderException($exception, $code);
         } catch (Exception $e) {
-            if ($this->debug) {
-                echo PHP_EOL;
-                debug_print_backtrace();
-            } else {
-                echo 'Internal server error';
-            }
+            echo 'Internal server error: ' . $e->getMessage();
         }
     }
 
@@ -111,56 +107,8 @@ class ErrorHandler
      * @param $code
      * @param null $traceRaw
      */
-    public function renderException($exception, $code, $traceRaw = null)
+    public function renderException($exception, $code)
     {
-        $template = $this->errorTemplate;
-        if ($this->debug) {
-            $template = $this->exceptionTemplate;
-        }
-
-        $trace = [];
-        $traceRaw = $traceRaw ?: $exception->getTrace();
-        $closestLines = 5;
-        if ($this->_path && ($base = $this->_path->get('base'))) {
-            $basePath = realpath($base);
-        } else {
-            $basePath = '';
-        }
-        foreach ($traceRaw as $traceItem) {
-            if (isset($traceItem['line'])) {
-                $line = $traceItem['line'];
-                $startLine = $line - $closestLines;
-                $endLine = $line + $closestLines;
-                if ($startLine < 0) {
-                    $endLine += abs($startLine);
-                    $startLine = 0;
-                }
-                $itemLines = [];
-                $fileName = $traceItem['file'];
-                try {
-                    if (file_exists($fileName) && ($lines = @file($fileName))) {
-                        $itemLines = array_slice($lines, $startLine, $endLine - $startLine, true);
-                    } else {
-                        continue;
-                    }
-                } catch (Exception $e) {
-
-                }
-
-                if (substr($fileName, 0, strlen($basePath)) == $basePath) {
-                    $fileName = substr($fileName, strlen($basePath));
-                }
-
-                $trace[] = [
-                    'fileName' => $fileName,
-                    'trace' => $traceItem,
-                    'startLine' => $startLine,
-                    'endLine' => $endLine,
-                    'itemLines' => $itemLines
-                ];
-            }
-        }
-
         if ($code == 404) {
             $this->logDebug("Page not found");
         } else {
@@ -169,13 +117,10 @@ class ErrorHandler
 
         if (php_sapi_name() == 'cli') {
             echo "Exception: " . $exception->getMessage() . PHP_EOL;
-            echo "Trace: " . PHP_EOL;
-            print_r($trace);
         } else {
-            echo $this->_renderer->render($template, [
+            echo $this->_renderer->render($this->errorTemplate, [
                 'exception' => $exception,
-                'code' => $code,
-                'trace' => $trace
+                'code' => $code
             ]);
         }
         die();

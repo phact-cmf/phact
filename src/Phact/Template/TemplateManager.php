@@ -15,7 +15,7 @@ namespace Phact\Template;
 use Fenom;
 use Fenom\Tag;
 use Phact\Application\ModulesInterface;
-use Phact\Cache\CacheDriverInterface;
+use Psr\SimpleCache\CacheInterface;
 use Phact\Components\PathInterface;
 use Phact\Components\Settings;
 use Phact\Event\EventManagerInterface;
@@ -84,7 +84,7 @@ class TemplateManager implements RendererInterface
     public $librariesCacheTimeout;
 
     /**
-     * @var CacheDriverInterface|null
+     * @var CacheInterface|null
      */
     protected $_cacheDriver;
 
@@ -126,7 +126,7 @@ class TemplateManager implements RendererInterface
     public function __construct(
         EventManagerInterface $eventManager = null,
         ModulesInterface $modules = null,
-        CacheDriverInterface $cacheDriver = null,
+        CacheInterface $cacheDriver = null,
         PathInterface $paths = null,
         AuthInterface $auth = null,
         HttpRequest $request = null,

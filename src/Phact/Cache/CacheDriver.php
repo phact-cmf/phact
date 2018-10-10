@@ -13,7 +13,9 @@
 namespace Phact\Cache;
 
 
-abstract class CacheDriver implements CacheDriverInterface
+use Psr\SimpleCache\CacheInterface;
+
+abstract class CacheDriver implements CacheInterface
 {
     public $serializer;
 
@@ -21,17 +23,43 @@ abstract class CacheDriver implements CacheDriverInterface
 
     public $prefix = '';
 
-
     public function get($key, $default = null)
     {
         $value = $this->getValue($this->buildKey($key));
         return is_null($value) ? $default : $this->unserialize($value);
     }
 
-    public function set($key, $value, $timeout = null)
+    public function getMultiple($keys, $default = null)
     {
-        $timeout = $timeout ?: $this->timeout;
-        return $this->setValue($this->buildKey($key), $this->serialize($value), $timeout);
+        $result = [];
+        foreach ($keys as $key) {
+            $result[$key] = $this->get($key, $default);
+        }
+        return $result;
+    }
+
+    public function setMultiple($values, $ttl = null)
+    {
+        $result = true;
+        foreach ($keys as $key => $value) {
+            $result = $this->set($key, $value, $ttl) && $result;
+        }
+        return $result;
+    }
+
+    public function deleteMultiple($keys, $default = null)
+    {
+        $result = true;
+        foreach ($keys as $key) {
+            $result = $this->delete($key) && $result;
+        }
+        return $result;
+    }
+
+    public function set($key, $value, $ttl = null)
+    {
+        $ttl = $ttl ?: $this->timeout;
+        return $this->setValue($this->buildKey($key), $this->serialize($value), $ttl);
     }
 
     public function serialize($value)
@@ -62,5 +90,11 @@ abstract class CacheDriver implements CacheDriverInterface
 
     abstract protected function getValue($key);
 
+    /**
+     * @param $key
+     * @param $data
+     * @param $timeout
+     * @return bool
+     */
     abstract protected function setValue($key, $data, $timeout);
 }

@@ -70,6 +70,21 @@ class File extends CacheDriver
         $this->_pathHandler = $pathHandler;
     }
 
+    public function delete($key)
+    {
+        $unlink = true;
+        if ($this->has($key)) {
+            $unlink = @unlink($this->getFileName($key));
+        }
+        return $unlink;
+    }
+
+    public function clear()
+    {
+        $this->gcRecursive($this->getBasePath(), false);
+        return true;
+    }
+
     /**
      * Read cache value from file
      *
@@ -78,8 +93,8 @@ class File extends CacheDriver
      */
     protected function getValue($key)
     {
-        $filePath = $this->getFileName($key);
-        if (is_file($filePath) && @filemtime($filePath) > time()) {
+        if ($this->has($key)) {
+            $filePath = $this->getFileName($key);
             $fp = @fopen($filePath, 'r');
             if ($fp !== false) {
                 @flock($fp, LOCK_SH);

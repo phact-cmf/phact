@@ -4,7 +4,7 @@ namespace Phact\Router;
 
 use Exception;
 use InvalidArgumentException;
-use Phact\Cache\CacheDriverInterface;
+use Psr\SimpleCache\CacheInterface;
 use Phact\Components\PathInterface;
 use Phact\Event\EventManagerInterface;
 use Phact\Event\Events;
@@ -67,7 +67,7 @@ class Router implements RouterInterface
     );
 
     /**
-     * @var CacheDriverInterface
+     * @var CacheInterface
      */
     protected $_cacheDriver;
 
@@ -76,7 +76,7 @@ class Router implements RouterInterface
      */
     protected $_path;
 
-    public function __construct(string $configPath = null, PathInterface $path = null, CacheDriverInterface $cacheDriver = null, EventManagerInterface $eventManager = null)
+    public function __construct(string $configPath = null, PathInterface $path = null, CacheInterface $cacheDriver = null, EventManagerInterface $eventManager = null)
     {
         $this->_cacheDriver = $cacheDriver;
         $this->_eventManager = $eventManager;
@@ -84,7 +84,7 @@ class Router implements RouterInterface
 
         $routes = null;
         $cacheKey = 'PHACT__ROUTER';
-        if (!is_null($this->cacheTimeout)) {
+        if (!is_null($this->cacheTimeout) && $this->_cacheDriver) {
             $routes = $this->_cacheDriver->get($cacheKey);
             if ($routes) {
                 $this->_namedRoutes = $routes['named'];
@@ -97,7 +97,7 @@ class Router implements RouterInterface
             if ($configPath) {
                 $this->collectFromFile($configPath);
             }
-            if (!is_null($this->cacheTimeout)) {
+            if (!is_null($this->cacheTimeout) && $this->_cacheDriver) {
                 $routes = [
                     'named' => $this->_namedRoutes,
                     'all' => $this->_routes
@@ -415,7 +415,7 @@ class Router implements RouterInterface
 
     protected function getCompiledRoutes()
     {
-        if (!$this->cacheTimeout) {
+        if (!$this->cacheTimeout || !$this->_cacheDriver) {
             return [];
         }
         return $this->_cacheDriver->get('PHACT__ROUTER_COMPILED');
@@ -423,7 +423,7 @@ class Router implements RouterInterface
 
     protected function setCompiledRoutes($routes)
     {
-        if (!$this->cacheTimeout) {
+        if (!$this->cacheTimeout || !$this->_cacheDriver) {
             return true;
         }
         $this->_cacheDriver->set('PHACT__ROUTER_COMPILED', $routes, $this->cacheTimeout);
@@ -432,7 +432,7 @@ class Router implements RouterInterface
 
     protected function getMatchedRoutes()
     {
-        if (!$this->cacheTimeout) {
+        if (!$this->cacheTimeout || !$this->_cacheDriver) {
             return [];
         }
         return $this->_cacheDriver->get('PHACT__ROUTER_MATCHED', []);
@@ -444,7 +444,7 @@ class Router implements RouterInterface
      */
     protected function setMatchedRoutes($routes)
     {
-        if (!$this->cacheTimeout) {
+        if (!$this->cacheTimeout || !$this->_cacheDriver) {
             return true;
         }
         $this->_cacheDriver->set('PHACT__ROUTER_MATCHED', $routes, $this->cacheTimeout);

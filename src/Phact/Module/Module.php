@@ -13,7 +13,7 @@
 namespace Phact\Module;
 
 use Phact\Cache\Cache;
-use Phact\Cache\CacheDriverInterface;
+use Psr\SimpleCache\CacheInterface;
 use Phact\Event\EventManagerInterface;
 use Phact\Form\ModelForm;
 use Phact\Helpers\ClassNames;
@@ -29,16 +29,16 @@ use ReflectionClass;
  */
 abstract class Module
 {
+    use ClassNames, SmartProperties;
+
     protected static $_paths = [];
 
     protected $_name;
 
-    use ClassNames, SmartProperties;
-
     public $settingsModelCache = 3600;
 
     /**
-     * @var CacheDriverInterface
+     * @var CacheInterface
      */
     protected $_cacheDriver;
 
@@ -48,7 +48,7 @@ abstract class Module
     protected $_translate;
 
 
-    public function __construct(string $name, CacheDriverInterface $cacheDriver = null, Translate $translate = null)
+    public function __construct(string $name, CacheInterface $cacheDriver = null, Translate $translate = null)
     {
         $this->_name = $name;
         $this->_cacheDriver = $cacheDriver;
