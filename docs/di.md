@@ -3,9 +3,7 @@
 Контейнер инъекции зависимостей (\Phact\Di\Container) необходим для инъекции зависимостей 
 в ваш сервис/компонент c целью уменьшения связанности кода и распределения обязанностей.
 
-## Вкратце, для чего это нужно
-
-### Проблематика
+## Проблематика
 
 Представим, что у нас есть компонент, который работает с запросом (request). 
 Например, основной его задачей является вывод метода запроса.
@@ -41,10 +39,10 @@ AmazingComponent зависит от HttpRequest. Или иначе - HttpReques
 
 В данном контексте инъекция - это "встраивание" зависимости в зависимый объект. Она может осуществлятся различными методами:
 
-1. Инъекция в конструктор
-2. Инъекция в "сеттер"
+1. Инъекция через конструктор
+2. Инъекция через "сеттер"
 
-### Инъекция в конструктор
+### Инъекция через конструктор
 
 Самое очевидное - если зависимый компонент не может выполнять своих основных задач без зависимости, 
 то он без нее не может существовать, следовательно - создать зависимый компонент без зависимости невозоможно.
@@ -61,7 +59,7 @@ class AmazingComponent
 {
     private $request;
     
-    public function __constructor(HttpRequest $request)
+    public function __construct(HttpRequest $request)
     {
         $this->request = $request;
     }
@@ -94,7 +92,7 @@ class AmazingComponent
 {
     private $request;
     
-    public function __constructor(HttpRequestInterface $request)
+    public function __construct(HttpRequestInterface $request)
     {
         $this->request = $request;
     }
@@ -108,9 +106,9 @@ class AmazingComponent
 
 Теперь наш компонент не зависит от реализации объекта зависимости, но всегда знает как с ним работать. Amazing!
 
-### Инъекция в сеттер
+### Инъекция через сеттер
 
-Инъекция в сеттер может быть необходима в некоторых случаях:
+Инъекция через сеттер может быть необходима в некоторых случаях:
 
 1. Чтобы работать с опциональными зависимостями
 2. Чтобы избежать циркулярных (круговых) зависимостей
@@ -118,7 +116,7 @@ class AmazingComponent
 Предположим, что в наш компонент необходимо добавить опциональное логирование. 
 Логирование в данном случае не является основной задачей нашего компонента и без него он должен выполнять основную задачу.
 
-В данном случае отлично подойдет инъекция в сеттер. Добавим логирование в наш компонент:
+В данном случае отлично подойдет инъекция через сеттер. Добавим логирование в наш компонент:
 
 ```php
 <?php
@@ -131,7 +129,7 @@ class AmazingComponent
     private $request;
     private $logger;
     
-    public function __constructor(HttpRequestInterface $request)
+    public function __construct(HttpRequestInterface $request)
     {
         $this->request = $request;
     }
@@ -403,3 +401,192 @@ class AmazingComponent
 ```
 
 Теперь при инициализации нашего компонента свойства, указанные в конфигурации, будут устанавливаться автоматически.
+
+## DI Container в Phact
+
+DI Container встроен в Phact на уровне приложения, это позволяет использовать все преимущества DI в том числе 
+и в стандартных объектах проекта - контроллерах, модулях, командах.
+
+### Конфигурирование
+
+Конфигурирование компонентов происходит в разделе `components` 
+конфигурационного файла, кроме этого можно переопределить стандартный DI Container своим. Для этого необходимо указать в конфигурационном 
+файле раздел `container` с указанием собственного класса контейнера:
+
+```php
+[
+...
+    'container' => [
+        'class' => \My\Mega\DiContainer
+    ],
+    'components' => [
+        ...
+    ]
+...
+]
+```
+
+### Применение в собственном компоненте
+
+Именно с этого мы и начали - поэтому подробно останавливаться на этом я не буду, выше уже есть масса примеров.
+
+### Применение в контроллере
+
+Через контейнер создается объект контроллера и выполняется action, поэтому в обоих случаях можно использовать DI.
+
+#### Инъекция через конструктор контроллера
+
+Описываем в конструкторе собственного контроллера зависимость от необходимого компонента. 
+Например, нам потребовался роутер:
+
+```php
+...
+
+class MyController extends Controller 
+{
+    protected $router;
+    
+    public function __construct(RouterInterface $router, HttpRequestInterface $request, RendererInterface $renderer = null) 
+    {
+        $this->_router = $router;
+        parent::__construct($request, $renderer);
+    }
+
+    ...
+}
+```
+
+Ну и не забываем о том, что базовому контроллеру тоже необходимы зависимости (`HttpRequestInterface`, `RendererInterface`).
+
+#### Инъекция через действия (action)
+
+Инъекция через конструктор контроллера - удобная вещь, однако у этого подхода есть минусы:
+
+1. Зависимость может использоваться всего лишь в небольшом количестве действий (action) и при использовании большого 
+набора зависимостей в разных действиях (action) конструктор значительно "распухнет"
+2. Зависимость может быть достаточно "тяжелой", для того, чтобы вызывать ее для каждого действия (action) 
+
+В данных случаях лучше всего воспользоваться инъекцией через action:
+
+
+```php
+...
+
+class MyController extends Controller 
+{
+    public function index(RouterInterface $router) 
+    {
+        ...
+    }
+    ...
+}
+```
+
+Использование действий (action) с параметрами:
+
+```php
+...
+
+class MyController extends Controller 
+{
+    public function view($id, RouterInterface $router) 
+    {
+        ...
+    }
+    ...
+}
+```
+
+### Применение в командах
+
+#### Инъекция через конструктор команды
+
+Аналогично инъекции через конструктор контроллера:
+
+```php
+...
+
+class MyCommand extends Command
+{
+    protected $router;
+    
+    public function __construct(RouterInterface $router)
+    {
+        $this->router = $router;
+    }
+    
+    ...
+}
+
+```
+
+#### Инъекция через действие команды
+
+Аналогично инъекции через действие (action) контроллера:
+
+```php
+...
+
+class MyCommand extends Command
+{
+    public function handle($args = [], RouterInterface $router)
+    {
+        ...
+    }
+    
+    ...
+}
+
+```
+
+
+### Применение в модулях
+
+Инъекция зависимостей в объект модуля осуществляется через конструктор:
+
+```php
+...
+
+class MyModule extends Module
+{
+    protected $router;
+    
+    public function __construct(string $name, RouterInterface $router, CacheInterface $cacheDriver = null, Translate $translate = null)
+    {
+        $this->router = $router;        
+        parent::__construct($cacheDriver, $translate);
+    }
+    
+    ...
+}
+```
+
+### Методы construct и invoke
+
+#### Метод construct
+
+Позволяет создать объект необходимого класса с автоматическим определением и инъекцией зависимостей:
+
+```php
+$myCommandObject = $container->construct(\My\MyCommand::class);
+```
+
+Также вторым входящим параметром можно передать агрументы конструктора:
+
+```php
+$myCommandObject = $container->construct(\My\MyCommand::class, ['router' => $someAnotherRouter]);
+```
+
+#### Метод invoke
+
+Позволяет вызвать callable (метод объекта, анонимную функцию) с автоматическим определением и инъекцией зависимостей:
+
+```php
+$container->invoke([$myCommandObject, 'handle']);
+```
+
+Также вторым входящим параметром можно передать агрументы callable:
+
+```php
+$container->invoke([$myCommandObject, 'handle'], ['args' => [1,2]]);
+```
