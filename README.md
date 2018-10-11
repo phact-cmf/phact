@@ -6,6 +6,7 @@
 
 ## Разделы документации
 
+* [DI - DI Container](./docs/di.md)
 * [ORM - работа с базой данных](./docs/orm.md)
 * [Events - система событий](./docs/events.md)
 * [Log - система логирования](./docs/log.md)
