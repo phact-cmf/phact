@@ -12,7 +12,6 @@ namespace Phact\Form\Fields;
 use Phact\Main\Phact;
 use Phact\Storage\Files\StorageFile;
 use Phact\Storage\StorageInterface;
-use Phact\Storage\StorageManager;
 use Phact\Validators\ImageValidator;
 
 class ImageField extends FileField
@@ -22,6 +21,8 @@ class ImageField extends FileField
 
     public $sizeShowValue = null;
     public $accept = ['image/*'];
+
+    public $storage;
 
     public function setDefaultValidators()
     {
@@ -44,10 +45,6 @@ class ImageField extends FileField
 
         $value = $this->getValue();
         if ($value instanceof StorageFile) {
-
-            /** @var StorageManager $storageManager */
-            $storageManager = Phact::app()->storage;
-
             if ($this->sizeShowValue) {
                 /** @var StorageInterface $storage */
                 $directory = pathinfo($value->path, PATHINFO_DIRNAME);
@@ -58,8 +55,7 @@ class ImageField extends FileField
                 $path = $value->getPath();
             }
 
-            $storage = $storageManager->getStorage($value->storage);
-            return $storage->getUrl($path);
+            return Phact::app()->getComponent($value->storage)->getUrl($path);
         }
     }
 }

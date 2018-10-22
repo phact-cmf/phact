@@ -14,8 +14,6 @@ use Phact\Helpers\FileHelper;
 use Phact\Main\Phact;
 use Phact\Storage\Files\StorageFile;
 use Phact\Storage\Files\UploadedFile;
-use Phact\Storage\Storage;
-use Phact\Storage\StorageManager;
 use Phact\Validators\UploadFileValidator;
 
 class FileField extends Field
@@ -136,11 +134,7 @@ class FileField extends Field
         /** @var StorageFile $value */
         $value = $this->getValue();
         if ($value instanceof StorageFile) {
-            /** @var StorageManager $storageManager */
-            $storageManager = Phact::app()->storage;
-            /** @var Storage $storage */
-            $storage = $storageManager->getStorage($value->storage);
-            return $storage->getUrl($value->getPath());
+            return Phact::app()->getComponent($value->storage)->getUrl($value->getPath());
         }
 
         return null;
