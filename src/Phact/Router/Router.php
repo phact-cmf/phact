@@ -28,7 +28,7 @@ class Router implements RouterInterface
     /**
      * @var array Array of all routes (incl. named routes).
      */
-    protected $_routes = array();
+    protected $_routes = [];
 
     /**
      * @var array Array of all named routes.
@@ -76,35 +76,17 @@ class Router implements RouterInterface
      */
     protected $_path;
 
+    /**
+     * @var string|null
+     */
+    protected $_configPath;
+
     public function __construct(string $configPath = null, PathInterface $path = null, CacheInterface $cacheDriver = null, EventManagerInterface $eventManager = null)
     {
         $this->_cacheDriver = $cacheDriver;
         $this->_eventManager = $eventManager;
         $this->_path = $path;
-
-        $routes = null;
-        $cacheKey = 'PHACT__ROUTER';
-        if (!is_null($this->cacheTimeout) && $this->_cacheDriver) {
-            $routes = $this->_cacheDriver->get($cacheKey);
-            if ($routes) {
-                $this->_namedRoutes = $routes['named'];
-                $this->_routes = $routes['all'];
-            }
-            $this->_matched = $this->getMatchedRoutes();
-        }
-
-        if (!$routes) {
-            if ($configPath) {
-                $this->collectFromFile($configPath);
-            }
-            if (!is_null($this->cacheTimeout) && $this->_cacheDriver) {
-                $routes = [
-                    'named' => $this->_namedRoutes,
-                    'all' => $this->_routes
-                ];
-                $this->_cacheDriver->set($cacheKey, $routes, $this->cacheTimeout);
-            }
-        }
+        $this->_configPath = $configPath;
     }
 
     /**
@@ -146,6 +128,48 @@ class Router implements RouterInterface
      */
     public function getRoutes()
     {
+        $this->fetchRoutes();
+        return $this->_routes;
+    }
+
+    /**
+     * Retrieves all routes.
+     * Useful if you want to process or display routes.
+     * @return array All routes.
+     */
+    public function getNamedRoutes()
+    {
+        $this->fetchRoutes();
+        return $this->_namedRoutes;
+    }
+
+    protected function fetchRoutes()
+    {
+        if (empty($this->_routes)) {
+            $routes = null;
+            $cacheKey = 'PHACT__ROUTER';
+            if (!is_null($this->cacheTimeout) && $this->_cacheDriver) {
+                $routes = $this->_cacheDriver->get($cacheKey);
+                if ($routes) {
+                    $this->_namedRoutes = $routes['named'];
+                    $this->_routes = $routes['all'];
+                }
+                $this->_matched = $this->getMatchedRoutes();
+            }
+
+            if (!$routes) {
+                if ($this->_configPath) {
+                    $this->collectFromFile($this->_configPath);
+                }
+                if (!is_null($this->cacheTimeout) && $this->_cacheDriver) {
+                    $routes = [
+                        'named' => $this->_namedRoutes,
+                        'all' => $this->_routes
+                    ];
+                    $this->_cacheDriver->set($cacheKey, $routes, $this->cacheTimeout);
+                }
+            }
+        }
         return $this->_routes;
     }
 
@@ -235,8 +259,9 @@ class Router implements RouterInterface
             $routeName = $this->getCurrentNamespace() . $routeName;
         }
 
+        $namedRoutes = $this->getNamedRoutes();
         // Check if named route exists
-        if (!isset($this->_namedRoutes[$routeName])) {
+        if (!isset($namedRoutes[$routeName])) {
             throw new \Exception("Route '{$routeName}' does not exist.");
         }
 
@@ -244,7 +269,7 @@ class Router implements RouterInterface
             $params = [$params];
         }
         // Replace named parameters
-        $route = $this->_namedRoutes[$routeName];
+        $route = $namedRoutes[$routeName];
 
         // prepend base path to route url again
         $url = $this->_basePath . $route;
@@ -325,7 +350,7 @@ class Router implements RouterInterface
         $matches = [];
         $compiled = $this->getCompiledRoutes();
         $setCompiled = false;
-        foreach ($this->_routes as $handler) {
+        foreach ($this->getRoutes() as $handler) {
             list($method, $_route, $target, $name) = $handler;
 
             $methods = explode('|', $method);
@@ -401,7 +426,7 @@ class Router implements RouterInterface
             $this->setCompiledRoutes($compiled);
         }
 
-        if (!$matches && $requestUrl != '/' && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
+        if (!$matches && $requestUrl !== '/' && $this->fixTrailingSlash && Text::endsWith($requestUrl, '/')) {
             /**
              * @TODO: kill me, please
              */
