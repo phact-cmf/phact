@@ -12,10 +12,11 @@
 
 namespace Phact\Application;
 
-
+use Phact\Components\PathInterface;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
+use Phact\Main\Phact;
 use Phact\Module\Module;
 
 /**
@@ -99,6 +100,9 @@ trait ModulesTrait
     protected function initModule($name, $config)
     {
         $this->_modules[$name] = $this->_container->construct($config['class'], [$name]);
+        if ($this->_container->has(PathInterface::class) && ($paths = $this->_container->get(PathInterface::class))) {
+            $paths->add("Modules.{$name}", $this->_modules[$name]->getPath());
+        }
         unset($config['class']);
         foreach ($config as $property => $value) {
             $this->_modules[$name]->{$property} = $value;
