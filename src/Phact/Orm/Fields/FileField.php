@@ -20,7 +20,6 @@ use Phact\Storage\Files\File;
 use Phact\Storage\Files\FileInterface;
 use Phact\Storage\Files\LocalFile;
 use Phact\Storage\Storage;
-use Phact\Storage\StorageManager;
 
 class FileField extends CharField
 {
@@ -46,7 +45,7 @@ class FileField extends CharField
     public $templateUploadDir = '%Module/%Model/%Y-%m-%d';
 
     /** @var null|string storage type. Default FileSystemStorage */
-    public $storage = null;
+    public $storage = 'storage';
 
     /**
      * Delete old file on after model delete or set new file
@@ -67,9 +66,7 @@ class FileField extends CharField
     public function getStorage()
     {
         if (!$this->_storage) {
-            /** @var StorageManager $component */
-            $component = Phact::app()->storage;
-            $this->_storage = $component->getStorage($this->storage);
+            $this->_storage = Phact::app()->getComponent($this->storage);
         }
         return $this->_storage;
     }
