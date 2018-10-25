@@ -24,9 +24,7 @@ class StorageFile implements FileInterface
     public function __construct($path, $storage = null)
     {
         $this->path = $path;
-        if ($storage === null) {
-            $this->storage = 'storage';
-        }
+        $this->storage = $storage ?? 'storage';
     }
 
     /**
@@ -75,8 +73,8 @@ class StorageFile implements FileInterface
      */
     public function getStorageSystem()
     {
-        if ($this->_storageSystem == null) {
-            $this->_storageSystem = Phact::app()->storage->getStorage($this->storage);
+        if ($this->_storageSystem === null) {
+            $this->_storageSystem = Phact::app()->getComponent($this->storage);
         }
         return $this->_storageSystem;
     }
@@ -91,7 +89,7 @@ class StorageFile implements FileInterface
             return false;
         }
 
-        if ($this->storage == $file->storage && $this->getPath() == $file->getPath()) {
+        if (($this->storage == $file->storage) && ($this->getPath() == $file->getPath())) {
             return true;
         }
 
