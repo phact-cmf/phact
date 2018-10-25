@@ -24,8 +24,8 @@ class StorageFile implements FileInterface
     public function __construct($path, $storage = null)
     {
         $this->path = $path;
-        if ($storage = null) {
-            $this->storage = 'default';
+        if ($storage === null) {
+            $this->storage = 'storage';
         }
     }
 
