@@ -185,9 +185,6 @@ class Application implements ModulesInterface
             if (!$modulesPath && ($modulesPath = $paths->get('base.Modules')) && is_dir($modulesPath)) {
                 $paths->add('Modules', $modulesPath);
             }
-            foreach ($this->getModules() as $name => $module) {
-                $paths->add("Modules.{$name}", $module->getPath());
-            }
             if (!is_dir($modulesPath)) {
                 throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');
             }
