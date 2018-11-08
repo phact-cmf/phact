@@ -173,7 +173,8 @@ abstract class Module
      */
     protected function getSettingsCacheKey()
     {
-        return static::class . '__' . $model->className();
+        $model = $this->getSettingsModel();
+        return static::class . '__' . ($model ? $model::className() : 'Settings');
     }
 
     /**
