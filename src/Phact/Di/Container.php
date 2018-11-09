@@ -570,10 +570,16 @@ class Container implements ContainerInterface
 
         if ($definition['calls']) {
             foreach ($definition['calls'] as $method => $attributes) {
-                if (is_numeric($method) && is_string($attributes)) {
-                    $method = $attributes;
-                    $attributes = [];
+                if (is_numeric($method)) {
+                    if (is_string($attributes)) {
+                        $method = $attributes;
+                        $attributes = [];
+                    } elseif (is_array($attributes) && isset($attributes['method'], $attributes['arguments'])) {
+                        $method = $attributes['method'];
+                        $attributes = $attributes['arguments'];
+                    }
                 }
+
                 $this->call($id, $object, $method, $attributes);
             }
         }

@@ -212,6 +212,25 @@ class ContainerTest extends TestCase
         $this->assertInstanceOf(StandaloneComponent::class, $container->get('setter')->getStandalone());
     }
 
+    public function testCallMultiple()
+    {
+        $container = new Container();
+        $container->addDefinition('setter', [
+            'class' => SetterComponent::class,
+            'calls' => [
+                [
+                    'method' => 'setValue',
+                    'arguments' => ['someValue']
+                ],
+                [
+                    'method' => 'setValue',
+                    'arguments' => ['someAnotherValue']
+                ]
+            ]
+        ]);
+        $this->assertEquals('someAnotherValue', $container->get('setter')->getValue());
+    }
+
     public function testSetterLoaded()
     {
         $container = new Container();

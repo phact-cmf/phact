@@ -357,6 +357,26 @@ class AmazingComponent
 ]
 ```
 
+При необходимости вызова одного и того же метода несколько раз можно применять следующую структуру:
+
+```php
+[
+    'new' => [
+        'class' => SomeNewComponent::class,
+        'calls' => [
+            [
+                'method' => 'appendLogger',
+                'arguments' => ['@logger']
+            ],
+            [
+                'method' => 'appendLogger',
+                'arguments' => ['@another_logger']
+            ]
+        ]
+    ]
+]
+```
+
 ### Установка свойств
 
 Еще одной удобной особенностью контейнера является возможность установки свойств компонентов.
