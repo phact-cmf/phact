@@ -76,8 +76,55 @@ class ErrorHandler
                 }
             }
             $this->_run->pushHandler($handler);
+            $this->_run->pushHandler(function ($exception, $inspector, $run) {
+                $this->logException($exception);
+                $this->setHeaders($exception);
+            });
         }
         $this->_run->register();
+    }
+
+    /**
+     * Log exception data
+     * @param $exception
+     */
+    public function logException(Exception $exception)
+    {
+        $code = $this->getExceptionCode($exception);
+        if ($code === 404) {
+            $this->logDebug('Page not found', [
+                'exception' => $exception
+            ]);
+        } else {
+            $this->logError((string) $exception, [
+                'exception' => $exception
+            ]);
+        }
+    }
+
+    /**
+     * Set headers code based on exception
+     * @param Exception $exception
+     */
+    public function setHeaders(Exception $exception)
+    {
+        $code = $this->getExceptionCode($exception);
+        if (!headers_sent()) {
+            header("HTTP/1.0 {$code} " . Http::getMessage($code));
+        }
+    }
+
+    /**
+     * @param Exception $exception
+     * @return int
+     */
+    public function getExceptionCode(Exception $exception)
+    {
+        $code = 500;
+        if ($exception instanceof HttpException) {
+            $code = $exception->status;
+        }
+        return $code;
     }
 
     /**
@@ -85,15 +132,7 @@ class ErrorHandler
      */
     public function handleException($exception)
     {
-        $code = 500;
-        if ($exception instanceof HttpException) {
-            $code = $exception->status;
-        }
-
-        if (!headers_sent()) {
-            header("HTTP/1.0 {$code} " . Http::getMessage($code));
-        }
-
+        $code = $this->getExceptionCode($exception);
         try {
             if (ob_get_length()) ob_clean();
             $this->renderException($exception, $code);
@@ -109,12 +148,6 @@ class ErrorHandler
      */
     public function renderException($exception, $code)
     {
-        if ($code == 404) {
-            $this->logDebug("Page not found");
-        } else {
-            $this->logError((string) $exception);
-        }
-
         if (php_sapi_name() == 'cli') {
             echo "Exception: " . $exception->getMessage() . PHP_EOL;
         } else {
