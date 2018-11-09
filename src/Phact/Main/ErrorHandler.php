@@ -88,7 +88,7 @@ class ErrorHandler
      * Log exception data
      * @param $exception
      */
-    public function logException(Exception $exception)
+    public function logException($exception)
     {
         $code = $this->getExceptionCode($exception);
         if ($code === 404) {
@@ -106,7 +106,7 @@ class ErrorHandler
      * Set headers code based on exception
      * @param Exception $exception
      */
-    public function setHeaders(Exception $exception)
+    public function setHeaders($exception)
     {
         $code = $this->getExceptionCode($exception);
         if (!headers_sent()) {
