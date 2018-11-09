@@ -118,7 +118,7 @@ class ErrorHandler
      * @param Exception $exception
      * @return int
      */
-    public function getExceptionCode(Exception $exception)
+    public function getExceptionCode($exception)
     {
         $code = 500;
         if ($exception instanceof HttpException) {
