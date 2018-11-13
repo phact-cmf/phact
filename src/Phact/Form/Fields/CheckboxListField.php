@@ -36,6 +36,9 @@ class CheckboxListField extends Field
         if ($value instanceof Manager) {
             $value = $value->values(['id'], true);
         }
+        if ($this->multiple && $value === '') {
+            $value = [];
+        }
         $this->_value = $value;
         return $this;
     }
