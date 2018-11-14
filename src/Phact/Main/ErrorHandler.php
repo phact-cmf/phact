@@ -22,6 +22,7 @@ use Phact\Log\Logger;
 use Phact\Template\Renderer;
 use Phact\Template\RendererInterface;
 use Psr\Log\LoggerInterface;
+use Whoops\Exception\Inspector;
 use Whoops\RunInterface;
 use Whoops\Run;
 use Whoops\Handler\PrettyPageHandler;
@@ -72,7 +73,10 @@ class ErrorHandler
                 if (php_sapi_name() == 'cli') {
                     $handler = new PlainTextHandler();
                 } else {
-                    $handler = new PrettyPageHandler();
+                    $handler = new ExceptionPageHandler();
+                    if ($path = $this->_path->get('root')) {
+                        $handler->setApplicationRootPath($path);
+                    }
                 }
             }
             $this->_run->pushHandler($handler);
