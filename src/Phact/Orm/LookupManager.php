@@ -182,8 +182,7 @@ class LookupManager
         if ($value) {
             $prefix = '';
         }
-        $key = $query->getConnection()->quoteIdentifier($column);
-        return QueryLayer::buildWhere("{$key} IS{$prefix} NULL", null, null, $operator);
+        return QueryLayer::buildWhere("{$column} IS{$prefix} NULL", null, null, $operator);
     }
 
     /**

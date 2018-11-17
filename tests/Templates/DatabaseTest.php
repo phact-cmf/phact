@@ -41,6 +41,11 @@ class DatabaseTest extends AppTest
         }
     }
 
+    public function getQuoteCharacter()
+    {
+        return Phact::app()->db->getConnection()->getDatabasePlatform()->getIdentifierQuoteCharacter();
+    }
+
     public function tearDown()
     {
         parent::tearDown();

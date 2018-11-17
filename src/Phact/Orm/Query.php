@@ -48,15 +48,28 @@ class Query
         return $this->getConnection()->createQueryBuilder();
     }
 
+    /**
+     * Quote columns names
+     * @param $data array column-value array
+     */
+    public function quoteData($data)
+    {
+        $quotedData = [];
+        foreach ($data as $column => $value) {
+            $quotedData[$this->getConnection()->quoteIdentifier($column)] = $value;
+        }
+        return $quotedData;
+    }
+
     public function insert($tableName, $data)
     {
-        $this->getConnection()->insert($tableName, $data);
+        $this->getConnection()->insert($tableName, $this->quoteData($data));
         return $this->getConnection()->lastInsertId();
     }
 
     public function update($tableName, $conditions, $data)
     {
-        return $this->getConnection()->update($tableName, $data, $conditions);
+        return $this->getConnection()->update($tableName, $this->quoteData($data), $conditions);
     }
 
     public function delete($tableName, $conditions)

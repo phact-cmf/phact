@@ -2,11 +2,11 @@
 /**
  *
  *
- * All rights reserved.
+ * All rights {$q}reserved{$q}.
  *
  * @author Okulov Anton
- * @email qantus@mail.ru
- * @version 1.0
+ * @email qantus@{$q}mail{$q}.{$q}ru{$q}
+ * @version {$q}1{$q}.{$q}0{$q}
  * @date 10/04/16 10:14
  */
 
@@ -38,7 +38,8 @@ abstract class AbstractManyToManyTest extends DatabaseTest
         $author = new Author();
         $author->name = 'JK Rowling';
         $author->save();
-        $this->assertEquals("SELECT test_book.* FROM test_book LEFT JOIN test_author_test_book test_author_test_book_1 ON test_book.id = test_author_test_book_1.book_id WHERE test_author_test_book_1.author_id = 1", $author->books->getQuerySet()->allSql());
+        $q = $this->getQuoteCharacter();
+        $this->assertEquals("SELECT {$q}test_book{$q}.* FROM {$q}test_book{$q} LEFT JOIN {$q}test_author_test_book{$q} {$q}test_author_test_book_1{$q} ON {$q}test_book{$q}.{$q}id{$q} = {$q}test_author_test_book_1{$q}.{$q}book_id{$q} WHERE {$q}test_author_test_book_1{$q}.{$q}author_id{$q} = 1", $author->books->getQuerySet()->allSql());
     }
 
     public function testDefaultBack()
@@ -46,7 +47,8 @@ abstract class AbstractManyToManyTest extends DatabaseTest
         $group = new Group();
         $group->name = 'Test group';
         $group->save();
-        $this->assertEquals("SELECT DISTINCT test_person.* FROM test_person LEFT JOIN test_membership test_membership_1 ON test_person.id = test_membership_1.person_id WHERE test_membership_1.group_id = 1", $group->persons->getQuerySet()->allSql());
+        $q = $this->getQuoteCharacter();
+        $this->assertEquals("SELECT DISTINCT {$q}test_person{$q}.* FROM {$q}test_person{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_person{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}person_id{$q} WHERE {$q}test_membership_1{$q}.{$q}group_id{$q} = 1", $group->persons->getQuerySet()->allSql());
     }
 
     public function testSetNonBack()
@@ -126,13 +128,16 @@ abstract class AbstractManyToManyTest extends DatabaseTest
         $author->books = [$book1, $book2->id];
         $author->save();
 
-        $this->assertEquals("SELECT DISTINCT test_author.* FROM test_author LEFT JOIN test_author_test_book test_author_test_book_1 ON test_author.id = test_author_test_book_1.author_id LEFT JOIN test_book test_book_2 ON test_author_test_book_1.book_id = test_book_2.id WHERE test_book_2.id IN (1)", Author::objects()->filter(['books__id__in' => [$book1->id]])->allSql());
+
+        $q = $this->getQuoteCharacter();
+
+        $this->assertEquals("SELECT DISTINCT {$q}test_author{$q}.* FROM {$q}test_author{$q} LEFT JOIN {$q}test_author_test_book{$q} {$q}test_author_test_book_1{$q} ON {$q}test_author{$q}.{$q}id{$q} = {$q}test_author_test_book_1{$q}.{$q}author_id{$q} LEFT JOIN {$q}test_book{$q} {$q}test_book_2{$q} ON {$q}test_author_test_book_1{$q}.{$q}book_id{$q} = {$q}test_book_2{$q}.{$q}id{$q} WHERE {$q}test_book_2{$q}.{$q}id{$q} IN (1)", Author::objects()->filter(['books__id__in' => [$book1->id]])->allSql());
         $this->assertEquals(1, Author::objects()->filter(['books__id__in' => [$book1->id]])->count());
 
-        $this->assertEquals("SELECT DISTINCT test_book.* FROM test_book LEFT JOIN test_author_test_book test_author_test_book_1 ON test_book.id = test_author_test_book_1.book_id LEFT JOIN test_author test_author_2 ON test_author_test_book_1.author_id = test_author_2.id WHERE test_author_2.id IN (1)", Book::objects()->filter(['authors__id__in' => [$author->id]])->allSql());
+        $this->assertEquals("SELECT DISTINCT {$q}test_book{$q}.* FROM {$q}test_book{$q} LEFT JOIN {$q}test_author_test_book{$q} {$q}test_author_test_book_1{$q} ON {$q}test_book{$q}.{$q}id{$q} = {$q}test_author_test_book_1{$q}.{$q}book_id{$q} LEFT JOIN {$q}test_author{$q} {$q}test_author_2{$q} ON {$q}test_author_test_book_1{$q}.{$q}author_id{$q} = {$q}test_author_2{$q}.{$q}id{$q} WHERE {$q}test_author_2{$q}.{$q}id{$q} IN (1)", Book::objects()->filter(['authors__id__in' => [$author->id]])->allSql());
         $this->assertEquals(2, Book::objects()->filter(['authors__id__in' => [$author->id]])->count());
 
-        $this->assertEquals("SELECT DISTINCT test_book.* FROM test_book LEFT JOIN test_author_test_book test_author_test_book_1 ON test_book.id = test_author_test_book_1.book_id LEFT JOIN test_author test_author_2 ON test_author_test_book_1.author_id = test_author_2.id WHERE test_author_2.name LIKE '%JK%'", Book::objects()->filter(['authors__name__contains' => 'JK'])->allSql());
+        $this->assertEquals("SELECT DISTINCT {$q}test_book{$q}.* FROM {$q}test_book{$q} LEFT JOIN {$q}test_author_test_book{$q} {$q}test_author_test_book_1{$q} ON {$q}test_book{$q}.{$q}id{$q} = {$q}test_author_test_book_1{$q}.{$q}book_id{$q} LEFT JOIN {$q}test_author{$q} {$q}test_author_2{$q} ON {$q}test_author_test_book_1{$q}.{$q}author_id{$q} = {$q}test_author_2{$q}.{$q}id{$q} WHERE {$q}test_author_2{$q}.{$q}name{$q} LIKE '%JK%'", Book::objects()->filter(['authors__name__contains' => 'JK'])->allSql());
         $this->assertEquals(2, Book::objects()->filter(['authors__name__contains' => 'JK'])->count());
     }
 
@@ -151,39 +156,41 @@ abstract class AbstractManyToManyTest extends DatabaseTest
         $group->persons = [$person1, $person2->id];
         $group->save();
 
+        $q = $this->getQuoteCharacter();
+
         $this->assertEquals(
-            "SELECT DISTINCT test_group.* FROM test_group LEFT JOIN test_membership test_membership_1 ON test_group.id = test_membership_1.group_id LEFT JOIN test_person test_person_2 ON test_membership_1.person_id = test_person_2.id WHERE test_person_2.id IN (1)",
+            "SELECT DISTINCT {$q}test_group{$q}.* FROM {$q}test_group{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_group{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}group_id{$q} LEFT JOIN {$q}test_person{$q} {$q}test_person_2{$q} ON {$q}test_membership_1{$q}.{$q}person_id{$q} = {$q}test_person_2{$q}.{$q}id{$q} WHERE {$q}test_person_2{$q}.{$q}id{$q} IN (1)",
             Group::objects()->filter(['persons__id__in' => [$person1->id]])->allSql()
         );
         $this->assertEquals(1, Group::objects()->filter(['persons__id__in' => [$person1->id]])->count());
 
         $this->assertEquals(
-            "SELECT DISTINCT test_group.* FROM test_group LEFT JOIN test_membership test_membership_1 ON test_group.id = test_membership_1.group_id LEFT JOIN test_person test_person_2 ON test_membership_1.person_id = test_person_2.id WHERE (test_person_2.id IN (2)) AND (test_person_2.name LIKE '%Robin%')",
+            "SELECT DISTINCT {$q}test_group{$q}.* FROM {$q}test_group{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_group{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}group_id{$q} LEFT JOIN {$q}test_person{$q} {$q}test_person_2{$q} ON {$q}test_membership_1{$q}.{$q}person_id{$q} = {$q}test_person_2{$q}.{$q}id{$q} WHERE ({$q}test_person_2{$q}.{$q}id{$q} IN (2)) AND ({$q}test_person_2{$q}.{$q}name{$q} LIKE '%Robin%')",
             Group::objects()->filter(['persons__id__in' => [$person2->id], 'persons__name__contains' => 'Robin'])->allSql()
         );
         $this->assertEquals(1, Group::objects()->filter(['persons__id__in' => [$person2->id], 'persons__name__contains' => 'Robin'])->count());
 
         $this->assertEquals(
-            "SELECT DISTINCT test_group.* FROM test_group LEFT JOIN test_membership test_membership_1 ON test_group.id = test_membership_1.group_id WHERE test_membership_1.role = 'Director'",
+            "SELECT DISTINCT {$q}test_group{$q}.* FROM {$q}test_group{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_group{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}group_id{$q} WHERE {$q}test_membership_1{$q}.{$q}role{$q} = 'Director'",
             Group::objects()->filter(['membership__role' => 'Director'])->allSql()
         );
         $this->assertEquals(0, Group::objects()->filter(['membership__role' => 'Director'])->count());
 
         $this->assertEquals(
-            "SELECT DISTINCT test_group.* FROM test_group LEFT JOIN test_membership test_membership_1 ON test_group.id = test_membership_1.group_id LEFT JOIN test_person test_person_2 ON test_membership_1.person_id = test_person_2.id WHERE (test_membership_1.role = 'Director') AND (test_person_2.name LIKE '%Albert%')",
+            "SELECT DISTINCT {$q}test_group{$q}.* FROM {$q}test_group{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_group{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}group_id{$q} LEFT JOIN {$q}test_person{$q} {$q}test_person_2{$q} ON {$q}test_membership_1{$q}.{$q}person_id{$q} = {$q}test_person_2{$q}.{$q}id{$q} WHERE ({$q}test_membership_1{$q}.{$q}role{$q} = 'Director') AND ({$q}test_person_2{$q}.{$q}name{$q} LIKE '%Albert%')",
             Group::objects()->filter(['membership__role' => 'Director', 'persons__name__contains' => 'Albert'])->allSql()
         );
         $this->assertEquals(0, Group::objects()->filter(['membership__role' => 'Director', 'persons__name__contains' => 'Albert'])->count());
 
 
         $this->assertEquals(
-            "SELECT DISTINCT test_person.* FROM test_person LEFT JOIN test_membership test_membership_1 ON test_person.id = test_membership_1.person_id LEFT JOIN test_group test_group_2 ON test_membership_1.group_id = test_group_2.id WHERE test_group_2.id IN (1)",
+            "SELECT DISTINCT {$q}test_person{$q}.* FROM {$q}test_person{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_person{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}person_id{$q} LEFT JOIN {$q}test_group{$q} {$q}test_group_2{$q} ON {$q}test_membership_1{$q}.{$q}group_id{$q} = {$q}test_group_2{$q}.{$q}id{$q} WHERE {$q}test_group_2{$q}.{$q}id{$q} IN (1)",
             Person::objects()->filter(['groups__id__in' => [$person1->id]])->allSql()
         );
         $this->assertEquals(2, Person::objects()->filter(['groups__id__in' => [$group->id]])->count());
 
         $this->assertEquals(
-            "SELECT DISTINCT test_person.* FROM test_person LEFT JOIN test_membership test_membership_1 ON test_person.id = test_membership_1.person_id LEFT JOIN test_group test_group_2 ON test_membership_1.group_id = test_group_2.id WHERE test_group_2.name LIKE '%tive%'",
+            "SELECT DISTINCT {$q}test_person{$q}.* FROM {$q}test_person{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_person{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}person_id{$q} LEFT JOIN {$q}test_group{$q} {$q}test_group_2{$q} ON {$q}test_membership_1{$q}.{$q}group_id{$q} = {$q}test_group_2{$q}.{$q}id{$q} WHERE {$q}test_group_2{$q}.{$q}name{$q} LIKE '%tive%'",
             Person::objects()->filter(['groups__name__contains' => 'tive'])->allSql()
         );
         $this->assertEquals(2, Person::objects()->filter(['groups__name__contains' => 'tive'])->count());
@@ -213,8 +220,9 @@ abstract class AbstractManyToManyTest extends DatabaseTest
             'role' => 'Assistant'
         ]);
 
+        $q = $this->getQuoteCharacter();
         $this->assertEquals(
-            "SELECT DISTINCT test_group.* FROM test_group LEFT JOIN test_membership test_membership_1 ON test_group.id = test_membership_1.group_id WHERE test_membership_1.role = 'Detective'",
+            "SELECT DISTINCT {$q}test_group{$q}.* FROM {$q}test_group{$q} LEFT JOIN {$q}test_membership{$q} {$q}test_membership_1{$q} ON {$q}test_group{$q}.{$q}id{$q} = {$q}test_membership_1{$q}.{$q}group_id{$q} WHERE {$q}test_membership_1{$q}.{$q}role{$q} = 'Detective'",
             Group::objects()->filter(['membership__role' => 'Detective'])->allSql()
         );
         $this->assertEquals(1, Group::objects()->filter(['membership__role' => 'Detective'])->count());
@@ -241,19 +249,21 @@ abstract class AbstractManyToManyTest extends DatabaseTest
         $this->assertEquals(1, $blogger2->subscribers->count());
         $this->assertEquals(1, $blogger3->subscribers->count());
 
+        $q = $this->getQuoteCharacter();
+        
         $this->assertEquals(
-            "SELECT test_blogger.* FROM test_blogger LEFT JOIN test_blogger_subscribes test_blogger_subscribes_1 ON test_blogger.id = test_blogger_subscribes_1.to_id WHERE (test_blogger_subscribes_1.from_id = 1) AND (test_blogger.name LIKE '%and%')",
+            "SELECT {$q}test_blogger{$q}.* FROM {$q}test_blogger{$q} LEFT JOIN {$q}test_blogger_subscribes{$q} {$q}test_blogger_subscribes_1{$q} ON {$q}test_blogger{$q}.{$q}id{$q} = {$q}test_blogger_subscribes_1{$q}.{$q}to_id{$q} WHERE ({$q}test_blogger_subscribes_1{$q}.{$q}from_id{$q} = 1) AND ({$q}test_blogger{$q}.{$q}name{$q} LIKE '%and%')",
             $blogger1->subscribes->filter(['name__contains' => 'and'])->allSql()
         );
 
         $this->assertEquals(
-            "SELECT test_blogger.* FROM test_blogger LEFT JOIN test_blogger_subscribes test_blogger_subscribes_1 ON test_blogger.id = test_blogger_subscribes_1.from_id WHERE (test_blogger_subscribes_1.to_id = 1) AND (test_blogger.name LIKE 'Rol%')",
+            "SELECT {$q}test_blogger{$q}.* FROM {$q}test_blogger{$q} LEFT JOIN {$q}test_blogger_subscribes{$q} {$q}test_blogger_subscribes_1{$q} ON {$q}test_blogger{$q}.{$q}id{$q} = {$q}test_blogger_subscribes_1{$q}.{$q}from_id{$q} WHERE ({$q}test_blogger_subscribes_1{$q}.{$q}to_id{$q} = 1) AND ({$q}test_blogger{$q}.{$q}name{$q} LIKE 'Rol%')",
             $blogger1->subscribers->filter(['name__startswith' => 'Rol'])->allSql()
         );
         $this->assertEquals(1, $blogger3->subscribers->filter(['name__startswith' => 'Rol'])->count());
 
         $this->assertEquals(
-            "SELECT DISTINCT test_blogger.* FROM test_blogger LEFT JOIN test_blogger_subscribes test_blogger_subscribes_1 ON test_blogger.id = test_blogger_subscribes_1.from_id LEFT JOIN test_blogger_subscribes test_blogger_subscribes_2 ON test_blogger.id = test_blogger_subscribes_2.from_id LEFT JOIN test_blogger test_blogger_3 ON test_blogger_subscribes_2.to_id = test_blogger_3.id WHERE (test_blogger_subscribes_1.to_id = 3) AND (test_blogger_3.name LIKE 'Eddie%')",
+            "SELECT DISTINCT {$q}test_blogger{$q}.* FROM {$q}test_blogger{$q} LEFT JOIN {$q}test_blogger_subscribes{$q} {$q}test_blogger_subscribes_1{$q} ON {$q}test_blogger{$q}.{$q}id{$q} = {$q}test_blogger_subscribes_1{$q}.{$q}from_id{$q} LEFT JOIN {$q}test_blogger_subscribes{$q} {$q}test_blogger_subscribes_2{$q} ON {$q}test_blogger{$q}.{$q}id{$q} = {$q}test_blogger_subscribes_2{$q}.{$q}from_id{$q} LEFT JOIN {$q}test_blogger{$q} {$q}test_blogger_3{$q} ON {$q}test_blogger_subscribes_2{$q}.{$q}to_id{$q} = {$q}test_blogger_3{$q}.{$q}id{$q} WHERE ({$q}test_blogger_subscribes_1{$q}.{$q}to_id{$q} = 3) AND ({$q}test_blogger_3{$q}.{$q}name{$q} LIKE 'Eddie%')",
             $blogger3->subscribers->filter(['subscribes__name__startswith' => 'Eddie'])->allSql()
         );
         $this->assertEquals(1, $blogger3->subscribers->filter(['subscribes__name__startswith' => 'Eddie'])->count());

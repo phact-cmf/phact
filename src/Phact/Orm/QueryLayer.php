@@ -127,7 +127,7 @@ class QueryLayer
     public function getQueryBuilder()
     {
         $qb = $this->getQueryBuilderRaw();
-        return $qb->from($this->getTableName());
+        return $qb->from($this->quote($this->getTableName()));
     }
 
     public function quoteValue($value)
@@ -233,7 +233,7 @@ class QueryLayer
 
     public function columnAlias($relationName, $attribute, $tableName = null)
     {
-        $key = implode('-', [$this->_model->className(), $relationName, $attribute, $tableName]);
+        $key = implode('-', [get_class($this->getQuery()->getConnection()->getDatabasePlatform()), $this->_model->className(), $relationName, $attribute, $tableName]);
         if (!isset(static::$_columnAliases[$key])) {
             if ($attribute != '*'){
                 $attribute = $this->relationColumnAttribute($relationName, $attribute);
@@ -246,7 +246,13 @@ class QueryLayer
 
     public function column($tableName, $attribute)
     {
-        return $tableName . '.' . $attribute;
+        $attribute = $this->isSafeAttribute($attribute) ? $attribute : $this->quote($attribute);
+        return $this->quote($tableName) . '.' . $attribute;
+    }
+
+    public function isSafeAttribute($attribute)
+    {
+        return $attribute == '*';
     }
 
     /**
@@ -277,9 +283,9 @@ class QueryLayer
                             $toColumn = $this->column($alias ?: $tableName, $attributeTo);
 
                             $attributes = [
-                                $currentAlias ?: $currentTable,
-                                $tableName,
-                                $alias,
+                                $this->quote($currentAlias ?: $currentTable),
+                                $this->quote($tableName),
+                                $this->quote($alias),
                                 $fromColumn . ' = ' . $toColumn
                             ];
                             $type = isset($join['type']) ? $join['type'] : 'left';
@@ -505,7 +511,7 @@ class QueryLayer
             $queryBuilder = $this->wrapQuery($queryBuilder);
         }
 
-        $queryBuilder->delete($this->getTableName());
+        $queryBuilder->delete($this->quote($this->getTableName()));
         if ($sql) {
             return $this->getSQL($queryBuilder);
         }
@@ -521,15 +527,19 @@ class QueryLayer
             $select = [$this->column($this->getTableName(), '*')];
         } else {
             $select = [];
-            foreach ($columns as $attribute) {
+            foreach ($columns as $key => $attribute) {
+                $alias = is_string($key) ? $this->quote($key) : null;
+                $item = null;
                 if ($attribute instanceof Expression) {
-                    list($value, $bindings) = $this->convertExpression($attribute);
+                    list($item, $bindings) = $this->convertExpression($attribute);
                     $this->addBindings($bindings);
-                    $select[] = $value;
                 } else {
-                    $column = $this->relationColumnAlias($attribute);
-                    $select[] = $column . ' AS ' . $attribute;
+                    $item = $this->relationColumnAlias($attribute);
+                    if (!$alias) {
+                        $alias = $this->quote($attribute);
+                    }
                 }
+                $select[] = $item . ($alias ? ' AS ' . $alias: '');
             }
         }
 
@@ -720,7 +730,8 @@ class QueryLayer
                 $column = $this->columnAlias($item['relation'], $item['field']);
                 if ($this->getQuerySet()->getHasManyRelations()) {
                     $alias = $this->_servicePrefix . implode('__', ['order', $item['relation'], $item['field']]);
-                    $queryBuilder->add('select', "{$column} as {$alias}", true);
+                    $alias = $this->quote($alias);
+                    $queryBuilder->add('select', "{$column} AS {$alias}", true);
                     $queryBuilder->addOrderBy($alias, $item['direction']);
                 } else {
                     $queryBuilder->addOrderBy($column, $item['direction']);
