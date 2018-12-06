@@ -228,6 +228,6 @@ class Session implements ArrayAccess, Countable, SessionInterface
      */
     public function count()
     {
-        count($_SESSION);
+        return count($_SESSION);
     }
 }
