@@ -110,7 +110,7 @@ class Translate
         $locale = null;
         if ($this->_localeDetector) {
             if ($this->_localeDetector instanceof LocaleDetector) {
-                $locale = $this->_localeDetector;
+                $locale = $this->_localeDetector->detect();
             } else {
                 $locale = call_user_func($this->_localeDetector);
             }
