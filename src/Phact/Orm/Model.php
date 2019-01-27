@@ -14,11 +14,13 @@ namespace Phact\Orm;
 
 use InvalidArgumentException;
 use Phact\Event\EventManager;
+use Phact\Event\EventManagerInterface;
 use Phact\Exceptions\UnknownMethodException;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
 use Phact\Main\Phact;
+use Phact\Orm\Configuration\ConfigurationProvider;
 use Phact\Orm\Fields\Field;
 use Serializable;
 
@@ -52,13 +54,15 @@ class Model implements Serializable
     }
 
     /**
-     * @return null|EventManager
-     * @throws \Phact\Exceptions\UnknownPropertyException
+     * @return null|EventManagerInterface
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
-    public static function getEventManager()
+    public static function getEventManager(): ?EventManagerInterface
     {
-        if (!self::$_eventManager && Phact::app()->hasComponent('event')) {
-            self::$_eventManager = Phact::app()->getComponent('event');
+        $configuration = ConfigurationProvider::getInstance()->getManager();
+        $eventManager = $configuration->getEventManager();
+        if (!self::$_eventManager) {
+            self::$_eventManager = $eventManager;
         }
         return self::$_eventManager;
     }

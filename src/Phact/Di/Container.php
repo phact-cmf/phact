@@ -295,11 +295,15 @@ class Container implements ContainerInterface
                 throw new ContainerException("Definition option {$option} must be an array");
             }
         }
+        if (!isset($definition['constructMethod'])) {
+            $definition['constructMethod'] = null;
+        }
         $this->_definitions[$id] = [
             'class' => $definition['class'],
             'arguments' => $definition['arguments'],
             'properties' => $definition['properties'],
-            'calls' => $definition['calls']
+            'calls' => $definition['calls'],
+            'constructMethod' => $definition['constructMethod']
         ];
         if ($this->_fullReference) {
             $this->addReferences($id, $definition['class']);
@@ -473,15 +477,20 @@ class Container implements ContainerInterface
      * Read constructor dependencies as array
      *
      * @param $className
+     * @param string $constructMethod
      * @return array
      * @throws ReflectionException
      */
-    protected function fetchConstructorDependencies($className)
+    protected function fetchConstructorDependencies($className, $constructMethod = null)
     {
         if (!isset($this->_constructors[$className])) {
             $reflection = new ReflectionClass($className);
             $dependencies = [];
-            $constructor = $reflection->getConstructor();
+            if ($constructMethod === null) {
+                $constructor = $reflection->getConstructor();
+            } else {
+                $constructor = new \ReflectionMethod($className, $constructMethod);
+            }
             if ($constructor) {
                 $dependencies = $this->fetchFunctionDependencies($constructor);
             }
@@ -562,7 +571,7 @@ class Container implements ContainerInterface
 
         $definition = $this->_definitions[$id];
         $className = $definition['class'];
-        $object = $this->make($className, $definition['arguments'], $this->_autowire);
+        $object = $this->make($className, $definition['arguments'], $definition['constructMethod'], $this->_autowire);
 
         foreach ($definition['properties'] as $name => $value) {
             $object->{$name} = $value;
@@ -709,20 +718,29 @@ class Container implements ContainerInterface
      *
      * @param string $className
      * @param array $attributes
+     * @param string $constructMethod
      * @param bool $autowire
      * @return mixed
      * @throws ContainerException
      * @throws NotFoundContainerException
      * @throws ReflectionException
      */
-    protected function make(string $className, $attributes = [], $autowire = true)
+    protected function make(string $className, $attributes = [], $constructMethod = null, $autowire = true)
     {
         $dependencies = null;
         if ($autowire) {
-            $dependencies = $this->fetchConstructorDependencies($className);
+            $dependencies = $this->fetchConstructorDependencies($className, $constructMethod);
         }
         $parameters = $this->buildParameters($attributes);
         $arguments = $this->buildFunctionArguments($dependencies, $parameters);
+
+        if ($constructMethod !== null) {
+            if ($arguments) {
+                return $className::$constructMethod(...$arguments);
+            } else {
+                return $className::$constructMethod();
+            }
+        }
 
         if ($arguments) {
             return new $className(...$arguments);

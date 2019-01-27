@@ -862,13 +862,6 @@ class QueryLayer
         return $this->_key . '#' . $type;
     }
 
-    public function getCachedQuery($type)
-    {
-        $key = $this->getCacheKey($type);
-        $cacheTimeout = Phact::app()->db->getCacheQueriesTimeout();
-        return is_null($cacheTimeout) ? null : Phact::app()->cache->get($key);
-    }
-
     /**
      * @param $queryBuilder DBALQueryBuilder
      * @return string

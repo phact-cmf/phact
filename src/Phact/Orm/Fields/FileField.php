@@ -14,12 +14,12 @@ namespace Phact\Orm\Fields;
 
 use Phact\Exceptions\InvalidAttributeException;
 use Phact\Helpers\FileHelper;
-use Phact\Main\Phact;
 use Phact\Storage\Files\StorageFile;
 use Phact\Storage\Files\File;
 use Phact\Storage\Files\FileInterface;
 use Phact\Storage\Files\LocalFile;
 use Phact\Storage\Storage;
+use Phact\Storage\StorageInterface;
 
 class FileField extends CharField
 {
@@ -59,15 +59,17 @@ class FileField extends CharField
     /** @var  string upload directory for field */
     protected $_uploadDir;
 
+    public function __construct(StorageInterface $storage)
+    {
+        $this->_storage = $storage;
+    }
+
     /**
      * @return Storage
      * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function getStorage()
     {
-        if (!$this->_storage) {
-            $this->_storage = Phact::app()->getComponent($this->storage);
-        }
         return $this->_storage;
     }
 

@@ -15,7 +15,7 @@ namespace Phact\Orm;
 
 use Phact\Exceptions\UnknownPropertyException;
 use Phact\Helpers\Configurator;
-use Phact\Main\Phact;
+use Phact\Orm\Configuration\ConfigurationProvider;
 use Phact\Orm\Fields\AutoField;
 use Phact\Orm\Fields\Field;
 
@@ -29,16 +29,20 @@ class FieldsManager
     protected $_aliases = [];
     protected $_className;
 
-
     public static function makeInstance($modelClass, $fields, $metaData = [])
     {
-        $cacheTimeout = Phact::app()->db->getCacheFieldsTimeout();
+        $configuration = ConfigurationProvider::getInstance()->getManager();
+        $cache = $configuration->getCache();
         $key = 'PHACT__FIELDS_MANAGER_' . $modelClass;
-        $manager = is_null($cacheTimeout) ? null : Phact::app()->cache->get($key);
+        $manager = null;
+        $cacheTimeout = $configuration->getCacheFieldsTimeout();
+        if ($cache && $cacheTimeout !== null) {
+            $manager = $cache->get($key);
+        }
         if (!$manager) {
             $manager = new self($modelClass, $fields, $metaData);
-            if (!is_null($cacheTimeout)) {
-                Phact::app()->cache->set($key, $manager, $cacheTimeout);
+            if ($cache && $cacheTimeout !== null) {
+                $cache->set($key, $manager, $cacheTimeout);
             }
         }
         return $manager;
@@ -76,25 +80,35 @@ class FieldsManager
         }
     }
 
-    protected function initField($name, $config)
+    protected function initField($name, $fieldConfiguration)
     {
+        list($fieldClass, $fieldConfiguration) = Configurator::split($fieldConfiguration);
+        $configuration = ConfigurationProvider::getInstance()->getManager();
+        $arguments = [];
+        if (isset($fieldConfiguration['arguments'])) {
+            $arguments = $fieldConfiguration['arguments'];
+            unset($fieldConfiguration['arguments']);
+        }
         /* @var $field \Phact\Orm\Fields\Field */
-        $field = Configurator::create($config);
+        $field = $configuration->getContainer()->construct($fieldClass, $arguments);
+        Configurator::configure($field, $fieldConfiguration);
+
         $field->setName($name);
         $field->setOwnerModelClass($this->getModelClass());
         $aliases = $field->getAliases();
         $this->mergeAliases($name, $aliases);
         $attribute = $field->getAttributeName();
+
         if ($field->pk) {
             $this->_pkField = $name;
             $this->_pkAttribute = $attribute;
         }
 
-         if ($attribute) {
+        if ($attribute) {
             $this->_attributes[$name] = $attribute;
-             if ($field->virtual) {
-                 $this->_virtualFields[$name] = $attribute;
-             }
+            if ($field->virtual) {
+                $this->_virtualFields[$name] = $attribute;
+            }
         }
 
         return $field;

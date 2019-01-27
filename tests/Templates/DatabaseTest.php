@@ -29,10 +29,9 @@ class DatabaseTest extends AppTest
         if (!isset($connections[$this->defaultConnection])) {
             $this->markTestSkipped('There is no connection '. $this->defaultConnection);
         }
-        $connectionManager->setConnections([
+        Phact::app()->getComponent('db')->setConnections([
             'default' => $connections[$this->defaultConnection]
         ]);
-        Phact::app()->setComponent('db', $connectionManager);
 
         $tableManager = new TableManager();
         $models = $this->useModels();

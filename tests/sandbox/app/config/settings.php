@@ -6,6 +6,19 @@ return [
         'Test'
     ],
     'components' => [
+        'db' => [
+            'class' => \Phact\Orm\ConnectionManager::class
+        ],
+        'orm_manager' => [
+            'class' => \Phact\Orm\Configuration\ConfigurationManager::class,
+        ],
+        'orm' => [
+            'class' => \Phact\Orm\Configuration\ConfigurationProvider::class,
+            'constructMethod' => 'getInstance',
+            'calls' => [
+                'setManager' => ['@orm_manager']
+            ]
+        ],
         'path' => [
             'class' => \Phact\Components\Path::class,
             'properties' => [
@@ -41,6 +54,7 @@ return [
     ],
     'autoloadComponents' => [
         'errorHandler',
-        'translate'
+        'translate',
+        'orm'
     ]
 ];

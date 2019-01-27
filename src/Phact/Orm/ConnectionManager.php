@@ -15,34 +15,21 @@ namespace Phact\Orm;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Phact\Exceptions\UnknownPropertyException;
-use Phact\Helpers\Configurator;
 use Phact\Helpers\SmartProperties;
 
-class ConnectionManager
+class ConnectionManager implements ConnectionManagerInterface
 {
     use SmartProperties;
 
-    protected $_settings;
     protected $_connections;
     protected $_connectionsConfig;
 
     public $defaultConnection = 'default';
 
-    public function setSettings($settings)
+    public function getDefaultConnection(): string
     {
-        $this->_settings = $settings;
-    }
-
-    public function getCacheFieldsTimeout()
-    {
-        return isset($this->_settings['cacheFieldsTimeout']) ? $this->_settings['cacheFieldsTimeout'] : null;
-    }
-
-    public function getCacheQueriesTimeout()
-    {
-        return isset($this->_settings['cacheQueriesTimeout']) ? $this->_settings['cacheQueriesTimeout'] : null;
+        return $this->defaultConnection;
     }
 
     public function setConnections($config = [])
@@ -56,10 +43,10 @@ class ConnectionManager
      * @throws UnknownPropertyException
      * @throws \Doctrine\DBAL\DBALException
      */
-    public function getConnection($name = null)
+    public function getConnection($name = null): Connection
     {
         if (!$name) {
-            $name = $this->defaultConnection;
+            $name = $this->getDefaultConnection();
         }
         if (!isset($this->_connections[$name])) {
             if (isset($this->_connectionsConfig[$name])) {

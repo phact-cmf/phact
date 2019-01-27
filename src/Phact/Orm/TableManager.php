@@ -19,6 +19,7 @@ use Doctrine\DBAL\Schema\Index;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
 use Phact\Main\Phact;
+use Phact\Orm\Configuration\ConfigurationProvider;
 use Phact\Orm\Fields\Field;
 use Phact\Orm\Fields\ManyToManyField;
 
@@ -33,6 +34,7 @@ class TableManager
      * @return bool
      * @throws \Doctrine\DBAL\DBALException
      * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function create($models = [])
     {
@@ -48,6 +50,7 @@ class TableManager
      * @return bool
      * @throws \Doctrine\DBAL\DBALException
      * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function drop($models = [], $mode = null)
     {
@@ -60,13 +63,14 @@ class TableManager
     /**
      * @param $model Model
      * @return \Doctrine\DBAL\Schema\AbstractSchemaManager
-     * @throws \Doctrine\DBAL\DBALException
-     * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function getSchemaManager($model)
     {
         $connectionName = $model->getConnectionName();
-        $connection = Phact::app()->db->getConnection($connectionName);
+        $configuration = ConfigurationProvider::getInstance()->getManager();
+        $connectionManager = $configuration->getConnectionManager();
+        $connection = $connectionManager->getConnection($connectionName);
         return $connection->getSchemaManager();
     }
 
@@ -74,6 +78,7 @@ class TableManager
      * @param $model Model
      * @throws \Doctrine\DBAL\DBALException
      * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function createModelTable($model)
     {
@@ -101,6 +106,7 @@ class TableManager
      * @param $model Model
      * @throws \Doctrine\DBAL\DBALException
      * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function createM2MTables($model)
     {
@@ -167,6 +173,7 @@ class TableManager
      * @param int $mode @deprecated
      * @throws \Doctrine\DBAL\DBALException
      * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function dropModelTable($model, $mode = null)
     {
@@ -183,8 +190,7 @@ class TableManager
     /**
      * @param $model Model
      * @param $mode @deprecated
-     * @throws \Doctrine\DBAL\DBALException
-     * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function dropM2MTables($model, $mode = null)
     {
@@ -201,8 +207,7 @@ class TableManager
 
     /**
      * @param $model Model
-     * @throws \Doctrine\DBAL\DBALException
-     * @throws \Phact\Exceptions\UnknownPropertyException
+     * @throws \Phact\Exceptions\InvalidConfigException
      */
     public function dropModelForeignKeys($model)
     {

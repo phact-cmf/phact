@@ -15,6 +15,7 @@ namespace Phact\Orm;
 use Doctrine\DBAL\ParameterType;
 use Phact\Main\Phact;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
+use Phact\Orm\Configuration\ConfigurationProvider;
 
 class Query
 {
@@ -39,8 +40,10 @@ class Query
 
     public function getConnection()
     {
+        $configuration = ConfigurationProvider::getInstance()->getManager();
+        $connectionManager = $configuration->getConnectionManager();
         $connectionName = $this->getConnectionName();
-        return Phact::app()->db->getConnection($connectionName);
+        return $connectionManager->getConnection($connectionName);
     }
 
     public function getQueryBuilder()
