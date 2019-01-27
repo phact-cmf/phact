@@ -10,11 +10,12 @@
  * @date 10/04/16 08:21
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Form;
 
 
 use Modules\Test\Forms\SimpleForm;
 use Phact\Form\Form;
+use Phact\Tests\Templates\AppTest;
 
 class SimpleTest extends AppTest
 {

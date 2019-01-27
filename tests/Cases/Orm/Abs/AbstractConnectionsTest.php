@@ -10,12 +10,13 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Abs;
 
 use Phact\Main\Phact;
 use Phact\Orm\ConnectionManager;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
 use Doctrine\DBAL\Connection as DBALConnection;
+use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractConnectionsTest extends DatabaseTest
 {

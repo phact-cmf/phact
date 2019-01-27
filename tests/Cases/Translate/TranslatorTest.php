@@ -10,10 +10,11 @@
  * @date 10/04/16 08:21
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Translate;
 
 use Modules\Test\Forms\TranslatedForm;
 use Phact\Main\Phact;
+use Phact\Tests\Templates\AppTest;
 use Phact\Translate\Translate;
 
 class TranslatorTest extends AppTest

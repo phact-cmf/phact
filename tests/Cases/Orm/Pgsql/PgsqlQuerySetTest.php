@@ -10,9 +10,11 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Pgsql;
 
-class PgsqlQuerySetTest extends QuerySetTest
+use Phact\Tests\Cases\Orm\Abs\AbstractQuerySetTest;
+
+class PgsqlQuerySetTest extends AbstractQuerySetTest
 {
     protected $defaultConnection = 'pgsql';
 }

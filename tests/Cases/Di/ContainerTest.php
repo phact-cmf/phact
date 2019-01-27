@@ -10,7 +10,7 @@
  * @date 20/09/2018 12:19
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Di;
 
 use Modules\Test\Components\ArgumentsComponent;
 use Modules\Test\Components\CrossComponent1;
@@ -25,6 +25,7 @@ use Modules\Test\Components\StandaloneComponent;
 use Modules\Test\Components\StandaloneComponentInterface;
 use Phact\Di\Container;
 use Phact\Exceptions\CircularContainerException;
+use Phact\Tests\Templates\TestCase;
 
 class ContainerTest extends TestCase
 {

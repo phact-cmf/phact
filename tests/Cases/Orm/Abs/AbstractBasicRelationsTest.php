@@ -10,7 +10,7 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Author;
 use Modules\Test\Models\Book;
@@ -19,6 +19,7 @@ use Modules\Test\Models\Membership;
 use Modules\Test\Models\Note;
 use Modules\Test\Models\NoteThesis;
 use Phact\Orm\Fields\HasManyField;
+use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractBasicRelationsTest extends DatabaseTest
 {

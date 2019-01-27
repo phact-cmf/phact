@@ -11,11 +11,15 @@
  * @date 09/04/16 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Application;
 
 use Phact\Main\Phact;
 use Phact\Request\HttpRequest;
 use Phact\Router\Router;
+use Phact\Tests\Mock\ArgumentsTestController;
+use Phact\Tests\Mock\DiTestController;
+use Phact\Tests\Mock\HttpTestRequest;
+use Phact\Tests\Templates\TestCase;
 
 class WebApplicationTest extends TestCase
 {

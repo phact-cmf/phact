@@ -11,12 +11,14 @@
  * @date 09/04/16 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Application;
 
 use Modules\Test\Commands\TestCommand;
 use Phact\Main\Phact;
 use Phact\Request\HttpRequest;
 use Phact\Router\Router;
+use Phact\Tests\Mock\CliTestRequest;
+use Phact\Tests\Templates\TestCase;
 
 class CliApplicationTest extends TestCase
 {

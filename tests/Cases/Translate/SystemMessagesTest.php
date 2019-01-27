@@ -10,9 +10,10 @@
  * @date 10/04/16 08:21
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Translate;
 
 use Phact\Main\Phact;
+use Phact\Tests\Templates\AppTest;
 use Phact\Translate\Translate;
 use Phact\Validators\EmailValidator;
 use Phact\Validators\RequiredValidator;

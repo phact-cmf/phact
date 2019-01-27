@@ -263,13 +263,16 @@ class QueryLayer
     public function processJoins($queryBuilder)
     {
         $relations = $this->getQuerySet()->getRelations();
+
         foreach ($relations as $relationName => $relation) {
             // A relation and a table on which a join is to be build
             $currentRelationName = $this->getQuerySet()->parentRelationName($relationName);
             $currentTable = $this->getRelationTable($currentRelationName);
-            $currentAlias = null;
+            $currentAlias = $this->getAlias($currentRelationName, $currentTable);
 
             if (isset($relation['joins']) && is_array($relation['joins'])) {
+
+
                 foreach ($relation['joins'] as $join) {
                     if (is_array($join)) {
                         if (isset($join['table']) && isset($join['from']) && isset($join['to'])) {
@@ -522,7 +525,6 @@ class QueryLayer
     {
         $queryBuilder = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
-
         if (!$columns) {
             $select = [$this->column($this->getTableName(), '*')];
         } else {
@@ -542,7 +544,6 @@ class QueryLayer
                 $select[] = $item . ($alias ? ' AS ' . $alias: '');
             }
         }
-
         if ($qs->getHasManyRelations() && $distinct) {
             reset($select);
             $first = key($select);

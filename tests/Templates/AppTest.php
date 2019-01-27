@@ -11,7 +11,7 @@
  * @date 09/04/16 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Templates;
 
 use Phact\Application\Application;
 use Phact\Helpers\Configurator;

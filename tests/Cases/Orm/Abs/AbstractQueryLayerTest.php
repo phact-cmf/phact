@@ -10,10 +10,11 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Note;
 use Phact\Orm\Query;
+use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractQueryLayerTest extends DatabaseTest
 {

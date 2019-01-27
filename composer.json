@@ -28,7 +28,8 @@
       "Phact\\Cache\\": "src/Phact/Cache",
       "Phact\\Log\\": "src/Phact/Log",
       "Phact\\Translate\\": "src/Phact/Translate",
-      "Phact\\Di\\": "src/Phact/Di"
+      "Phact\\Di\\": "src/Phact/Di",
+      "Phact\\Tests\\": "tests"
     },
     "files": [
       "src/dump.php"

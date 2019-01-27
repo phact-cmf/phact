@@ -10,7 +10,7 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Area;
 use Modules\Test\Models\Author;
@@ -27,6 +27,7 @@ use Phact\Orm\Having\Having;
 use Phact\Orm\Manager;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
+use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractLookupsTest extends DatabaseTest
 {

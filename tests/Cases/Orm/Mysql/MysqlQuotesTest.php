@@ -10,7 +10,9 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Mysql;
+
+use Phact\Tests\Cases\Orm\Abs\AbstractQuotesTest;
 
 class MysqlQuotesTest extends AbstractQuotesTest
 {

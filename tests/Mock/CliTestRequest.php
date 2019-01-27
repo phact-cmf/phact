@@ -10,7 +10,7 @@
  * @date 23/09/2018 13:20
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Mock;
 
 
 use Phact\Commands\Command;

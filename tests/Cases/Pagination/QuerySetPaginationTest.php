@@ -1,11 +1,12 @@
 <?php
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Pagination;
 
 
 use Modules\Test\Models\Company;
 use Phact\Orm\QuerySet;
 use Phact\Pagination\Pagination;
+use Phact\Tests\Templates\DatabaseTest;
 
 class QuerySetPaginationTest extends DatabaseTest
 {

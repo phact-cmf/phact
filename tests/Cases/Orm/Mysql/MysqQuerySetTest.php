@@ -10,8 +10,10 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Mysql;
 
-class MysqlAbstractQuerySetTest extends QuerySetTest
+use Phact\Tests\Cases\Orm\Abs\AbstractQuerySetTest;
+
+class MysqlAbstractQuerySetTest extends AbstractQuerySetTest
 {
 }

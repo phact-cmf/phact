@@ -10,7 +10,7 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Area;
 use Modules\Test\Models\Author;
@@ -20,6 +20,7 @@ use Modules\Test\Models\NoteProperty;
 use Modules\Test\Models\NotePropertyCharValue;
 use Modules\Test\Models\NotePropertyIntValue;
 use Modules\Test\Models\NoteThesis;
+use Modules\Test\Models\NoteThesisVote;
 use Phact\Orm\Aggregations\Avg;
 use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Expression;
@@ -27,14 +28,16 @@ use Phact\Orm\Having\Having;
 use Phact\Orm\Manager;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
+use Phact\Tests\Templates\DatabaseTest;
 
-abstract class QuerySetTest extends DatabaseTest
+abstract class AbstractQuerySetTest extends DatabaseTest
 {
     public function useModels()
     {
         return [
             new Note(),
             new NoteThesis(),
+            new NoteThesisVote(),
             new Author(),
             new Area(),
             new Group(),
@@ -215,6 +218,9 @@ abstract class QuerySetTest extends DatabaseTest
 
         $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'name', 'theses__name'], false, false);
         $this->assertEquals("SELECT {$q}test_note{$q}.{$q}id{$q} AS {$q}id{$q}, {$q}test_note{$q}.{$q}name{$q} AS {$q}name{$q}, {$q}test_note_thesis_1{$q}.{$q}name{$q} AS {$q}theses__name{$q} FROM {$q}test_note{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_thesis_1{$q}.{$q}note_id{$q} WHERE {$q}test_note{$q}.{$q}id{$q} = 1", $sql);
+
+        $sql = NoteThesisVote::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'rating', 'note_thesis__note__name'], false, false);
+        $this->assertEquals("SELECT {$q}test_note_thesis_vote{$q}.{$q}id{$q} AS {$q}id{$q}, {$q}test_note_thesis_vote{$q}.{$q}rating{$q} AS {$q}rating{$q}, {$q}test_note_2{$q}.{$q}name{$q} AS {$q}note_thesis__note__name{$q} FROM {$q}test_note_thesis_vote{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note_thesis_vote{$q}.{$q}note_thesis_id{$q} = {$q}test_note_thesis_1{$q}.{$q}id{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_2{$q} ON {$q}test_note_thesis_1{$q}.{$q}note_id{$q} = {$q}test_note_2{$q}.{$q}id{$q} WHERE {$q}test_note_thesis_vote{$q}.{$q}id{$q} = 1", $sql);
     }
 
     public function testChoices()

@@ -11,9 +11,10 @@
  * @date 09/04/16 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Application;
 
 use Phact\Main\Phact;
+use Phact\Tests\Templates\TestCase;
 
 class ApplicationTest extends TestCase
 {

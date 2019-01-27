@@ -10,7 +10,7 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Author;
 use Modules\Test\Models\Blogger;
@@ -18,6 +18,7 @@ use Modules\Test\Models\Book;
 use Modules\Test\Models\Group;
 use Modules\Test\Models\Membership;
 use Modules\Test\Models\Person;
+use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractManyToManyTest extends DatabaseTest
 {

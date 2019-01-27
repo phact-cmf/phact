@@ -11,7 +11,7 @@
  * @date 09/04/16 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Controller;
 
 use InvalidArgumentException;
 use Modules\Test\Controllers\TestController;
@@ -19,10 +19,11 @@ use Phact\Controller\Controller;
 use Phact\Main\Phact;
 use Phact\Request\HttpRequest;
 use Phact\Router\Router;
+use Phact\Tests\Templates\AppTest;
 
 /**
  * Class ControllerTest
- * @package Phact\Tests
+ * @package Phact\Tests\Cases
  */
 class ControllerTest extends AppTest
 {

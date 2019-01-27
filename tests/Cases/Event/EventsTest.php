@@ -11,9 +11,10 @@
  * @date 09/04/16 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Event;
 
 use Phact\Event\EventManager;
+use Phact\Tests\Templates\AppTest;
 
 class EventsTest extends AppTest
 {

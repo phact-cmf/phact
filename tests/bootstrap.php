@@ -9,9 +9,6 @@ $_SERVER['SCRIPT_FILENAME'] = __FILE__;
 // require composer autoloader if available
 $composerAutoload = __DIR__ . '/../vendor/autoload.php';
 require_once($composerAutoload);
-require_once(__DIR__ . '/Templates/TestCase.php');
-require_once(__DIR__ . '/Templates/AppTest.php');
-require_once(__DIR__ . '/Templates/DatabaseTest.php');
 
 function req($classes)
 {
@@ -20,8 +17,6 @@ function req($classes)
     }
 }
 
-req(glob(__DIR__ . '/Mock/*.php'));
-req(glob(__DIR__ . '/Abstract/**/*.php'));
 req(glob(__DIR__ . '/sandbox/app/Modules/Test/*Module.php'));
 req(glob(__DIR__ . '/sandbox/app/Modules/Test/**/*Interface.php'));
 req(glob(__DIR__ . '/sandbox/app/Modules/Test/**/*.php'));

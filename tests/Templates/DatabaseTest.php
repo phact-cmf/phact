@@ -10,7 +10,7 @@
  * @date 10/04/16 10:59
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Templates;
 
 use Phact\Main\Phact;
 use Phact\Orm\ConnectionManager;

@@ -11,12 +11,13 @@
  * @date 09/04/16 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Router;
 
 use InvalidArgumentException;
 use Phact\Helpers\Paths;
 use Phact\Main\Phact;
 use Phact\Router\Router;
+use Phact\Tests\Templates\AppTest;
 
 class RouterTest extends AppTest
 {

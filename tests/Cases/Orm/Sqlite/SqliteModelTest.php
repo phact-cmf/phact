@@ -10,7 +10,9 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Orm\Sqlite;
+
+use Phact\Tests\Cases\Orm\Abs\AbstractModelTest;
 
 class SqliteModelTest extends AbstractModelTest
 {

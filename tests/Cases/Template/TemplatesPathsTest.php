@@ -10,11 +10,12 @@
  * @date 10/04/16 08:21
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Template;
 
 
 use Phact\Main\Phact;
 use Phact\Template\TemplateManager;
+use Phact\Tests\Templates\AppTest;
 
 class TemplatesPathsTest extends AppTest
 {

@@ -1,8 +1,9 @@
 <?php
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Pagination;
 
 use Phact\Pagination\Pagination;
+use Phact\Tests\Templates\AppTest;
 
 class ArrayPaginationTest extends AppTest
 {

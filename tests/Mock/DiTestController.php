@@ -10,7 +10,7 @@
  * @date 23/09/2018 11:26
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Mock;
 
 
 use Phact\Controller\Controller;

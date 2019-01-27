@@ -10,11 +10,12 @@
  * @date 10/04/16 08:21
  */
 
-namespace Phact\Tests;
+namespace Phact\Tests\Cases\Form;
 
 use Modules\Test\Forms\CompanyDefaultForm;
 use Modules\Test\Forms\CompanyFoundedForm;
 use Modules\Test\Models\Company;
+use Phact\Tests\Templates\DatabaseTest;
 
 class ModelOptionsTest extends DatabaseTest
 {
