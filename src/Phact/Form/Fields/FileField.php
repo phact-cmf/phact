@@ -8,17 +8,14 @@
 
 namespace Phact\Form\Fields;
 
-
 use Phact\Form\ModelForm;
 use Phact\Helpers\FileHelper;
-use Phact\Main\Phact;
 use Phact\Storage\Files\StorageFile;
 use Phact\Storage\Files\UploadedFile;
 use Phact\Validators\UploadFileValidator;
 
 class FileField extends Field
 {
-
     /**
      * @var array accept mime types of file. HTML5 attribute in field
      * See more at Phact\Helpers\FileHelper line 543.
@@ -31,7 +28,6 @@ class FileField extends Field
     public $maxSize;
 
     public $inputTemplate = 'forms/field/file/input.tpl';
-
 
     public function setDefaultValidators()
     {
@@ -134,7 +130,7 @@ class FileField extends Field
         /** @var StorageFile $value */
         $value = $this->getValue();
         if ($value instanceof StorageFile) {
-            return Phact::app()->getComponent($value->storage)->getUrl($value->getPath());
+            return $value->getStorageSystem()->getUrl($value->getPath());
         }
 
         return null;

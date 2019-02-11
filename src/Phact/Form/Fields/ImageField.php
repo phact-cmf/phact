@@ -9,7 +9,6 @@
 namespace Phact\Form\Fields;
 
 
-use Phact\Main\Phact;
 use Phact\Storage\Files\StorageFile;
 use Phact\Storage\StorageInterface;
 use Phact\Validators\ImageValidator;
@@ -28,14 +27,12 @@ class ImageField extends FileField
     {
         parent::setDefaultValidators();
         $this->_validators[] = new ImageValidator($this->accept, $this->maxSize);
-
     }
 
     public function getOriginalImage()
     {
         return $this->getCurrentFileUrl();
     }
-
 
     public function getSizeImage()
     {
@@ -55,7 +52,7 @@ class ImageField extends FileField
                 $path = $value->getPath();
             }
 
-            return Phact::app()->getComponent($value->storage)->getUrl($path);
+            return $value->getStorageSystem()->getUrl($path);
         }
     }
 }

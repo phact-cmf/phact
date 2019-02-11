@@ -12,6 +12,7 @@
 
 namespace Phact\Form;
 
+use Phact\Form\Configuration\ConfigurationProvider;
 use Phact\Form\Fields\Field;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\Configurator;
@@ -90,10 +91,20 @@ abstract class Form
     {
         if (is_null($this->_initFields)) {
             $this->_initFields = [];
-            foreach ($this->getFieldsConfigs() as $name => $fieldConfig) {
+            foreach ($this->getFieldsConfigs() as $name => $fieldConfiguration) {
                 if (!in_array($name, $this->exclude)) {
                     /** @var Field $field */
-                    $field = Configurator::create(array_merge($fieldConfig, [
+
+                    list($fieldClass, $fieldConfiguration) = Configurator::split($fieldConfiguration);
+
+                    $configuration = ConfigurationProvider::getInstance()->getManager();
+                    $arguments = [];
+                    if (isset($fieldConfiguration['arguments'])) {
+                        $arguments = $fieldConfiguration['arguments'];
+                        unset($fieldConfiguration['arguments']);
+                    }
+                    $field = $configuration->getContainer()->construct($fieldClass, $arguments);
+                    Configurator::configure($field, array_merge($fieldConfiguration, [
                         'form' => $this,
                         'name' => $name
                     ]));

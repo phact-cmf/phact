@@ -9,6 +9,16 @@ return [
         'db' => [
             'class' => \Phact\Orm\ConnectionManager::class
         ],
+        'form_manager' => [
+            'class' => \Phact\Form\Configuration\ConfigurationManager::class,
+        ],
+        'form' => [
+            'class' => \Phact\Form\Configuration\ConfigurationProvider::class,
+            'constructMethod' => 'getInstance',
+            'calls' => [
+                'setManager' => ['@form_manager']
+            ]
+        ],
         'orm_manager' => [
             'class' => \Phact\Orm\Configuration\ConfigurationManager::class,
         ],
@@ -55,6 +65,7 @@ return [
     'autoloadComponents' => [
         'errorHandler',
         'translate',
+        'form',
         'orm'
     ]
 ];
