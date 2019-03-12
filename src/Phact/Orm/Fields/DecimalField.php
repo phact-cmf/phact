@@ -47,7 +47,7 @@ class DecimalField extends NumericField
 
     public function mainSqlType()
     {
-        return "DECIMAL({$this->precision}, {$this->scale})";
+        return "decimal({$this->precision}, {$this->scale})";
     }
 
     /**
@@ -55,7 +55,7 @@ class DecimalField extends NumericField
      */
     public function getType()
     {
-        return "DECIMAL";
+        return "decimal";
     }
 
     public function getColumnOptions()
