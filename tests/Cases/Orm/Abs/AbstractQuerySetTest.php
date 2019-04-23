@@ -442,4 +442,27 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertEquals("SELECT {$q}test_note{$q}.* FROM {$q}test_note{$q} LEFT JOIN {$q}test_note_property_char_value{$q} {$q}test_note_property_char_value_1{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_property_char_value_1{$q}.{$q}note_id{$q} LEFT JOIN {$q}test_note_property_int_value{$q} {$q}test_note_property_int_value_2{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_property_int_value_2{$q}.{$q}note_id{$q} LEFT JOIN {$q}test_note_property_int_value{$q} {$q}test_note_property_int_value_3{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_property_int_value_3{$q}.{$q}note_id{$q} WHERE (({$q}test_note_property_char_value_1{$q}.{$q}note_property_id{$q} = 1) AND ({$q}test_note_property_char_value_1{$q}.{$q}value{$q} = 'Some description for first note')) AND (({$q}test_note_property_int_value_2{$q}.{$q}note_property_id{$q} = 2) AND ({$q}test_note_property_int_value_2{$q}.{$q}value{$q} = 3)) AND (({$q}test_note_property_int_value_3{$q}.{$q}note_property_id{$q} = 10) AND ({$q}test_note_property_int_value_3{$q}.{$q}value{$q} = 10))", $sql);
         $this->assertEquals(0, count($qs->all()));
     }
+
+    public function testWith()
+    {
+        $q = $this->getQuoteCharacter();
+
+        $note = new Note();
+        $note->name = 'new note';
+        $note->save();
+
+        $thesis = new NoteThesis();
+        $thesis->name = 'new thesis';
+        $thesis->note = $note;
+        $thesis->save();
+
+        $qs = NoteThesis::objects()->with(['note']);
+        $sql = $qs->getSql();
+
+        $this->assertEquals("SELECT {$q}test_note_thesis{$q}.*, {$q}test_note_1{$q}.{$q}name{$q} AS {$q}note__name{$q}, {$q}test_note_1{$q}.{$q}id{$q} AS {$q}note__id{$q} FROM {$q}test_note_thesis{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_1{$q} ON {$q}test_note_thesis{$q}.{$q}note_id{$q} = {$q}test_note_1{$q}.{$q}id{$q}", $sql);
+
+        $all = $qs->all();
+
+        $this->assertEquals(1, count($all));
+    }
 }
