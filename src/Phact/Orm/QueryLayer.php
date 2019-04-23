@@ -420,8 +420,9 @@ class QueryLayer
             $table = $this->getRelationTable($relationName);
             $relationModel = $this->getRelationModel($relationName);
             $attributes = $relationModel->getFieldsManager()->getDbAttributesList();
+            $alias = $this->getAlias($relationName, $table);
             foreach ($attributes as $attribute) {
-                $select[$this->column($table, $attribute)] = $relationName . '__' . $attribute;
+                $select[$this->column($alias, $attribute)] = $this->quote($relationName . '__' . $attribute);
             }
         }
         return $select;
