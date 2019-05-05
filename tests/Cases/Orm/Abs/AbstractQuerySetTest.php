@@ -14,6 +14,7 @@ namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Area;
 use Modules\Test\Models\Author;
+use Modules\Test\Models\Book;
 use Modules\Test\Models\Group;
 use Modules\Test\Models\Note;
 use Modules\Test\Models\NoteProperty;
@@ -39,6 +40,7 @@ abstract class AbstractQuerySetTest extends DatabaseTest
             new NoteThesis(),
             new NoteThesisVote(),
             new Author(),
+            new Book(),
             new Area(),
             new Group(),
             new NoteProperty(),
@@ -221,6 +223,9 @@ abstract class AbstractQuerySetTest extends DatabaseTest
 
         $sql = NoteThesisVote::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['id', 'rating', 'note_thesis__note__name'], false, false);
         $this->assertEquals("SELECT {$q}test_note_thesis_vote{$q}.{$q}id{$q} AS {$q}id{$q}, {$q}test_note_thesis_vote{$q}.{$q}rating{$q} AS {$q}rating{$q}, {$q}test_note_2{$q}.{$q}name{$q} AS {$q}note_thesis__note__name{$q} FROM {$q}test_note_thesis_vote{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note_thesis_vote{$q}.{$q}note_thesis_id{$q} = {$q}test_note_thesis_1{$q}.{$q}id{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_2{$q} ON {$q}test_note_thesis_1{$q}.{$q}note_id{$q} = {$q}test_note_2{$q}.{$q}id{$q} WHERE {$q}test_note_thesis_vote{$q}.{$q}id{$q} = 1", $sql);
+
+        $sql = Note::objects()->getQuerySet()->filter(['pk' => 1])->valuesSql(['*']);
+        $this->assertEquals("SELECT {$q}test_note{$q}.* FROM {$q}test_note{$q} WHERE {$q}test_note{$q}.{$q}id{$q} = 1", $sql);
     }
 
     public function testChoices()
@@ -349,7 +354,7 @@ abstract class AbstractQuerySetTest extends DatabaseTest
             "theses#1__id" => $thesis1->id, "theses#1__name" => $thesis1->name,
             "theses#2__id" => $thesis2->id, "theses#2__name" => $thesis2->name
         ]);
-        $sql = $qs->allSql();
+        $sql = $qs->getQuerySet()->allSql();
         $this->assertEquals("SELECT DISTINCT {$q}test_note{$q}.* FROM {$q}test_note{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_thesis_1{$q}.{$q}note_id{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_2{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_thesis_2{$q}.{$q}note_id{$q} WHERE ({$q}test_note_thesis_1{$q}.{$q}id{$q} = 1) AND ({$q}test_note_thesis_1{$q}.{$q}name{$q} = 'First thesis') AND ({$q}test_note_thesis_2{$q}.{$q}id{$q} = 2) AND ({$q}test_note_thesis_2{$q}.{$q}name{$q} = 'Second thesis')", $sql);
         $this->assertEquals(1, count($qs->all()));
     }
@@ -443,7 +448,7 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertEquals(0, count($qs->all()));
     }
 
-    public function testWith()
+    public function testWithAll()
     {
         $q = $this->getQuoteCharacter();
 
@@ -451,18 +456,219 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $note->name = 'new note';
         $note->save();
 
+        $secondNote = new Note();
+        $secondNote->name = 'second note';
+        $secondNote->save();
+
+
         $thesis = new NoteThesis();
         $thesis->name = 'new thesis';
         $thesis->note = $note;
         $thesis->save();
 
-        $qs = NoteThesis::objects()->with(['note']);
-        $sql = $qs->getSql();
+        $secondThesis = new NoteThesis();
+        $secondThesis->name = 'new thesis';
+        $secondThesis->note = $secondNote;
+        $secondThesis->save();
 
-        $this->assertEquals("SELECT {$q}test_note_thesis{$q}.*, {$q}test_note_1{$q}.{$q}name{$q} AS {$q}note__name{$q}, {$q}test_note_1{$q}.{$q}id{$q} AS {$q}note__id{$q} FROM {$q}test_note_thesis{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_1{$q} ON {$q}test_note_thesis{$q}.{$q}note_id{$q} = {$q}test_note_1{$q}.{$q}id{$q}", $sql);
+//        $qs = NoteThesis::objects()->with(['note']);
+//        $sql = $qs->getSql();
+//
+//        $this->assertEquals("SELECT {$q}test_note_thesis{$q}.*, {$q}test_note_1{$q}.{$q}name{$q} AS {$q}note__name{$q}, {$q}test_note_1{$q}.{$q}id{$q} AS {$q}note__id{$q} FROM {$q}test_note_thesis{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_1{$q} ON {$q}test_note_thesis{$q}.{$q}note_id{$q} = {$q}test_note_1{$q}.{$q}id{$q}", $sql);
+//
+//        $all = $qs->all();
+//
+//        $this->assertEquals(1, count($all));
+
+        $vote = new NoteThesisVote();
+        $vote->rating = 10;
+        $vote->note_thesis = $thesis;
+        $vote->save();
+
+        $qs = NoteThesisVote::objects()->with([
+            'note_thesis__note__theses'
+        ]);
+        $sql = $qs->getSql();
+        $this->assertEquals("SELECT {$q}test_note_thesis_vote{$q}.*, {$q}test_note_thesis_1{$q}.{$q}name{$q} AS {$q}note_thesis__name{$q}, {$q}test_note_thesis_1{$q}.{$q}note_id{$q} AS {$q}note_thesis__note_id{$q}, {$q}test_note_thesis_1{$q}.{$q}id{$q} AS {$q}note_thesis__id{$q}, {$q}test_note_2{$q}.{$q}name{$q} AS {$q}note_thesis__note__name{$q}, {$q}test_note_2{$q}.{$q}id{$q} AS {$q}note_thesis__note__id{$q} FROM {$q}test_note_thesis_vote{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note_thesis_vote{$q}.{$q}note_thesis_id{$q} = {$q}test_note_thesis_1{$q}.{$q}id{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_2{$q} ON {$q}test_note_thesis_1{$q}.{$q}note_id{$q} = {$q}test_note_2{$q}.{$q}id{$q}", $sql);
 
         $all = $qs->all();
 
-        $this->assertEquals(1, count($all));
+        $thesisWith = $all[0]->getWithData('note_thesis');
+        $this->assertInstanceOf(NoteThesis::class, $thesisWith);
+        $this->assertEquals('new thesis', $thesisWith->name);
+
+        $noteWith = $thesisWith->getWithData('note');
+        $this->assertInstanceOf(Note::class, $noteWith);
+        $this->assertEquals('new note', $noteWith->name);
+
+        $theses = $noteWith->getWithData('theses');
+        $this->assertCount(1, $theses);
+        $this->assertInstanceOf(NoteThesis::class, $theses[0]);
+        $this->assertEquals('new thesis', $theses[0]->name);
+
+        $book = new Book();
+        $book->name = 'New book';
+        $book->save();
+
+        $secondBook = new Book();
+        $secondBook->name = 'Second book';
+        $secondBook->save();
+
+        $newSecondBook = new Book();
+        $newSecondBook->name = 'New Second book';
+        $newSecondBook->save();
+
+        $author = new Author();
+        $author->name = 'New author';
+        $author->books = [$book, $newSecondBook];
+        $author->save();
+
+        $secondAuthor = new Author();
+        $secondAuthor->name = 'Second author';
+        $secondAuthor->books = [$secondBook];
+        $secondAuthor->save();
+
+        $authors = Author::objects()->order(['name'])->with(['books'])->all();
+
+        $books = $authors[0]->getWithData('books');
+        $this->assertCount(2, $books);
+        $this->assertInstanceOf(Book::class, $books[0]);
+
+        $books = $authors[1]->getWithData('books');
+        $this->assertCount(1, $books);
+        $this->assertInstanceOf(Book::class, $books[0]);
+        $this->assertEquals('Second book', $books[0]->name);
+    }
+
+    public function testWithValues()
+    {
+        $q = $this->getQuoteCharacter();
+
+        $note = new Note();
+        $note->name = 'new note';
+        $note->save();
+
+        $secondNote = new Note();
+        $secondNote->name = 'second note';
+        $secondNote->save();
+
+        $thesis = new NoteThesis();
+        $thesis->name = 'new thesis';
+        $thesis->note = $note;
+        $thesis->save();
+
+        $secondThesis = new NoteThesis();
+        $secondThesis->name = 'new thesis second';
+        $secondThesis->note = $secondNote;
+        $secondThesis->save();
+
+        $qs = NoteThesis::objects()->with(['note']);
+        $values = $qs->values();
+
+        $this->assertEquals([
+            [
+                'id' => '1',
+                'note_id' => '1',
+                'name' => 'new thesis',
+                'note' => [
+                    'id' => '1',
+                    'name' => 'new note'
+                ]
+            ],
+            [
+                'id' => '2',
+                'note_id' => '2',
+                'name' => 'new thesis second',
+                'note' => [
+                    'id' => '2',
+                    'name' => 'second note'
+                ]
+            ]
+        ],$values);
+
+        $vote = new NoteThesisVote();
+        $vote->rating = 10;
+        $vote->note_thesis = $thesis;
+        $vote->save();
+
+        $qs = NoteThesisVote::objects()->with([
+            'note_thesis__note__theses'
+        ]);
+        $values = $qs->values();
+
+        $this->assertEquals([
+            [
+                'id' => '1',
+                'rating' => '10',
+                'note_thesis_id' => '1',
+                'note_thesis' => [
+                    'id' => '1',
+                    'note_id' => '1',
+                    'name' => 'new thesis',
+                    'note' => [
+                        'id' => '1',
+                        'name' => 'new note',
+                        'theses' => [
+                            [
+                                'id' => '1',
+                                'note_id' => '1',
+                                'name' => 'new thesis',
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+        ], $values);
+
+        $book = new Book();
+        $book->name = 'New book';
+        $book->save();
+
+        $secondBook = new Book();
+        $secondBook->name = 'Second book';
+        $secondBook->save();
+
+        $newSecondBook = new Book();
+        $newSecondBook->name = 'New Second book';
+        $newSecondBook->save();
+
+        $author = new Author();
+        $author->name = 'New author';
+        $author->books = [$book, $newSecondBook];
+        $author->save();
+
+        $secondAuthor = new Author();
+        $secondAuthor->name = 'Second author';
+        $secondAuthor->books = [$secondBook];
+        $secondAuthor->save();
+
+        $authors = Author::objects()->order(['name'])->with(['books'])->values();
+
+        $this->assertEquals([
+            [
+                'id' => '1',
+                'name' => 'New author',
+                'books' => [
+                    [
+                        'id' => '1',
+                        'name' => 'New book',
+                    ],
+                    [
+                        'id' => '3',
+                        'name' => 'New Second book',
+                    ],
+                ],
+            ],
+            [
+                'id' => '2',
+                'name' => 'Second author',
+                'books' => [
+                    [
+                        'id' => '2',
+                        'name' => 'Second book',
+                    ],
+                ],
+            ],
+        ], $authors);
     }
 }

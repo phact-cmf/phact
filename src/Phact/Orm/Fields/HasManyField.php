@@ -11,8 +11,11 @@
  */
 
 namespace Phact\Orm\Fields;
+
 use Phact\Helpers\Configurator;
 use Phact\Orm\HasManyManager;
+use Phact\Orm\FieldManagedInterface;
+use Phact\Orm\Manager;
 
 /**
  * Class HasManyField
@@ -22,7 +25,7 @@ use Phact\Orm\HasManyManager;
  *
  * @package Phact\Orm\Fields
  */
-class HasManyField extends RelationField
+class HasManyField extends RelationField implements FieldManagedInterface
 {
     protected $_to = null;
     protected $_from = 'id';
@@ -95,15 +98,16 @@ class HasManyField extends RelationField
         return $this->getManager();
     }
 
-    public function getManager()
+    public function getManager(): Manager
     {
         $relationModel = $this->getRelationModel();
         $manager = new $this->managerClass($relationModel);
 
         return Configurator::configure($manager, [
-            'to'=>$this->getTo(),
-            'from'=>$this->getFrom(),
-            'ownerModel'=>$this->getModel()
+            'name' => $this->name,
+            'toField' => $this->getTo(),
+            'fromField' => $this->getFrom(),
+            'ownerModel' => $this->getModel()
         ]);
     }
 }

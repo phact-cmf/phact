@@ -10,8 +10,10 @@ namespace Phact\Orm;
 
 use InvalidArgumentException;
 
-class ManyToManyManager extends RelationManager
+class ManyToManyManager extends RelationManager implements RelationBatchInterface
 {
+    use FetchPreselectedWithTrait;
+
     /** @var Model field owner */
     public $ownerModel;
 
@@ -65,9 +67,27 @@ class ManyToManyManager extends RelationManager
      */
     public $fieldName;
 
-    public function getQuerySet()
+    public function nextManager(QuerySet $querySet): Manager
     {
-        $qs = parent::getQuerySet();
+        /** @var self $next */
+        $next = parent::nextManager($querySet);
+        $next->ownerModel = $this->ownerModel;
+        $next->backField = $this->backField;
+        $next->backThroughName = $this->backThroughName;
+        $next->backThroughField = $this->backThroughField;
+        $next->through = $this->through;
+        $next->throughTable = $this->throughTable;
+        $next->throughFromField = $this->throughFromField;
+        $next->throughToField = $this->throughToField;
+        $next->toField = $this->toField;
+        $next->fromField = $this->fromField;
+        $next->fieldName = $this->fieldName;
+        return $next;
+    }
+
+    public function createQuerySet()
+    {
+        $qs = parent::createQuerySet();
 
         if ($this->backThroughName && $this->backThroughField) {
             $qs->filter([
@@ -86,6 +106,42 @@ class ManyToManyManager extends RelationManager
         }
 
         return $qs;
+    }
+    /**
+     * Filter batch for multiple outer identifiers
+     *
+     * @param array $outerIds
+     * @return Manager
+     */
+    public function filterBatch(array $outerIds = []): Manager
+    {
+        $qs = parent::createQuerySet();
+
+        if ($this->backThroughName && $this->backThroughField) {
+            $qs->filter([
+                $this->backThroughName . '__' . $this->backThroughField . '__in' => $outerIds
+            ]);
+        } else {
+            $relationName = $this->getRelationName();
+            $qs->appendRelation($relationName, null, [[
+                'table' => $this->throughTable,
+                'from' => $this->toField,
+                'to' => $this->throughToField
+            ]]);
+            $qs->filter([
+                $relationName . '__' . $this->throughFromField . '__in' => $outerIds
+            ]);
+        }
+
+        return $this->nextManager($qs);
+    }
+
+    protected function getFilterAttribute()
+    {
+        if ($this->backThroughName && $this->backThroughField) {
+            return $this->backThroughName . '__' . $this->backThroughField;
+        }
+        return $this->getRelationName() . '__' . $this->throughFromField;
     }
 
     public function getKey()
@@ -213,5 +269,42 @@ class ManyToManyManager extends RelationManager
     public function getQuery()
     {
         return $this->getModel()->getQuery();
+    }
+
+    /**
+     * Attribute for matching outer model
+     *
+     * Example: Outer model is User, current model is Order
+     * Inner attribute is `user_id` (FK attribute in model Order), outer attribute is `id` (Primary key for model User)
+     *
+     * @return mixed
+     */
+    public function getOuterAttribute(): string
+    {
+        return $this->fromField;
+    }
+
+    /**
+     * Attribute for matching inner model
+     *
+     * See example above
+     *
+     * @return mixed
+     */
+    public function getInnerAttribute(): string
+    {
+        return $this->getFilterAttribute();
+    }
+
+    /**
+     * Additional selection attributes
+     *
+     * Useful for m2m relations
+     *
+     * @return string[]
+     */
+    public function getAdditionalAttributes(): array
+    {
+        return [$this->getFilterAttribute()];
     }
 }

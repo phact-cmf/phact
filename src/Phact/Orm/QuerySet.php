@@ -14,12 +14,14 @@ namespace Phact\Orm;
 
 use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
+use Phact\Helpers\Text;
 use Phact\Orm\Aggregations\Aggregation;
 use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Aggregations\Max;
 use Phact\Orm\Aggregations\Min;
 use Phact\Orm\Aggregations\Avg;
 use Phact\Orm\Aggregations\Sum;
+use Phact\Orm\Fields\ForeignField;
 use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Fields\RelationField;
 use Phact\Orm\Having\Having;
@@ -33,7 +35,7 @@ use Phact\Pagination\PaginableInterface;
  *
  * @package Phact\Orm
  */
-class QuerySet implements PaginableInterface
+class QuerySet implements PaginableInterface, QuerySetInterface
 {
     use SmartProperties;
 
@@ -129,10 +131,15 @@ class QuerySet implements PaginableInterface
     /**
      * With relations
      *
-     * @var array
+     * @var With[]
      */
-
     protected $_with = [];
+
+    /**
+     * With FK relations names
+     * @var string[]
+     */
+    protected $_withFk = [];
 
     protected $_aliases = [];
 
@@ -142,6 +149,11 @@ class QuerySet implements PaginableInterface
     protected function nextQuerySet()
     {
         return clone $this;
+    }
+
+    public function getQuerySet()
+    {
+        return $this;
     }
 
     public function getModel()
@@ -186,12 +198,12 @@ class QuerySet implements PaginableInterface
         self::$_lookupManager = $lookup;
     }
 
-    public function createModel($row)
+    public function createModel($row, $modelClass = null)
     {
-        $modelClass = $this->_modelClass;
+        $modelClass = $modelClass ?: $this->_modelClass;
         /* @var $model Model */
         $model = new $modelClass;
-        $model->setDbData($row, $this->_with);
+        $model->setDbData($row);
         return $model;
     }
 
@@ -212,7 +224,8 @@ class QuerySet implements PaginableInterface
     public function all()
     {
         $data = $this->getQueryLayer()->all();
-        return $this->createModels($data);
+        $this->postProcessing($data, true);
+        return $data;
     }
 
     public function allSql()
@@ -271,6 +284,7 @@ class QuerySet implements PaginableInterface
             }
             return $result;
         }
+        $this->postProcessing($data, false);
         return $data;
     }
 
@@ -657,7 +671,7 @@ class QuerySet implements PaginableInterface
         }
         if ($value instanceof Expression) {
             $value = $this->handleExpression($value);
-        } elseif ($value instanceof QuerySet) {
+        } elseif ($value instanceof QuerySetInterface) {
             $value = new Expression("({$value->allSql()})");
         }elseif ($value instanceof Model) {
             $value = $value->getPk();
@@ -717,7 +731,9 @@ class QuerySet implements PaginableInterface
     
     public function buildWith()
     {
-        foreach ($this->_with as $relation) {
+        $this->_withFk = $this->buildWithFkRelations($this->getModel(), $this->getWith());
+        $this->_withFk = array_unique($this->_withFk);
+        foreach ($this->getWithFkRelations() as $relation) {
             $this->connectRelation($relation);
         }
     }
@@ -884,23 +900,84 @@ class QuerySet implements PaginableInterface
      */
     public function with($with = [])
     {
-        $this->_with = array_merge($this->_with, $with);
+        $this->_with = array_merge($this->_with, $this->normalizeWith($with));
         return $this;
     }
 
+    /**
+     * @return With[]
+     */
     public function getWith()
     {
         return $this->_with;
     }
-    
-    public function setPaginationLimit($limit)
+
+    protected function normalizeWith($with = [])
     {
-        $this->limit($limit);
+        $normalized = [];
+        foreach ($with as $item) {
+            if ($item instanceof With) {
+                $normalized[] = $item;
+            } elseif (is_string($item)) {
+                $exploded = explode('__', $item);
+                $prevWith = null;
+                $newWith = null;
+                foreach (array_reverse($exploded) as $withItem) {
+                    $withItemExploded = explode('->', $withItem);
+                    $relationName = $withItemExploded[0];
+                    $namedSelection = $withItemExploded[1] ?? null;
+                    $newWith = new With($relationName);
+                    if ($namedSelection) {
+                        $newWith->setNamedSelection($namedSelection);
+                    }
+                    if ($prevWith) {
+                        $newWith->setWith([$prevWith]);
+                    }
+                    $prevWith = $newWith;
+                }
+                $normalized[] = $newWith;
+            }
+        }
+        return $normalized;
     }
 
-    public function setPaginationOffset($offset)
+    public function getWithFkRelations()
     {
-        $this->offset($offset);
+        return $this->_withFk;
+    }
+
+    /**
+     * @param With[] $with
+     * @return array
+     */
+    public function buildWithFkRelations(Model $model, $with = [], $prefix = '')
+    {
+        $relations = [];
+        foreach ($with as $item) {
+            if (
+                ($field = $model->getField($item->getRelationName())) &&
+                ($field instanceof ForeignField) &&
+                ($relationModel = $field->getRelationModel())
+            ) {
+                $relationName = $prefix . $item->getRelationName();
+                $relations[] = $relationName;
+                $subRelations = $this->buildWithFkRelations($relationModel, $item->getWith(), $relationName . '__');
+                if ($subRelations) {
+                    $relations = array_merge($relations, $subRelations);
+                }
+            }
+        }
+        return $relations;
+    }
+    
+    public function setPaginationLimit($limit): PaginableInterface
+    {
+        return $this->limit($limit);
+    }
+
+    public function setPaginationOffset($offset): PaginableInterface
+    {
+        return $this->offset($offset);
     }
 
     public function getPaginationTotal()
@@ -910,10 +987,111 @@ class QuerySet implements PaginableInterface
 
     public function getPaginationData($dataType = null)
     {
-        if ($dataType == 'raw') {
+        if ($dataType === 'raw') {
             return $this->values();
-        } else {
-            return $this->all();
+        }
+        return $this->all();
+    }
+
+    protected function postProcessing(&$data, $makeModels = false)
+    {
+        $with = $this->getQuerySet()->getWith();
+        $this->postProcessingWith($data, $data, $this->getModel(), $makeModels, $with);
+        if ($makeModels) {
+            foreach ($data as &$ownerModel) {
+                $ownerModel = $this->createModel($ownerModel);
+            }
+        }
+    }
+
+    /**
+     * @param With[] $with
+     */
+    protected function postProcessingWith(&$rawFetch, &$ownerModels, $model, $makeModels = false, array $with = [], array $path = [])
+    {
+        foreach ($with as $item) {
+            /** @var RelationField $field */
+            if ($field = $model->getField($item->getRelationName())) {
+                $data = [];
+                $path[] = $item->getRelationName();
+                $relation = implode('__', $path);
+                $relationModel = $field->getRelationModel();
+                $relationModelClass = $field->getRelationModelClass();
+
+                if ($field instanceof ForeignField) {
+                    // Handle foreign connections
+
+                    // Fetch model data from existing fetch
+                    foreach ($rawFetch as &$row) {
+                        $withModel = [];
+                        foreach ($row as $name => $value) {
+                            // Avoid multi-connections issues
+                            // Example: note__name, note__thesis__name
+                            if (
+                                Text::startsWith($name, $relation . '__') &&
+                                ($fieldName = str_replace($relation . '__', '', $name)) &&
+                                (strpos($fieldName, '__') === false)
+                            ) {
+                                $withModel[$fieldName] = $value;
+                                unset($row[$name]);
+                            }
+                        }
+                        $data[] = $withModel;
+                    }
+
+                    // Process sub-with
+                    $this->postProcessingWith($rawFetch, $data, $relationModel, $makeModels, $item->getWith(), $path);
+
+                    // Matching
+                    foreach ($ownerModels as $i => &$ownerModel) {
+                        // Fill models
+                        $ownerModel[$item->getKey()] = $makeModels ? $this->createModel($data[$i], $relationModelClass) : $data[$i];
+                    }
+                } elseif (($field instanceof FieldManagedInterface) && ($manager = $field->getManager()) && ($manager instanceof RelationBatchInterface)) {
+                    // Handle has-many and many-to-many connections
+
+                    // Prepare and do query
+                    $outerAttribute = $manager->getOuterAttribute();
+                    $outerIds = array_map(function($item) use ($outerAttribute) {
+                        return $item[$outerAttribute] ?? null;
+                    }, $ownerModels);
+
+                    /** @var QuerySetInterface $qs */
+                    $qs = $manager->filterBatch(array_filter($outerIds))->with($item->getWith());
+                    if ($name = $item->getNamedSelection()) {
+                        $qs = $qs->processNamedSelection($name);
+                    }
+                    $values = $item->getValues() ?: ['*'];
+                    $additonalAttributes = $manager->getAdditionalAttributes();
+                    $values = array_merge($values, $additonalAttributes);
+                    $data = $qs->values($values);
+
+                    // Matching
+                    foreach ($ownerModels as $i => &$ownerModel) {
+                        $dataModels = [];
+                        foreach ($data as $dataItem) {
+                            if (
+                                isset($dataItem[$manager->getInnerAttribute()]) &&
+                                isset($ownerModel[$manager->getOuterAttribute()]) &&
+                                $ownerModel[$manager->getOuterAttribute()] == $dataItem[$manager->getInnerAttribute()]
+                            ) {
+                                if ($additonalAttributes) {
+                                    $cleanItem = [];
+                                    foreach ($dataItem as $key => $value) {
+                                        if (!in_array($key, $additonalAttributes)) {
+                                            $cleanItem[$key] = $value;
+                                        }
+                                    }
+                                    $dataItem = $cleanItem;
+                                }
+                                $dataModels[] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                            }
+                        }
+                        // Fill models
+                        $ownerModel[$item->getKey()] = $dataModels;
+                    }
+                }
+            }
         }
     }
 }

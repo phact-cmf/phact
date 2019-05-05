@@ -316,13 +316,15 @@ class Pagination
 
         if (is_array($this->_provider)) {
             return array_slice($this->_provider, $offset, $limit);
-        } elseif ($this->_provider instanceof PaginableInterface) {
-            $this->_provider->setPaginationLimit($limit);
-            $this->_provider->setPaginationOffset($offset);
-            return $this->_provider->getPaginationData($this->getDataType());
-        } else {
-            return [];
         }
+
+        if ($this->_provider instanceof PaginableInterface) {
+            return $this->_provider->setPaginationLimit($limit)
+                ->setPaginationOffset($offset)
+                ->getPaginationData($this->getDataType());
+        }
+
+        return [];
     }
 
     public function render($template = 'pagination/default.tpl')

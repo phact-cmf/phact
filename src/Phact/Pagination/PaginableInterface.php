@@ -15,9 +15,9 @@ namespace Phact\Pagination;
 
 interface PaginableInterface
 {
-    public function setPaginationLimit($limit);
+    public function setPaginationLimit($limit): PaginableInterface;
 
-    public function setPaginationOffset($offset);
+    public function setPaginationOffset($offset): PaginableInterface;
 
     public function getPaginationTotal();
 

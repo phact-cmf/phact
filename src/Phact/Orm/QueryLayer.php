@@ -12,18 +12,13 @@
 
 namespace Phact\Orm;
 
-use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\Expression\CompositeExpression;
-use Doctrine\DBAL\Types\Type;
 use Exception;
 use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
-use Phact\Main\Phact;
 use Phact\Orm\Aggregations\Aggregation;
-use Phact\Orm\Aggregations\Max;
 use Phact\Orm\Having\Having;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
-use Doctrine\DBAL\Connection as DBALConnection;
 
 /**
  * Class QueryLayer
@@ -353,9 +348,6 @@ class QueryLayer
         $qs = $this->getQuerySet();
 
         $select = $qs->getSelect();
-        if (!$select) {
-            $select = $this->defaultSelect();
-        }
         list($select, $bindings) = $this->buildSelect($select);
         if ($qs->getHasManyRelations()) {
             if (!$qs->getGroupBy() && $qs->getAutoGroup()) {
@@ -397,9 +389,6 @@ class QueryLayer
         $this->buildQuery($queryBuilder);
 
         $select = $qs->getSelect();
-        if (!$select) {
-            $select = $this->defaultSelect();
-        }
         list($select, $bindings) = $this->buildSelect($select);
         $queryBuilder->select($select);
         $this->addBindings($queryBuilder, $bindings);
@@ -416,13 +405,19 @@ class QueryLayer
     {
         $select = [];
         $select[] = $this->column($this->getTableName(), '*');
-        foreach ($this->getQuerySet()->getWith() as $relationName) {
+        return array_merge($select, $this->withSelect());
+    }
+
+    public function withSelect()
+    {
+        $select = [];
+        foreach ($this->getQuerySet()->getWithFkRelations() as $relationName) {
             $table = $this->getRelationTable($relationName);
             $relationModel = $this->getRelationModel($relationName);
             $attributes = $relationModel->getFieldsManager()->getDbAttributesList();
             $alias = $this->getAlias($relationName, $table);
             foreach ($attributes as $attribute) {
-                $select[$this->column($alias, $attribute)] = $this->quote($relationName . '__' . $attribute);
+                $select[$this->quote($relationName . '__' . $attribute)] = $this->column($alias, $attribute);
             }
         }
         return $select;
@@ -450,7 +445,7 @@ class QueryLayer
                 $value = $this->column($this->getTableName(), '*');
             }
             if (is_string($key)) {
-                $result[$key] = $key . " AS " . $value;
+                $result[$key] = $value . " AS " . $key;
             } else {
                 $result[$key] = $value;
             }
@@ -538,11 +533,16 @@ class QueryLayer
                     $this->addBindings($bindings);
                 } else {
                     $item = $this->relationColumnAlias($attribute);
-                    if (!$alias) {
+                    if (!$alias && $attribute !== '*') {
                         $alias = $this->quote($attribute);
                     }
                 }
                 $select[] = $item . ($alias ? ' AS ' . $alias: '');
+            }
+        }
+        if ($withSelect = $this->withSelect()) {
+            foreach ($withSelect as $alias => $column) {
+                $select[] = $column . ' AS ' . $alias;
             }
         }
         if ($qs->getHasManyRelations() && $distinct) {
@@ -567,6 +567,14 @@ class QueryLayer
             $result[$key] = $row;
         }
         return $result;
+    }
+
+    protected function createModel($modelClass, $dbData): Model
+    {
+        /** @var Model $model */
+        $model = new $modelClass;
+        $model->setDbData($dbData);
+        return $model;
     }
 
     /**

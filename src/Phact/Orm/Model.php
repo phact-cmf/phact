@@ -22,6 +22,7 @@ use Phact\Helpers\Text;
 use Phact\Main\Phact;
 use Phact\Orm\Configuration\ConfigurationProvider;
 use Phact\Orm\Fields\Field;
+use Phact\Orm\Fields\RelationField;
 use Serializable;
 
 /**
@@ -263,10 +264,10 @@ class Model implements Serializable
         }
     }
 
-    public function setDbData($data, $relations = [])
+    public function setDbData($data)
     {
         $manager = $this->getFieldsManager();
-        $relationsFields = [];
+        $withData = [];
         foreach ($data as $name => $value) {
             if ($field = $manager->getField($name)) {
                 $attributeName = $field->getAttributeName();
@@ -286,31 +287,16 @@ class Model implements Serializable
                     }
                 }
             } else {
-                foreach ($relations as $relation) {
-                    if (Text::startsWith($name, $relation . '__')) {
-                        if (!isset($relationsFields[$relation])) {
-                            $relationsFields[$relation] = [];
-                        }
-                        $fieldName = str_replace($relation . '__', '', $name);
-                        $relationsFields[$relation][$fieldName] = $value;
-                    }
-                }
+                $withData[$name] = $value;
             }
         }
-        foreach ($relationsFields as $relation => $dbData) {
-            if ($field = $manager->getField($relation)) {
-                $class = $field->getRelationModelClass();
-                
-                /** @var Model $model */
-                $model = new $class();
-                $model->setDbData($dbData);
 
-                $this->_withModels[$relation] = $model;
-            }
+        if ($withData) {
+            $this->_withModels = $withData;
         }
     }
 
-    public function getWithModel($name)
+    public function getWithData($name)
     {
         return isset($this->_withModels[$name]) ? $this->_withModels[$name] : null;
     }

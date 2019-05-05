@@ -13,6 +13,8 @@
 namespace Phact\Orm\Fields;
 use Phact\Form\Fields\DropDownField;
 use Phact\Helpers\Configurator;
+use Phact\Orm\FieldManagedInterface;
+use Phact\Orm\Manager;
 use Phact\Orm\ManyToManyManager;
 use Phact\Orm\QuerySet;
 
@@ -24,7 +26,7 @@ use Phact\Orm\QuerySet;
  *
  * @package Phact\Orm\Fields
  */
-class ManyToManyField extends RelationField
+class ManyToManyField extends RelationField implements FieldManagedInterface
 {
     /**
      * Related model field
@@ -275,7 +277,7 @@ class ManyToManyField extends RelationField
     /**
      * @return ManyToManyManager
      */
-    public function getManager()
+    public function getManager(): Manager
     {
         $relationModel = $this->getRelationModel();
         $manager = new $this->managerClass($relationModel);

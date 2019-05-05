@@ -124,7 +124,7 @@ class ForeignField extends RelationField
     protected function fetchModel()
     {
         $model = $this->getModel();
-        if ($withModel = $model->getWithModel($this->name)) {
+        if ($withModel = $model->getWithData($this->name)) {
             return $withModel;
         }
         $value = $this->_attribute;
