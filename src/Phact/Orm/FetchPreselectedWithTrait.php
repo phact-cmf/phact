@@ -24,16 +24,10 @@ trait FetchPreselectedWithTrait
     {
         if (
             $this->ownerModel &&
-            $this->_cleanSelection
+            $this->getIsCleanSelection()
         ) {
-            $fetchName = $this->name;
-            if ($this->_activeSelection) {
-                $fetchName .= '->' . $this->_activeSelection;
-            }
-            if ($data = $this->ownerModel->getWithData($fetchName)) {
-                return $data;
-            }
-
+            $fetchName = $this->fieldName . ($this->_activeSelection ? '->' . $this->_activeSelection : '');
+            return $this->ownerModel->getWithData($fetchName);
         }
         return null;
     }

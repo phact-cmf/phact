@@ -471,19 +471,30 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $secondThesis->note = $secondNote;
         $secondThesis->save();
 
-//        $qs = NoteThesis::objects()->with(['note']);
-//        $sql = $qs->getSql();
-//
-//        $this->assertEquals("SELECT {$q}test_note_thesis{$q}.*, {$q}test_note_1{$q}.{$q}name{$q} AS {$q}note__name{$q}, {$q}test_note_1{$q}.{$q}id{$q} AS {$q}note__id{$q} FROM {$q}test_note_thesis{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_1{$q} ON {$q}test_note_thesis{$q}.{$q}note_id{$q} = {$q}test_note_1{$q}.{$q}id{$q}", $sql);
-//
-//        $all = $qs->all();
-//
-//        $this->assertEquals(1, count($all));
-
         $vote = new NoteThesisVote();
         $vote->rating = 10;
         $vote->note_thesis = $thesis;
         $vote->save();
+
+        $qs = Note::objects()->order(['name'])->with(['theses__votes']);
+        $all = $qs->all();
+
+        $thesisWith = $all[0]->getWithData('theses')[0];
+        $this->assertInstanceOf(NoteThesis::class, $thesisWith);
+        $this->assertEquals('new thesis', $thesisWith->name);
+
+        $voteWith = $thesisWith->getWithData('votes')[0];
+        $this->assertInstanceOf(NoteThesisVote::class, $voteWith);
+        $this->assertEquals(10, $voteWith->rating);
+
+        $qs = NoteThesis::objects()->with(['note']);
+        $sql = $qs->getSql();
+
+        $this->assertEquals("SELECT {$q}test_note_thesis{$q}.*, {$q}test_note_1{$q}.{$q}name{$q} AS {$q}note__name{$q}, {$q}test_note_1{$q}.{$q}id{$q} AS {$q}note__id{$q} FROM {$q}test_note_thesis{$q} LEFT JOIN {$q}test_note{$q} {$q}test_note_1{$q} ON {$q}test_note_thesis{$q}.{$q}note_id{$q} = {$q}test_note_1{$q}.{$q}id{$q}", $sql);
+
+        $all = $qs->all();
+        $this->assertEquals(2, count($all));
+
 
         $qs = NoteThesisVote::objects()->with([
             'note_thesis__note__theses'

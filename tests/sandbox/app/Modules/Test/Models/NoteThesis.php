@@ -14,6 +14,7 @@ namespace Modules\Test\Models;
 
 use Phact\Orm\Fields\CharField;
 use Phact\Orm\Fields\ForeignField;
+use Phact\Orm\Fields\HasManyField;
 use Phact\Orm\Model;
 
 class NoteThesis extends Model
@@ -27,6 +28,10 @@ class NoteThesis extends Model
             'note' => [
                 'class' => ForeignField::class,
                 'modelClass' => Note::class
+            ],
+            'votes' => [
+                'class' => HasManyField::class,
+                'modelClass' => NoteThesisVote::class
             ]
         ];
     }

@@ -80,4 +80,6 @@ interface QuerySetInterface
     public function avgSql($attribute);
 
     public function sumSql($attribute);
+
+    public function getQuerySet(): QuerySet;
 }

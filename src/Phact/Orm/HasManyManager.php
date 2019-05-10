@@ -27,7 +27,7 @@ class HasManyManager extends RelationManager implements RelationBatchInterface
     /**
      * @var string
      */
-    public $name;
+    public $fieldName;
 
     public function nextManager(QuerySet $querySet): Manager
     {
@@ -36,7 +36,7 @@ class HasManyManager extends RelationManager implements RelationBatchInterface
         $next->ownerModel = $this->ownerModel;
         $next->fromField = $this->fromField;
         $next->toField = $this->toField;
-        $next->name = $this->name;
+        $next->fieldName = $this->fieldName;
         return $next;
     }
 

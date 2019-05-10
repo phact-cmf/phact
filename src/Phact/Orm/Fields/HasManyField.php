@@ -104,7 +104,7 @@ class HasManyField extends RelationField implements FieldManagedInterface
         $manager = new $this->managerClass($relationModel);
 
         return Configurator::configure($manager, [
-            'name' => $this->name,
+            'fieldName' => $this->name,
             'toField' => $this->getTo(),
             'fromField' => $this->getFrom(),
             'ownerModel' => $this->getModel()

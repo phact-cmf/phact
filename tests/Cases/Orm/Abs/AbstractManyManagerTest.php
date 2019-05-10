@@ -12,24 +12,8 @@
 
 namespace Phact\Tests\Cases\Orm\Abs;
 
-use Modules\Test\Models\Area;
-use Modules\Test\Models\Author;
-use Modules\Test\Models\Group;
 use Modules\Test\Models\Musician;
-use Modules\Test\Models\Note;
-use Modules\Test\Models\NoteProperty;
-use Modules\Test\Models\NotePropertyCharValue;
-use Modules\Test\Models\NotePropertyIntValue;
-use Modules\Test\Models\NoteThesis;
-use Modules\Test\Models\NoteThesisVote;
 use Modules\Test\Models\Song;
-use Phact\Orm\Aggregations\Avg;
-use Phact\Orm\Aggregations\Count;
-use Phact\Orm\Expression;
-use Phact\Orm\Having\Having;
-use Phact\Orm\Manager;
-use Phact\Orm\Q;
-use Phact\Orm\QuerySet;
 use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractManyManagerTest extends DatabaseTest

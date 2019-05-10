@@ -80,7 +80,7 @@ class Manager implements PaginableInterface, QuerySetInterface
      * @return \Phact\Orm\QuerySet
      * @throws \Phact\Exceptions\InvalidConfigException
      */
-    public function getQuerySet()
+    public function getQuerySet(): QuerySet
     {
         return $this->_querySet ?: $this->createQuerySet();
     }
@@ -382,5 +382,10 @@ class Manager implements PaginableInterface, QuerySetInterface
     {
         $this->_cleanSelection = $cleanSelection;
         return $this;
+    }
+
+    public function getIsCleanSelection()
+    {
+        return $this->_cleanSelection || $this->_querySet === null;
     }
 }

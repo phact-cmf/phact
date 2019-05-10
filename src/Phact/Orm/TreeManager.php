@@ -21,7 +21,7 @@ class TreeManager extends Manager
      * @return \Phact\Orm\TreeQuerySet
      * @throws \Phact\Exceptions\InvalidConfigException
      */
-    public function getQuerySet()
+    public function getQuerySet(): QuerySet
     {
         $qs = parent::getQuerySet();
         return $qs->order(['root', 'lft']);

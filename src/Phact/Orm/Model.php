@@ -269,7 +269,11 @@ class Model implements Serializable
         $manager = $this->getFieldsManager();
         $withData = [];
         foreach ($data as $name => $value) {
-            if ($field = $manager->getField($name)) {
+            if (
+                !is_array($value) &&
+                !is_object($value) &&
+                ($field = $manager->getField($name))
+            ) {
                 $attributeName = $field->getAttributeName();
                 if ($field->rawSet) {
                     $attribute = $field->attributePrepareValue($value);
@@ -298,7 +302,12 @@ class Model implements Serializable
 
     public function getWithData($name)
     {
-        return isset($this->_withModels[$name]) ? $this->_withModels[$name] : null;
+        return $this->_withModels[$name] ?? null;
+    }
+
+    public function hasWithData($name)
+    {
+        return isset($this->_withModels[$name]);
     }
 
     protected function _mergeOldAttributes($attributes)

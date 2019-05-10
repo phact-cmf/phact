@@ -14,7 +14,6 @@ namespace Phact\Orm;
 
 use InvalidArgumentException;
 use Phact\Helpers\SmartProperties;
-use Phact\Helpers\Text;
 use Phact\Orm\Aggregations\Aggregation;
 use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Aggregations\Max;
@@ -151,7 +150,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         return clone $this;
     }
 
-    public function getQuerySet()
+    public function getQuerySet(): QuerySet
     {
         return $this;
     }
@@ -225,6 +224,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
     {
         $data = $this->getQueryLayer()->all();
         $this->postProcessing($data, true);
+        $this->makeModels($data);
         return $data;
     }
 
@@ -993,15 +993,25 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         return $this->all();
     }
 
+    protected function withValues($columns = [], $makeModels = false, $distinct = true)
+    {
+        $this->handleRelationColumns($columns);
+        $data = $this->getQueryLayer()->values($columns, $distinct);
+        $this->postProcessing($data, $makeModels);
+        return $data;
+    }
+
+    protected function makeModels(&$data)
+    {
+        foreach ($data as &$ownerModel) {
+            $ownerModel = $this->createModel($ownerModel);
+        }
+    }
+
     protected function postProcessing(&$data, $makeModels = false)
     {
         $with = $this->getQuerySet()->getWith();
         $this->postProcessingWith($data, $data, $this->getModel(), $makeModels, $with);
-        if ($makeModels) {
-            foreach ($data as &$ownerModel) {
-                $ownerModel = $this->createModel($ownerModel);
-            }
-        }
     }
 
     /**
@@ -1012,85 +1022,135 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         foreach ($with as $item) {
             /** @var RelationField $field */
             if ($field = $model->getField($item->getRelationName())) {
-                $data = [];
-                $path[] = $item->getRelationName();
-                $relation = implode('__', $path);
-                $relationModel = $field->getRelationModel();
-                $relationModelClass = $field->getRelationModelClass();
-
                 if ($field instanceof ForeignField) {
                     // Handle foreign connections
-
-                    // Fetch model data from existing fetch
-                    foreach ($rawFetch as &$row) {
-                        $withModel = [];
-                        foreach ($row as $name => $value) {
-                            // Avoid multi-connections issues
-                            // Example: note__name, note__thesis__name
-                            if (
-                                Text::startsWith($name, $relation . '__') &&
-                                ($fieldName = str_replace($relation . '__', '', $name)) &&
-                                (strpos($fieldName, '__') === false)
-                            ) {
-                                $withModel[$fieldName] = $value;
-                                unset($row[$name]);
-                            }
-                        }
-                        $data[] = $withModel;
-                    }
-
-                    // Process sub-with
-                    $this->postProcessingWith($rawFetch, $data, $relationModel, $makeModels, $item->getWith(), $path);
-
-                    // Matching
-                    foreach ($ownerModels as $i => &$ownerModel) {
-                        // Fill models
-                        $ownerModel[$item->getKey()] = $makeModels ? $this->createModel($data[$i], $relationModelClass) : $data[$i];
-                    }
+                    $this->postProcessingWithForeignField($item, $path, $rawFetch, $ownerModels, $field, $makeModels);
                 } elseif (($field instanceof FieldManagedInterface) && ($manager = $field->getManager()) && ($manager instanceof RelationBatchInterface)) {
                     // Handle has-many and many-to-many connections
+                    $this->postProcessingWithRelationField($item, $field, $manager, $ownerModels, $makeModels);
+                }
+            }
+        }
+    }
 
-                    // Prepare and do query
-                    $outerAttribute = $manager->getOuterAttribute();
-                    $outerIds = array_map(function($item) use ($outerAttribute) {
-                        return $item[$outerAttribute] ?? null;
-                    }, $ownerModels);
+    /**
+     * @param $with With
+     * @param $relationName
+     * @param $rawFetch
+     * @param $ownerModels
+     * @param $field ForeignField
+     * @param $makeModels
+     * @param $path
+     * @throws \Phact\Exceptions\InvalidConfigException
+     */
+    protected function postProcessingWithForeignField($with, $path, &$rawFetch, &$ownerModels, $field, $makeModels)
+    {
+        $relationModel = $field->getRelationModel();
+        $relationModelClass = $field->getRelationModelClass();
 
-                    /** @var QuerySetInterface $qs */
-                    $qs = $manager->filterBatch(array_filter($outerIds))->with($item->getWith());
-                    if ($name = $item->getNamedSelection()) {
-                        $qs = $qs->processNamedSelection($name);
-                    }
-                    $values = $item->getValues() ?: ['*'];
-                    $additonalAttributes = $manager->getAdditionalAttributes();
-                    $values = array_merge($values, $additonalAttributes);
-                    $data = $qs->values($values);
+        $path[] = $with->getRelationName();
+        $relationName = implode('__', $path);
 
-                    // Matching
-                    foreach ($ownerModels as $i => &$ownerModel) {
-                        $dataModels = [];
-                        foreach ($data as $dataItem) {
-                            if (
-                                isset($dataItem[$manager->getInnerAttribute()]) &&
-                                isset($ownerModel[$manager->getOuterAttribute()]) &&
-                                $ownerModel[$manager->getOuterAttribute()] == $dataItem[$manager->getInnerAttribute()]
-                            ) {
-                                if ($additonalAttributes) {
-                                    $cleanItem = [];
-                                    foreach ($dataItem as $key => $value) {
-                                        if (!in_array($key, $additonalAttributes)) {
-                                            $cleanItem[$key] = $value;
-                                        }
-                                    }
-                                    $dataItem = $cleanItem;
-                                }
-                                $dataModels[] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
-                            }
-                        }
-                        // Fill models
-                        $ownerModel[$item->getKey()] = $dataModels;
+        $len = \strlen($relationName . '__');
+
+        $fieldsMap = [];
+        $data = [];
+
+        // Fetch model data from existing fetch
+        foreach ($rawFetch as &$row) {
+            $withModel = [];
+            if (!$fieldsMap) {
+                foreach ($row as $name => $value) {
+                    if (
+                        \substr($name, 0, $len) === $relationName . '__' &&
+                        ($fieldName = str_replace($relationName . '__', '', $name)) &&
+                        (\strpos($fieldName, '__') === false)
+                    ) {
+                        $fieldsMap[$name] = $fieldName;
                     }
                 }
+            }
+            foreach($fieldsMap as $name => $fieldName) {
+                $withModel[$fieldName] = $row[$name];
+                unset($row[$name]);
+            }
+            $data[] = $withModel;
+        }
+
+        // Process sub-with
+        $this->postProcessingWith($rawFetch, $data, $relationModel, $makeModels, $with->getWith(), $path);
+
+        $withKey = $with->getKey();
+        foreach ($ownerModels as $i => &$ownerModel) {
+            // Fill models
+            $ownerModel[$withKey] = $makeModels ? $this->createModel($data[$i], $relationModelClass) : $data[$i];
+        }
+    }
+
+    /**
+     * @param $with With
+     * @param $field RelationField
+     * @param $manager RelationManager|RelationBatchInterface|QuerySetInterface
+     * @param $ownerModels
+     * @param bool $makeModels
+     * @throws \Phact\Exceptions\InvalidConfigException
+     */
+    protected function postProcessingWithRelationField($with, $field, $manager, &$ownerModels, $makeModels = false)
+    {
+        $relationModelClass = $field->getRelationModelClass();
+        $outerAttribute = $manager->getOuterAttribute();
+        $outerIds = [];
+        foreach ($ownerModels as $ownerModelData) {
+            if (isset($ownerModelData[$outerAttribute])) {
+                $outerIds[] = $ownerModelData[$outerAttribute];
+            }
+        }
+        /** @var QuerySetInterface $qs */
+        $qs = $manager->filterBatch($outerIds)->with($with->getWith());
+        if ($name = $with->getNamedSelection()) {
+            $qs = $qs->processNamedSelection($name);
+        }
+        $values = $with->getValues() ?: ['*'];
+        $additonalAttributes = $manager->getAdditionalAttributes();
+        $hasAttributes = \count($additonalAttributes) > 0;
+
+        $values = array_merge($values, $additonalAttributes);
+
+        $data = $qs->getQuerySet()->withValues($values, $makeModels);
+
+        $innerAttribute = $manager->getInnerAttribute();
+        $outerAttribute = $manager->getOuterAttribute();
+
+        // Skip if columns are undefined or empty data
+        if (\count($data) > 0) {
+            if (!isset($ownerModels[0][$outerAttribute])) {
+                return;
+            }
+            if (!isset($data[0][$outerAttribute])) {
+                return;
+            }
+        }
+
+        // Matching
+        $withKey = $with->getKey();
+
+        $map = [];
+        foreach ($ownerModels as $i => &$ownerModel) {
+            $map[$ownerModel[$outerAttribute]] = $i;
+        }
+        foreach ($data as $dataKey => $dataItem) {
+            $i = $map[$dataItem[$innerAttribute]] ?? null;
+            if ($i !== null) {
+                if ($hasAttributes) {
+                    $cleanItem = [];
+                    foreach ($dataItem as $key => $value) {
+                        if (!\in_array($key, $additonalAttributes)) {
+                            $cleanItem[$key] = $value;
+                        }
+                    }
+                    $dataItem = $cleanItem;
+                }
+                $ownerModels[$i][$withKey][] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
             }
         }
     }
