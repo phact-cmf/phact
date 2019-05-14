@@ -38,7 +38,7 @@ abstract class AbstractWithBenchmarkTest extends DatabaseTest
 
     public function testNamedSelection()
     {
-        for ($i = 0;$i < 900;$i++) {
+        for ($i = 0;$i < 20;$i++) {
             $musician = new Musician();
             $musician->setAttributes([
                 'name' => $this->randomName()
