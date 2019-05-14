@@ -38,6 +38,7 @@ abstract class AbstractWithBenchmarkTest extends DatabaseTest
 
     public function testNamedSelection()
     {
+        $this->markTestSkipped();
         for ($i = 0;$i < 20;$i++) {
             $musician = new Musician();
             $musician->setAttributes([
@@ -106,6 +107,7 @@ abstract class AbstractWithBenchmarkTest extends DatabaseTest
 
     public function test2Levels()
     {
+        $this->markTestSkipped();
         for ($i = 0;$i < 50;$i++) {
             $note = new Note();
             $note->setAttributes([
@@ -208,6 +210,7 @@ abstract class AbstractWithBenchmarkTest extends DatabaseTest
 
     public function testM2M()
     {
+        $this->markTestSkipped();
         for ($i = 0; $i < 1000; $i++) {
             $author = new Author();
             $author->setAttributes([

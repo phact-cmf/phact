@@ -172,23 +172,36 @@ class Application implements ModulesInterface
         /** @var PathInterface $paths */
         if ($this->_container->has(PathInterface::class) && ($paths = $this->_container->get(PathInterface::class))) {
             $basePath = $paths->get('base');
-            if (!is_dir($basePath)) {
+            if (!$this->setUpPath($basePath)) {
                 throw new InvalidConfigException('Base path must be a valid directory. Please, set up correct base path in "paths" section of configuration.');
             }
+
             if (!$paths->get('runtime')) {
                 $paths->add('runtime', $paths->get('base.runtime'));
             }
-            if (!is_dir($paths->get('runtime')) || !is_writable($paths->get('runtime'))) {
+            if (!$this->setUpPath($paths->get('runtime')) || !is_writable($paths->get('runtime'))) {
                 throw new InvalidConfigException('Runtime path must be a valid and writable directory. Please, set up correct runtime path in "paths" section of configuration.');
             }
+
             $modulesPath = $paths->get('Modules');
             if (!$modulesPath && ($modulesPath = $paths->get('base.Modules')) && is_dir($modulesPath)) {
                 $paths->add('Modules', $modulesPath);
             }
-            if (!is_dir($modulesPath)) {
+            if (!$this->setUpPath($modulesPath)) {
                 throw new InvalidConfigException('Modules path must be a valid. Please, set up correct modules path in "paths" section of configuration.');
             }
         }
+    }
+
+    /**
+     * Check or create system path
+     *
+     * @param $path
+     * @return bool
+     */
+    protected function setUpPath($path): bool
+    {
+        return is_dir($path) || mkdir($path, 0755, true);
     }
 
     public function run()
