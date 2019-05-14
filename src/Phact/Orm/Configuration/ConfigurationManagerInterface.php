@@ -19,6 +19,10 @@ use Psr\SimpleCache\CacheInterface;
 
 interface ConfigurationManagerInterface
 {
+    /**
+     * @deprecated
+     * @return int|null
+     */
     public function getCacheFieldsTimeout(): ?int;
     public function getCacheQueryTimeout(): ?int;
     public function getContainer(): ContainerInterface;

@@ -31,21 +31,7 @@ class FieldsManager
 
     public static function makeInstance($modelClass, $fields, $metaData = [])
     {
-        $configuration = ConfigurationProvider::getInstance()->getManager();
-        $cache = $configuration->getCache();
-        $key = 'PHACT__FIELDS_MANAGER_' . $modelClass;
-        $manager = null;
-        $cacheTimeout = $configuration->getCacheFieldsTimeout();
-        if ($cache && $cacheTimeout !== null) {
-            $manager = $cache->get($key);
-        }
-        if (!$manager) {
-            $manager = new self($modelClass, $fields, $metaData);
-            if ($cache && $cacheTimeout !== null) {
-                $cache->set($key, $manager, $cacheTimeout);
-            }
-        }
-        return $manager;
+        return new self($modelClass, $fields, $metaData);
     }
 
     public function __construct($modelClass, $fields, $metaData = [])

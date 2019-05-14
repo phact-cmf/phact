@@ -64,6 +64,7 @@ class ConfigurationManager implements ConfigurationManagerInterface
 
     /**
      * @return int
+     * @deprecated
      */
     public function setCacheFieldsTimeout(?int $timeout): self
     {
@@ -73,6 +74,7 @@ class ConfigurationManager implements ConfigurationManagerInterface
 
     /**
      * @return int
+     * @deprecated
      */
     public function getCacheFieldsTimeout(): ?int
     {
