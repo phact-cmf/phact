@@ -28,6 +28,12 @@ class BooleanField extends IntField
         return isset($value) ? (bool) $value : null;
     }
 
+    public function setValue($value, $aliasConfig = null)
+    {
+        $value = $this->attributePrepareValue($value);
+        return parent::setValue($value, $aliasConfig);
+    }
+
     public function dbPrepareValue($value)
     {
         return $value ? 1 : 0;
