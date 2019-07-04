@@ -32,7 +32,7 @@ class QueryLayer
 {
     use SmartProperties;
 
-    static $_columnAliases = [];
+    protected $_columnAliases = [];
 
     protected $_query;
 
@@ -229,14 +229,14 @@ class QueryLayer
     public function columnAlias($relationName, $attribute, $tableName = null)
     {
         $key = implode('-', [get_class($this->getQuery()->getConnection()->getDatabasePlatform()), $this->_model->className(), $relationName, $attribute, $tableName]);
-        if (!isset(static::$_columnAliases[$key])) {
+        if (!isset($this->_columnAliases[$key])) {
             if ($attribute != '*'){
                 $attribute = $this->relationColumnAttribute($relationName, $attribute);
             }
             $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
-            static::$_columnAliases[$key] = $this->column($tableName, $attribute);
+            $this->_columnAliases[$key] = $this->column($tableName, $attribute);
         }
-        return static::$_columnAliases[$key];
+        return $this->_columnAliases[$key];
     }
 
     public function column($tableName, $attribute)

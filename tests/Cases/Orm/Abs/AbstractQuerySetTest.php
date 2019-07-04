@@ -682,4 +682,29 @@ abstract class AbstractQuerySetTest extends DatabaseTest
             ],
         ], $authors);
     }
+
+    public function testIndependentManager()
+    {
+        $manager = NoteThesisVote::objects();
+        $data = $manager->max('id');
+        $this->assertNull($manager->getQuerySet()->getAggregation());
+
+        $qs = NoteThesisVote::objects()->getQuerySet();
+        $data = $qs->max('id');
+        $this->assertNull($qs->getAggregation());
+
+        $qs = NoteThesisVote::objects()->getQuerySet();
+        $qsNew = $qs->filter([
+            'id__gt' => 10
+        ]);
+        $data = $qsNew->all();
+        $this->assertEmpty($qs->getWhere());
+
+        $manager = NoteThesisVote::objects();
+        $managerNew = $manager->filter([
+            'id__gt' => 10
+        ]);
+        $data = $managerNew->all();
+        $this->assertEmpty($manager->getQuerySet()->getWhere());
+    }
 }

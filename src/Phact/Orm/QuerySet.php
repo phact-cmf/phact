@@ -259,16 +259,23 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         return $this->getQueryLayer()->get(true);
     }
 
+    public function getAggregation()
+    {
+        return $this->_aggregation;
+    }
+
     public function aggregate(Aggregation $aggregation)
     {
-        $this->_aggregation = $aggregation;
-        return $this->getQueryLayer()->aggregate($aggregation);
+        $qs = $this->nextQuerySet();
+        $qs->_aggregation = $aggregation;
+        return $qs->getQueryLayer()->aggregate($aggregation);
     }
 
     public function aggregateSql(Aggregation $aggregation)
     {
-        $this->_aggregation = $aggregation;
-        return $this->getQueryLayer()->aggregate($aggregation, true);
+        $qs = $this->nextQuerySet();
+        $qs->_aggregation = $aggregation;
+        return $qs->getQueryLayer()->aggregate($aggregation, true);
     }
 
     public function values($columns = [], $flat = false, $distinct = true)
