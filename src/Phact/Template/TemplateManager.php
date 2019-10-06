@@ -15,6 +15,7 @@ namespace Phact\Template;
 use Fenom;
 use Fenom\Tag;
 use Phact\Application\ModulesInterface;
+use Phact\Di\ContainerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Phact\Components\PathInterface;
 use Phact\Components\Settings;
@@ -123,6 +124,16 @@ class TemplateManager implements RendererInterface
      */
     protected $_translate;
 
+    /**
+     * @var ContainerInterface
+     */
+    protected $_container;
+
+    /**
+     * @var TemplateLibrary[]
+     */
+    protected $_libraries = [];
+
     public function __construct(
         EventManagerInterface $eventManager = null,
         ModulesInterface $modules = null,
@@ -132,7 +143,8 @@ class TemplateManager implements RendererInterface
         HttpRequest $request = null,
         Settings $settings = null,
         Router $router = null,
-        Translate $translate = null)
+        Translate $translate = null,
+        ContainerInterface $container = null)
     {
         $this->_eventManager = $eventManager;
         $this->_cacheDriver = $cacheDriver;
@@ -143,6 +155,7 @@ class TemplateManager implements RendererInterface
         $this->_settings = $settings;
         $this->_router = $router;
         $this->_translate = $translate;
+        $this->_container = $container;
     }
 
     /**
@@ -392,7 +405,7 @@ class TemplateManager implements RendererInterface
     public function addExtension($class, $methodName, $name, $kind)
     {
         $renderer = $this->getRenderer();
-        $callable = [$class, $methodName];
+        $callable = [$this->getLibrary($class), $methodName];
         switch ($kind) {
             case 'function':
                 $renderer->addFunction($name, $callable);
@@ -419,5 +432,15 @@ class TemplateManager implements RendererInterface
                 $renderer->addBlockCompiler($name, $callable);
                 break;
         }
+    }
+
+    public function getLibrary($class)
+    {
+        if (isset($this->_libraries[$class])) {
+            return $this->_libraries[$class];
+        }
+        $library = $this->_container->construct($class);
+        $this->_libraries[$class] = $library;
+        return $library;
     }
 }
