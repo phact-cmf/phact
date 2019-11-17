@@ -82,6 +82,9 @@ class LookupManager
      */
     public function processIn($query, $column, $value, $operator)
     {
+        if (empty($value)) {
+            return QueryLayer::buildWhere(1, '=', 0, $operator);
+        }
         return QueryLayer::buildWhere($column, 'IN', $value, $operator);
     }
 

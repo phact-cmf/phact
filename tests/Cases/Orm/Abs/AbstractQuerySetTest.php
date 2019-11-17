@@ -549,6 +549,8 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertCount(1, $books);
         $this->assertInstanceOf(Book::class, $books[0]);
         $this->assertEquals('Second book', $books[0]->name);
+
+        $this->assertEquals([], Author::objects()->filter(['id' => 100])->with(['books'])->all());
     }
 
     public function testWithValues()

@@ -496,7 +496,7 @@ class Model implements Serializable
             $this->{$metaEvent}();
             if ($event) {
                 $event->trigger(self::class . '::' . $metaEvent, [], $this);
-                $event->trigger('model.' . $eventName, [], $this);
+                $event->trigger('model.' . $metaEvent, [], $this);
             }
         }
     }
