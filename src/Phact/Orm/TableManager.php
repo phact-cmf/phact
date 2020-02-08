@@ -15,10 +15,10 @@ namespace Phact\Orm;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
-use Doctrine\DBAL\Schema\Index;
+use Doctrine\DBAL\Schema\Index as DBALIndex;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
-use Phact\Main\Phact;
+use Phact\Orm\Index as PhactIndex;
 use Phact\Orm\Configuration\ConfigurationProvider;
 use Phact\Orm\Fields\Field;
 use Phact\Orm\Fields\ManyToManyField;
@@ -84,11 +84,10 @@ class TableManager
     {
         $tableName = $model->getTableName();
         $columns = $this->createColumns($model);
-        $attribute = $model->getPkAttribute();
 
-        $table = new Table($tableName, $columns, [
-            new Index($attribute, [$attribute], true, true)
-        ]);
+        $dbalIndexes = $this->convertIndexes($model->getIndexes());
+
+        $table = new Table($tableName, $columns, $dbalIndexes);
         $schemaManager = $this->getSchemaManager($model);
         if (!$schemaManager->tablesExist([$tableName])) {
             $schemaManager->createTable($table);
@@ -216,5 +215,29 @@ class TableManager
         foreach ($schemaManager->listTableForeignKeys($tableName) as $constraint) {
             $schemaManager->dropForeignKey($constraint, $tableName);
         }
+    }
+
+    /**
+     * @param PhactIndex[] $indexes
+     * @return DBALIndex[]
+     * @throws \Exception
+     */
+    public function convertIndexes(array $indexes)
+    {
+        $dbalIndexes = [];
+        foreach ($indexes as $index) {
+            if (!($index instanceof PhactIndex)) {
+                throw new \Exception('Invalid index object. Expected ' . PhactIndex::class);
+            }
+            $dbalIndexes[] = new DBALIndex(
+                $index->getIndexName(),
+                $index->getColumns(),
+                $index->isUnique(),
+                $index->isPrimary(),
+                $index->getFlags(),
+                $index->getOptions()
+            );
+        }
+        return $dbalIndexes;
     }
 }

@@ -13,16 +13,13 @@
 namespace Phact\Orm;
 
 use InvalidArgumentException;
-use Phact\Event\EventManager;
 use Phact\Event\EventManagerInterface;
 use Phact\Exceptions\UnknownMethodException;
 use Phact\Helpers\ClassNames;
 use Phact\Helpers\SmartProperties;
 use Phact\Helpers\Text;
-use Phact\Main\Phact;
 use Phact\Orm\Configuration\ConfigurationProvider;
 use Phact\Orm\Fields\Field;
-use Phact\Orm\Fields\RelationField;
 use Serializable;
 
 /**
@@ -169,6 +166,21 @@ class Model implements Serializable
     public static function getFields()
     {
         return [];
+    }
+
+    /**
+     * @return Index[]
+     */
+    public function getIndexes()
+    {
+        $indexes = [];
+
+        $pkAttribute = $this->getPkAttribute();
+        if ($pkAttribute) {
+            $indexes[] = new Index($pkAttribute, [$pkAttribute], true, true);
+        }
+
+        return $indexes;
     }
 
     public static function getMetaData()
