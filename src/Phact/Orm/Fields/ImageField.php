@@ -110,9 +110,10 @@ class ImageField extends FileField
     {
         /** @var StorageFile $storageFile */
         $storageFile = $this->getAttribute();
-        $prefixName = $prefix.'_'.$storageFile->getName();
+        list($filename, $extension) = $this->getSizeFilenameAndExt($prefix, $storageFile->getBaseName());
+        $newBasename = $prefix . '_' . $filename . ($extension ? '.' . $extension : '');
         $basePath = dirname($storageFile->getPath());
-        return $basePath.DIRECTORY_SEPARATOR.$prefixName;
+        return $basePath.DIRECTORY_SEPARATOR.$newBasename;
     }
 
     public function sizeUrl($prefix)
