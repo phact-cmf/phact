@@ -8,9 +8,7 @@
 
 namespace Phact\Orm\Fields;
 
-
 use Exception;
-use Imagine\Image\AbstractImage;
 use Imagine\Image\AbstractImagine;
 use Imagine\Image\Box;
 use Imagine\Image\BoxInterface;
@@ -20,8 +18,6 @@ use Imagine\Image\Metadata\DefaultMetadataReader;
 use Phact\Exceptions\InvalidConfigException;
 use Phact\Storage\Files\FileInterface;
 use Phact\Storage\Files\StorageFile;
-use Phact\Storage\Storage;
-
 
 class ImageField extends FileField
 {
@@ -32,7 +28,8 @@ class ImageField extends FileField
      * [
      *      'thumb' => [
      *          300,200,
-     *          'method' => 'cover'
+     *          'method' => 'cover',
+     *          'ext' => 'png'
      *      ]
      * ]
      *
@@ -208,10 +205,9 @@ class ImageField extends FileField
      */
     public function saveSize($sizeName, $source)
     {
-
         /** @var StorageFile $storageFile */
         $storageFile = $this->attribute;
-        $extension = $this->getStorage()->getExtension($storageFile->path);
+        list($filename, $extension) = $this->getSizeFilenameAndExt($sizeName, $storageFile->getBaseName());
         $options = isset($params['options']) ? $params['options'] : $this->options;
         $this->getStorage()->save($this->sizeStoragePath($sizeName, $storageFile), $source->get($extension, $options));
     }
@@ -223,10 +219,34 @@ class ImageField extends FileField
     public function sizeStoragePath($sizeName, StorageFile $storageFile)
     {
         $directory = pathinfo($storageFile->path, PATHINFO_DIRNAME);
-        $sizeFileName = $this->preparePrefixSize($sizeName) . $storageFile->getBaseName();
+
+        list($filename, $ext) = $this->getSizeFilenameAndExt($sizeName, $storageFile->getBaseName());
+        $newBasename = $filename . ($ext ? '.' . $ext : '');
+        $sizeFileName = $this->preparePrefixSize($sizeName) . $newBasename;
         return $directory . DIRECTORY_SEPARATOR . $sizeFileName;
     }
 
+    protected function getSizeFilenameAndExt($sizeName, $basename)
+    {
+        $options = $this->sizes[$sizeName] ?? [];
+        list($filename, $ext) = $this->getFilenameAndExt($basename);
+        if (isset($options['ext'])) {
+            $ext = $options['ext'];
+        }
+        return [$filename, $ext];
+    }
+
+    protected function getFilenameAndExt($basename)
+    {
+        $ext = '';
+        $filename = $basename;
+        $lastDot = mb_strrpos($basename, '.', 0, 'UTF-8');
+        if ($lastDot !== false) {
+            $ext = mb_substr($basename, $lastDot + 1, null, 'UTF-8');
+            $filename = mb_substr($basename, 0, $lastDot, 'UTF-8');
+        }
+        return [$filename, $ext];
+    }
     /**
      * @param ImageInterface $image
      * @param $sizeParams
