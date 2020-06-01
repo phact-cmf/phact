@@ -128,13 +128,14 @@ class ImageField extends FileField
         return $this->getStorage()->getPath($path);
     }
 
-    public function afterSave()
+    public function setValue($value, $aliasConfig = NULL)
     {
-        parent::afterSave();
-
-        if (!empty($this->sizes)) {
+        $createSizes = !(($value instanceof StorageFile) && $value->equalsTo($this->getAttribute()));
+        $attribute = parent::setValue($value, $aliasConfig);
+        if ($createSizes) {
             $this->createSizes();
         }
+        return $attribute;
     }
 
     public function deleteOld()
@@ -148,7 +149,6 @@ class ImageField extends FileField
             }
         }
     }
-
 
     public function createSizes()
     {
@@ -198,7 +198,6 @@ class ImageField extends FileField
     {
         return $imageInstance->thumbnail($box, ManipulatorInterface::THUMBNAIL_INSET);
     }
-
 
     /**
      * @param $sizeName
@@ -272,14 +271,12 @@ class ImageField extends FileField
         }
 
         return $box;
-
     }
 
     protected function preparePrefixSize($prefix)
     {
         return rtrim($prefix, '_') . '_';
     }
-
 
     public function getImagine()
     {
