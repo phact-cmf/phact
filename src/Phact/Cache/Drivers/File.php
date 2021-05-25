@@ -12,11 +12,10 @@
 
 namespace Phact\Cache\Drivers;
 
-use Phact\Cache\CacheDriver;
+use Phact\Cache\AbstractCacheDriver;
 use Phact\Components\PathInterface;
-use Phact\Helpers\Paths;
 
-class File extends CacheDriver
+class File extends AbstractCacheDriver
 {
     /**
      * Path for store cache files
@@ -51,44 +50,35 @@ class File extends CacheDriver
      *
      * @var int
      */
-    public $mode = 0755;
+    public $mode = 0775;
 
     /**
      * Base path
      *
      * @var string
      */
-    protected $_basePath;
+    protected $basePath;
 
     /**
      * @var PathInterface
      */
-    protected $_pathHandler;
+    protected $pathHandler;
 
-    public function __construct(PathInterface $pathHandler = null)
+    public function __construct(PathInterface $pathHandler)
     {
-        $this->_pathHandler = $pathHandler;
+        $this->pathHandler = $pathHandler;
     }
 
-    public function has($key)
-    {
-        $filePath = $this->getFileName($key);
-        return is_file($filePath) && @filemtime($filePath) > time();
-    }
-
-    public function delete($key)
-    {
-        $unlink = true;
-        if ($this->has($key)) {
-            $unlink = @unlink($this->getFileName($key));
-        }
-        return $unlink;
-    }
-
-    public function clear()
+    public function clear(): bool
     {
         $this->gcRecursive($this->getBasePath(), false);
         return true;
+    }
+
+    protected function hasValue(string $key): bool
+    {
+        $filePath = $this->getFileName($key);
+        return is_file($filePath) && @filemtime($filePath) > time();
     }
 
     /**
@@ -97,11 +87,11 @@ class File extends CacheDriver
      * @param $key
      * @return bool|null|string
      */
-    protected function getValue($key)
+    protected function getValue(string $key)
     {
-        if ($this->has($key)) {
+        if ($this->hasValue($key)) {
             $filePath = $this->getFileName($key);
-            $fp = @fopen($filePath, 'r');
+            $fp = @fopen($filePath, 'rb');
             if ($fp !== false) {
                 @flock($fp, LOCK_SH);
                 $cacheValue = @stream_get_contents($fp);
@@ -114,27 +104,32 @@ class File extends CacheDriver
     }
 
     /**
-     * Store cache value to disk
-     *
-     * @param $key
-     * @param $data
-     * @param $timeout
-     * @return bool
+     * @inheritDoc
      */
-    protected function setValue($key, $data, $timeout)
+    protected function setValue(string $key, $data, int $ttl): bool
     {
         $this->gc();
         $cacheFile = $this->getFileName($key);
         $dir = dirname($cacheFile);
-        if (!is_dir($dir)) {
-            @mkdir($dir, $this->mode, true);
+        if (!is_dir($dir) && !mkdir($dir, $this->mode, true) && !is_dir($dir)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
         }
         if (@file_put_contents($cacheFile, $data, LOCK_EX) !== false) {
-            if ($timeout <= 0) {
-                $timeout = $this->timeout;
-            }
-            return $this->setExpirationTime($cacheFile, $timeout + time());
+            return $this->setExpirationTime($cacheFile, $ttl);
         }
+        return false;
+    }
+
+
+    /**
+     * @inheritDoc
+     */
+    protected function deleteValue(string $key): bool
+    {
+        if ($this->hasValue($key)) {
+            return @unlink($this->getFileName($key));
+        }
+
         return false;
     }
 
@@ -143,16 +138,17 @@ class File extends CacheDriver
      *
      * @return string
      */
-    protected function getBasePath()
+    protected function getBasePath(): string
     {
-        if (is_null($this->_basePath)) {
-            if ($this->_pathHandler) {
-                $this->_basePath = $this->_pathHandler->get($this->path);
-            } else {
-                $this->_basePath = "/tmp";
+        if (!$this->basePath) {
+            $this->basePath = sys_get_temp_dir() || '/tmp';
+
+            if ($this->pathHandler) {
+                $this->basePath = $this->pathHandler->get($this->path);
             }
         }
-        return $this->_basePath;
+
+        return $this->basePath;
     }
 
     /**
@@ -161,19 +157,19 @@ class File extends CacheDriver
      * @param $key
      * @return string
      */
-    protected function getFileName($key)
+    protected function getFileName($key): string
     {
+        $base = '';
         $filePath = $key;
-        if ($this->directoryLevel > 0 ) {
-            $base = '';
+        if ($this->directoryLevel > 0) {
             for ($i = 0; $i < $this->directoryLevel; ++$i) {
                 if (($prefix = substr($key, $i + $i, 2)) !== false) {
-                    $base .= DIRECTORY_SEPARATOR . $prefix;
+                    $base .= $prefix . DIRECTORY_SEPARATOR;
                 }
             }
-            $filePath = $base . $filePath;
         }
-        return $this->getBasePath() . DIRECTORY_SEPARATOR . $filePath . $this->extension;
+
+        return $this->getBasePath() . DIRECTORY_SEPARATOR . $base . $this->prefix . $filePath . $this->extension;
     }
 
     /**
@@ -182,8 +178,9 @@ class File extends CacheDriver
      * @param bool $force
      * @param bool $expiredOnly
      */
-    public function gc($force = false, $expiredOnly = true)
+    public function gc($force = false, $expiredOnly = true): void
     {
+        /** @noinspection RandomApiMigrationInspection */
         if ($force || mt_rand(0, 1000000) < $this->gcProbability) {
             $this->gcRecursive($this->getBasePath(), $expiredOnly);
         }
@@ -195,9 +192,9 @@ class File extends CacheDriver
      * @param $path
      * @param bool $expiredOnly
      */
-    protected function gcRecursive($path, $expiredOnly = true)
+    protected function gcRecursive($path, $expiredOnly = true): void
     {
-        if (($handle = opendir($path)) !== false) {
+        if (($handle = @opendir($path)) !== false) {
             while (($file = readdir($handle)) !== false) {
                 if ($file[0] === '.') {
                     continue;
@@ -208,7 +205,7 @@ class File extends CacheDriver
                     if (!$expiredOnly) {
                         @rmdir($fullPath);
                     }
-                } elseif (!$expiredOnly || $expiredOnly && $this->isExpire($fullPath)) {
+                } elseif (!$expiredOnly || ($expiredOnly && $this->isExpire($fullPath))) {
                     @unlink($fullPath);
                 }
             }
@@ -223,7 +220,7 @@ class File extends CacheDriver
      * @param $timeout
      * @return bool
      */
-    protected function setExpirationTime($fullPath, $timeout)
+    protected function setExpirationTime($fullPath, $timeout): bool
     {
         return @touch($fullPath, $timeout);
     }
@@ -234,7 +231,7 @@ class File extends CacheDriver
      * @param $fullPath
      * @return bool
      */
-    protected function isExpire($fullPath)
+    protected function isExpire($fullPath): bool
     {
         return @filemtime($fullPath) < time();
     }
