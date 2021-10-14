@@ -456,7 +456,7 @@ class QueryLayer
     public function aggregate(Aggregation $aggregation, $sql = false)
     {
         $queryBuilder = $this->getQueryBuilder();
-        $this->buildQuery($queryBuilder, false);
+        $this->buildQuery($queryBuilder, false, true, true, false);
 
         $field = $aggregation->getField();
         if (!$aggregation->getRaw()) {
