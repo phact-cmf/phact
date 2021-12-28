@@ -530,16 +530,17 @@ class Container implements ContainerInterface
         foreach ($reflection->getParameters() as $param) {
             $value = null;
             $type = self::DEPENDENCY_VALUE;
-            $paramType = $param->getType();
+            $typeName = $param->getType() ? $param->getType()->getName() : null;
+            $isName = $typeName && (class_exists($typeName) || interface_exists($typeName));
 
             if ($param->isVariadic()) {
                 break;
-            } elseif ($paramType && $c = $paramType->getName()) {
+            } elseif ($isName) {
                 $type = self::DEPENDENCY_OBJECT_VALUE_REQUIRED;
                 if ($param->allowsNull()) {
                     $type = self::DEPENDENCY_OBJECT_VALUE_OPTIONAL;
                 }
-                $value = $c;
+                $value = $typeName;
             } elseif ($param->isDefaultValueAvailable()) {
                 $value = $param->getDefaultValue();
             }
