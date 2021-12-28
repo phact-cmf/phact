@@ -20,7 +20,7 @@ class DatabaseTest extends AppTest
 {
     protected $defaultConnection = 'default';
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -45,7 +45,7 @@ class DatabaseTest extends AppTest
         return Phact::app()->db->getConnection()->getDatabasePlatform()->getIdentifierQuoteCharacter();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         parent::tearDown();
         $tableManager = new TableManager();
@@ -59,7 +59,7 @@ class DatabaseTest extends AppTest
     {
         return [];
     }
-    
+
     public function getConnections()
     {
         $dir = implode(DIRECTORY_SEPARATOR,[__DIR__, '..', 'config']);

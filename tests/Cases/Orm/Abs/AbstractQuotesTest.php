@@ -57,19 +57,41 @@ abstract class AbstractQuotesTest extends DatabaseTest
             'key' => 'index'
         ]);
         $schema->save();
+        $this->assertTrue(!!$schema->save());
     }
 
     public function testFilter()
     {
-        Schema::objects()->filter([
+        $schema = new Schema();
+        $schema->setAttributes([
+            'key' => 'key',
+            'order' => 'order',
+            'group' => 'group'
+        ]);
+        $schema->save();
+
+        $result = Schema::objects()->filter([
             'key' => 'key'
         ])->order([
             'key'
         ])->all();
+
+        $this->assertCount(1, $result);
     }
 
     public function testValues()
     {
-        Schema::objects()->values(['key', 'group', 'order']);
+        $expected = [
+            'key' => 'key',
+            'order' => 'order',
+            'group' => 'group'
+        ];
+        $schema = new Schema();
+        $schema->setAttributes($expected);
+        $schema->save();
+
+        $result = Schema::objects()->values(['key', 'group', 'order']);
+
+        $this->assertEquals([$expected], $result);
     }
 }

@@ -218,7 +218,7 @@ class Container implements ContainerInterface
         if (isset($config['_references'])) {
             unset($config['_references']);
         }
-        return $this->setServices($config);
+        $this->setServices($config);
     }
 
     /**
@@ -530,15 +530,16 @@ class Container implements ContainerInterface
         foreach ($reflection->getParameters() as $param) {
             $value = null;
             $type = self::DEPENDENCY_VALUE;
+            $paramType = $param->getType();
 
             if ($param->isVariadic()) {
                 break;
-            } elseif ($c = $param->getClass()) {
+            } elseif ($paramType && $c = $paramType->getName()) {
                 $type = self::DEPENDENCY_OBJECT_VALUE_REQUIRED;
                 if ($param->allowsNull()) {
                     $type = self::DEPENDENCY_OBJECT_VALUE_OPTIONAL;
                 }
-                $value = $c->getName();
+                $value = $c;
             } elseif ($param->isDefaultValueAvailable()) {
                 $value = $param->getDefaultValue();
             }
@@ -731,6 +732,7 @@ class Container implements ContainerInterface
         if ($autowire) {
             $dependencies = $this->fetchConstructorDependencies($className, $constructMethod);
         }
+
         $parameters = $this->buildParameters($attributes);
         $arguments = $this->buildFunctionArguments($dependencies, $parameters);
 

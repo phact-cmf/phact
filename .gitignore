@@ -5,3 +5,4 @@ vendor
 /tests/config/connections_local.php
 /tests/sandbox/app/runtime
 .DS_Store
+.phpunit.result.cache

@@ -60,7 +60,7 @@ class ControllerTest extends AppTest
         $router = Phact::app()->router;
         $matches = $router->match('/test_route/params_test', 'GET');
         $match = $matches[0];
-        
+
         $controllerClass = $match['target'][0];
         $action = $match['target'][1];
 
@@ -71,10 +71,10 @@ class ControllerTest extends AppTest
     }
 
     /**
-     * @expectedException \Phact\Exceptions\InvalidAttributeException
      */
     public function testInvalidParams()
     {
+        $this->expectException(\Phact\Exceptions\InvalidAttributeException::class);
         Phact::app()->handleMatch([
             'target' => [TestController::class, 'unknownAction']
         ]);

@@ -26,7 +26,7 @@ class AppTest extends TestCase
         return [];
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $config = include implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'sandbox', 'app', 'config', 'settings.php']);
         Phact::init($config);

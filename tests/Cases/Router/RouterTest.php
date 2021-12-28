@@ -115,11 +115,11 @@ class RouterTest extends AppTest
 
     /**
      * @depends testParameterRoutes
-     * @expectedException InvalidArgumentException
      * @param $router Router
      */
     public function testInvalidArgument($router)
     {
+        $this->expectException(InvalidArgumentException::class);
         $router->url('first-route');
     }
 
