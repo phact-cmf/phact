@@ -18,6 +18,7 @@ use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\Index as DBALIndex;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
+use Phact\Orm\Fields\ForeignField;
 use Phact\Orm\Index as PhactIndex;
 use Phact\Orm\Configuration\ConfigurationProvider;
 use Phact\Orm\Fields\Field;
@@ -27,7 +28,7 @@ class TableManager
 {
     public $checkExists = true;
     public $addFields = true;
-    public $processFk = false;
+    public $processFk = true;
 
     /**
      * @param array $models
@@ -41,7 +42,32 @@ class TableManager
         foreach ($models as $model) {
             $this->createModelTable($model);
         }
+
+        if ($this->processFk) {
+            foreach ($models as $model) {
+                $this->createModelTable($model, true);
+            }
+        }
+
+        foreach ($models as $model) {
+            $this->createM2MTables($model);
+        }
+
         return true;
+    }
+
+    public function getFKConstrains(Model $model)
+    {
+        $fk = [];
+        foreach ($model->getFieldsManager()->getFields() as $field) {
+            if ($field instanceof ForeignField) {
+                $toModel = $field->getRelationModel();
+                $options = $this->getConstrainOptions($field->onUpdate, $field->onDelete);
+                $fk[] = new ForeignKeyConstraint([$field->getFrom()], $toModel->getTableName(), [$field->getTo()], null, $options);
+            }
+        }
+
+        return $fk;
     }
 
     /**
@@ -55,8 +81,13 @@ class TableManager
     public function drop($models = [], $mode = null)
     {
         foreach ($models as $model) {
+            $this->dropModelForeignKeys($model);
+        }
+
+        foreach ($models as $model) {
             $this->dropModelTable($model, $mode);
         }
+
         return true;
     }
 
@@ -80,14 +111,19 @@ class TableManager
      * @throws \Phact\Exceptions\UnknownPropertyException
      * @throws \Phact\Exceptions\InvalidConfigException
      */
-    public function createModelTable($model)
+    public function createModelTable($model, bool $processFk = false)
     {
         $tableName = $model->getTableName();
         $columns = $this->createColumns($model);
 
         $dbalIndexes = $this->convertIndexes($model->getIndexes());
 
-        $table = new Table($tableName, $columns, $dbalIndexes);
+        $fk = [];
+        if ($processFk) {
+            $fk = $this->getFKConstrains($model);
+        }
+
+        $table = new Table($tableName, $columns, $dbalIndexes, $fk);
         $schemaManager = $this->getSchemaManager($model);
         if (!$schemaManager->tablesExist([$tableName])) {
             $schemaManager->createTable($table);
@@ -98,8 +134,8 @@ class TableManager
                 $schemaManager->alterTable($diff);
             }
         }
-        $this->createM2MTables($model);
     }
+
 
     /**
      * @param $model Model
@@ -109,15 +145,25 @@ class TableManager
      */
     public function createM2MTables($model)
     {
+        $handledTables = [];
         $schemaManager = $this->getSchemaManager($model);
         foreach ($model->getFieldsManager()->getFields() as $field) {
             if ($field instanceof ManyToManyField && !$field->getThrough()) {
                 $tableName = $field->getThroughTableName();
+
+                if (in_array($tableName, $handledTables)) {
+                    continue;
+                }
+
                 $columns = [];
 
                 $toModelClass = $field->modelClass;
                 /** @var $toModel Model */
                 $toModel = new $toModelClass();
+
+                if (!$schemaManager->tablesExist([$toModel->getTableName()])) {
+                    continue;
+                }
 
                 $to = $field->getTo();
                 $toColumnName = $field->getThroughTo();
@@ -139,13 +185,26 @@ class TableManager
 
                 $fk = [];
                 if ($this->processFk) {
-                    $fk[] = new ForeignKeyConstraint([$toColumnName], $toModel->getTableName(), [$to]);
-                    $fk[] = new ForeignKeyConstraint([$fromColumnName], $toModel->getTableName(), [$from]);
+                    $toM2MField = $this->getBackM2M($toModel, $model::class);
+                    $M2MOptions = $this->getM2MConstrainOptions($field, $toM2MField);
+                    $toOptions = $M2MOptions['to'] ?? [];
+                    $fromOptions = $M2MOptions['from'] ?? [];
+                    $fk[] = new ForeignKeyConstraint([$toColumnName], $toModel->getTableName(), [$to], null, $toOptions);
+                    $fk[] = new ForeignKeyConstraint([$fromColumnName], $model->getTableName(), [$from], null, $fromOptions);
                 }
+
                 $table = new Table($tableName, $columns, [], $fk);
                 if (!$schemaManager->tablesExist([$tableName])) {
                     $schemaManager->createTable($table);
+                } else {
+                    $tableExists = $schemaManager->listTableDetails($tableName);
+                    $comparator = new Comparator();
+                    if ($diff = $comparator->diffTable($tableExists, $table)) {
+                        $schemaManager->alterTable($diff);
+                    }
                 }
+
+                $handledTables[] = $tableName;
             }
         }
     }
@@ -239,5 +298,65 @@ class TableManager
             );
         }
         return $dbalIndexes;
+    }
+
+    public function getBackM2M(Model $toModel, string $targetClass): ?ManyToManyField
+    {
+        foreach ($toModel->getFieldsManager()->getFields() as $field) {
+            if ($field instanceof ManyToManyField && $field->modelClass === $targetClass) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    public function getM2MConstrainOptions(ManyToManyField $field, ?ManyToManyField $backField = null): array
+    {
+        if ($backField) {
+            $onUpdateTo = max($field->onUpdateTo, $backField->onUpdateFrom);
+            $onDeleteTo = max($field->onDeleteTo, $backField->onDeleteFrom);
+            $onUpdateFrom = max($field->onUpdateFrom, $backField->onUpdateTo);
+            $onDeleteFrom = max($field->onDeleteFrom, $backField->onDeleteTo);
+        } else {
+            $onUpdateTo = $field->onUpdateTo;
+            $onDeleteTo = $field->onDeleteTo;
+            $onUpdateFrom = $field->onUpdateTo;
+            $onDeleteFrom = $field->onDeleteTo;
+        }
+
+        return [
+            'to' => $this->getConstrainOptions($onUpdateTo, $onDeleteTo),
+            'from' => $this->getConstrainOptions($onUpdateFrom, $onDeleteFrom)
+        ];
+    }
+
+    public function getConstrainOptions(int $onUpdate, int $onDelete): array
+    {
+        $options = [];
+        $onUpdate = $this->convertConstrain($onUpdate);
+        $onDelete = $this->convertConstrain($onDelete);
+
+        if ($onUpdate) {
+            $options['onUpdate'] = $onUpdate;
+        }
+
+        if ($onDelete) {
+            $options['onDelete'] = $onDelete;
+        }
+
+        return $options;
+    }
+
+    public function convertConstrain(int $const): ?string
+    {
+        return match ($const) {
+            ForeignField::CASCADE => 'CASCADE',
+            ForeignField::SET_NULL => 'SET NULL',
+            ForeignField::NO_ACTION => 'NO ACTION',
+            ForeignField::RESTRICT => 'RESTRICT',
+            ForeignField::SET_DEFAULT => 'SET DEFAULT',
+            default => null
+        };
     }
 }

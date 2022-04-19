@@ -10,27 +10,25 @@
  * @date 10/04/16 10:14
  */
 
-namespace Phact\Tests\Cases\Orm\Sqlite;
+namespace Phact\Tests\Cases\Orm\Mysql;
 
 use Phact\Tests\Cases\Orm\Abs\AbstractTableTest;
 
-class SqliteTableTest extends AbstractTableTest
+class MysqlTableTest extends AbstractTableTest
 {
-    protected $defaultConnection = 'sqlite';
-
     protected array $expectedConstraint = [
         'movie' => [
-            'onUpdate' => 'NO ACTION',
+            'onUpdate' => 'CASCADE',
             'onDelete' => null
         ],
 
         'genre' => [
-            'onUpdate' => 'NO ACTION',
+            'onUpdate' => 'CASCADE',
             'onDelete' => 'NO ACTION'
         ],
 
         'film_company' => [
-            'onUpdate' => 'NO ACTION',
+            'onUpdate' => 'CASCADE',
             'onDelete' => 'SET NULL'
         ],
     ];
