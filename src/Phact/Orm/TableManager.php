@@ -45,7 +45,7 @@ class TableManager
 
         if ($this->processFk) {
             foreach ($models as $model) {
-                $this->createModelTable($model, true);
+                $this->createModelTable($model);
             }
         }
 
@@ -62,8 +62,12 @@ class TableManager
         foreach ($model->getFieldsManager()->getFields() as $field) {
             if ($field instanceof ForeignField) {
                 $toModel = $field->getRelationModel();
-                $options = $this->getConstrainOptions($field->onUpdate, $field->onDelete);
-                $fk[] = new ForeignKeyConstraint([$field->getFrom()], $toModel->getTableName(), [$field->getTo()], null, $options);
+                $schemaManager = $this->getSchemaManager($toModel);
+                $toTableName = $toModel->getTableName();
+                if ($schemaManager->tablesExist($toTableName)) {
+                    $options = $this->getConstrainOptions($field->onUpdate, $field->onDelete);
+                    $fk[] = new ForeignKeyConstraint([$field->getFrom()], $toTableName, [$field->getTo()], null, $options);
+                }
             }
         }
 
@@ -80,6 +84,10 @@ class TableManager
      */
     public function drop($models = [], $mode = null)
     {
+        foreach ($models as $model) {
+            $this->dropM2MTables($model);
+        }
+
         foreach ($models as $model) {
             $this->dropModelForeignKeys($model);
         }
@@ -111,15 +119,16 @@ class TableManager
      * @throws \Phact\Exceptions\UnknownPropertyException
      * @throws \Phact\Exceptions\InvalidConfigException
      */
-    public function createModelTable($model, bool $processFk = false)
+    public function createModelTable($model)
     {
         $tableName = $model->getTableName();
+        $this->checkTableName($tableName);
         $columns = $this->createColumns($model);
 
         $dbalIndexes = $this->convertIndexes($model->getIndexes());
 
         $fk = [];
-        if ($processFk) {
+        if ($this->processFk) {
             $fk = $this->getFKConstrains($model);
         }
 
@@ -150,7 +159,8 @@ class TableManager
         foreach ($model->getFieldsManager()->getFields() as $field) {
             if ($field instanceof ManyToManyField && !$field->getThrough()) {
                 $tableName = $field->getThroughTableName();
-
+                $this->checkTableName($tableName);
+                
                 if (in_array($tableName, $handledTables)) {
                     continue;
                 }
@@ -235,9 +245,6 @@ class TableManager
      */
     public function dropModelTable($model, $mode = null)
     {
-        $this->dropM2MTables($model, $mode);
-        $this->dropModelForeignKeys($model);
-
         $tableName = $model->getTableName();
         $schemaManager = $this->getSchemaManager($model);
         if ($schemaManager->tablesExist([$tableName])) {
@@ -358,5 +365,13 @@ class TableManager
             ForeignField::SET_DEFAULT => 'SET DEFAULT',
             default => null
         };
+    }
+
+    public function checkTableName(string $tableName)
+    {
+        $length = strlen($tableName);
+        if ($length > 57) {
+            throw new \LengthException("The table name '$tableName' is too long ($length characters). Maximum value 57");
+        }
     }
 }

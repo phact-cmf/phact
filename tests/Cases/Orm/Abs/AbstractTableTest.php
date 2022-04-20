@@ -29,6 +29,7 @@ use Phact\Tests\Templates\DatabaseTest;
 abstract class AbstractTableTest extends DatabaseTest
 {
     protected array $expectedConstraint = [];
+
     public function testCreate()
     {
         $tableManager = new TableManager();
@@ -96,5 +97,11 @@ abstract class AbstractTableTest extends DatabaseTest
                 'onDelete' => $constraint->getOption('onDelete'),
             ]
         );
+
+        $this->assertTrue($tableManager->drop([
+            new Genre(),
+            new Movie(),
+            new FilmCompany(),
+        ]));
     }
 }
