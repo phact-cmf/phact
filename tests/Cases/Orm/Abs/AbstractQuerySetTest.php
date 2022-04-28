@@ -712,12 +712,11 @@ abstract class AbstractQuerySetTest extends DatabaseTest
 
     public function testSubQuerySqlExpression()
     {
-
-        $subQuery = NoteThesisVote::objects()
-            ->filter(['rating__in' => ['{1}']])
+        $subQuery = Author::objects()
+            ->filter(['name__in' => ['{name}']])
             ->select([new Expression('{id}')]);
 
-        $result = NoteThesisVote::objects()->filter(['id__in' => $subQuery])->all();
+        $result = Author::objects()->filter(['id__in' => $subQuery])->all();
 
         $this->assertEmpty($result);
     }
