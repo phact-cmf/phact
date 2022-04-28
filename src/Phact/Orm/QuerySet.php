@@ -238,7 +238,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         $data = $this->getQueryLayer()->rawAll($query, $params);
         return $this->createModels($data);
     }
-    
+
     /**
      * @return null|Model
      */
@@ -679,7 +679,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         if ($value instanceof Expression) {
             $value = $this->handleExpression($value);
         } elseif ($value instanceof QuerySetInterface) {
-            $value = new Expression("({$value->allSql()})");
+            $value = new SqlExpression("({$value->allSql()})");
         }elseif ($value instanceof Model) {
             $value = $value->getPk();
         }
@@ -735,7 +735,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         }
         return $conditions;
     }
-    
+
     public function buildWith()
     {
         $this->_withFk = $this->buildWithFkRelations($this->getModel(), $this->getWith());
@@ -844,7 +844,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         }
         return $expression;
     }
-    
+
     public function handleAggregation(Aggregation $aggregation)
     {
         $field = $aggregation->getField();
@@ -976,7 +976,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         }
         return $relations;
     }
-    
+
     public function setPaginationLimit($limit): PaginableInterface
     {
         return $this->limit($limit);

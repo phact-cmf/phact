@@ -709,4 +709,15 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $data = $managerNew->all();
         $this->assertEmpty($manager->getQuerySet()->getWhere());
     }
+
+    public function testSubQuerySqlExpression()
+    {
+        $subQuery = Author::objects()
+            ->filter(['name__in' => ['{name}']])
+            ->select([new Expression('{id}')]);
+
+        $result = Author::objects()->filter(['id__in' => $subQuery])->all();
+
+        $this->assertEmpty($result);
+    }
 }
