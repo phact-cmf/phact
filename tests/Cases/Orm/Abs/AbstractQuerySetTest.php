@@ -255,7 +255,7 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $note2 = new Note();
         $note2->name = 'Second note';
         $note2->save();
-        
+
         $thesis1 = new NoteThesis();
         $thesis1->note = $note1;
         $thesis1->name = 'First thesis';
@@ -302,7 +302,7 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertEquals("SELECT DISTINCT {$q}test_note{$q}.{$q}name{$q} AS {$q}name{$q}, {$q}test_note_thesis_1{$q}.{$q}id{$q} AS {$q}theses__id{$q}, {$q}test_note_thesis_1{$q}.{$q}name{$q} AS {$q}_service__order__theses__name{$q} FROM {$q}test_note{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_thesis_1{$q}.{$q}note_id{$q} ORDER BY {$q}_service__order__theses__name{$q} DESC", $sql);
         $this->assertEquals('First note', $qs->values(['name', 'theses__id'])[0]['name']);
     }
-    
+
     public function testRaw()
     {
         $q = $this->getQuoteCharacter();
@@ -313,7 +313,7 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $note2 = new Note();
         $note2->name = 'Second note';
         $note2->save();
-        
+
         $this->assertEquals([
             [
                 'id' => '2',
@@ -708,5 +708,17 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         ]);
         $data = $managerNew->all();
         $this->assertEmpty($manager->getQuerySet()->getWhere());
+    }
+
+    public function testSubQuerySqlExpression()
+    {
+
+        $subQuery = NoteThesisVote::objects()
+            ->filter(['rating__in' => ['{1}']])
+            ->select([new Expression('{id}')]);
+
+        $result = NoteThesisVote::objects()->filter(['id__in' => $subQuery])->all();
+
+        $this->assertEmpty($result);
     }
 }
