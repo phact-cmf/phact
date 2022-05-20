@@ -1104,6 +1104,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
      */
     protected function postProcessingWithRelationField($with, $field, $manager, &$ownerModels, $makeModels = false)
     {
+        $relationModel = $field->getRelationModel();
         $relationModelClass = $field->getRelationModelClass();
         $outerAttribute = $manager->getOuterAttribute();
         $outerIds = [];
@@ -1126,6 +1127,10 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         $data = $qs->getQuerySet()->withValues($values, $makeModels);
 
         $innerAttribute = $manager->getInnerAttribute();
+        if ($fetchedField = $relationModel->fetchField($innerAttribute)) {
+            $innerAttribute = $fetchedField->from;
+        }
+
         $outerAttribute = $manager->getOuterAttribute();
 
         // Skip if columns are undefined or empty data

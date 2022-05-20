@@ -29,6 +29,8 @@ use Phact\Orm\Having\Having;
 use Phact\Orm\Manager;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
+use Phact\Tests\sandbox\app\Modules\Test\Models\Country;
+use Phact\Tests\sandbox\app\Modules\Test\Models\Movie;
 use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractQuerySetTest extends DatabaseTest
@@ -46,6 +48,8 @@ abstract class AbstractQuerySetTest extends DatabaseTest
             new NoteProperty(),
             new NotePropertyCharValue(),
             new NotePropertyIntValue(),
+            new Movie(),
+            new Country()
         ];
     }
 
@@ -551,6 +555,53 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertEquals('Second book', $books[0]->name);
 
         $this->assertEquals([], Author::objects()->filter(['id' => 100])->with(['books'])->all());
+    }
+
+    public function testWithOnFetchFields()
+    {
+        $country = new Country();
+        $country->name = 'USA';
+        $country->save();
+
+        $movie1 = new Movie();
+        $movie1->name = 'Star Wars. Episode III: Revenge of the Sith';
+        $movie1->producer_country_id = $country->getPk();
+        $movie1->save();
+
+        $movie1 = new Movie();
+        $movie1->name = 'Terminator 2: Judgment day';
+        $movie1->producer_country_id = $country->getPk();
+        $movie1->save();
+
+//        Test all()
+        $countriesWithMovies = Country::objects()->with(['movies'])->all();
+        $movies = $countriesWithMovies[0]->getWithData('movies');
+
+        $this->assertCount(2, $movies);
+        $this->assertInstanceOf(Movie::class, $movies[0]);
+        $this->assertEquals('Star Wars. Episode III: Revenge of the Sith', $movies[0]->name);
+
+//        Test values()
+        $countriesWithMovies = Country::objects()->with(['movies'])->values();
+        $this->assertEquals([
+            [
+                'id' => 1,
+                'name' => 'USA',
+                'movies' => [
+                    [
+                        'id' => 1,
+                        'producer_country_id' => 1,
+                        'name' => 'Star Wars. Episode III: Revenge of the Sith',
+                    ],
+                    [
+                        'id' => 2,
+                        'producer_country_id' => 1,
+                        'name' => 'Terminator 2: Judgment day',
+                    ]
+                ]
+            ]
+        ], $countriesWithMovies);
+
     }
 
     public function testWithValues()
