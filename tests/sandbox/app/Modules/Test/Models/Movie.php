@@ -28,7 +28,20 @@ class Movie extends Model
                 'modelClass' => FilmCompany::class,
                 'null' => true,
                 'onDelete' => ForeignField::SET_NULL,
+            ],
+            'producer_country' => [
+                'class' => ForeignField::class,
+                'modelClass' => Country::class,
+                'null' => true
             ]
         ];
+    }
+
+    public function fetchField($name)
+    {
+        if ($name === 'country_id') {
+            $name = 'producer_country_id';
+        }
+        return parent::fetchField($name);
     }
 }
