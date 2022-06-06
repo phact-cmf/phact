@@ -63,7 +63,9 @@ class HasManyField extends RelationField implements FieldManagedInterface
         $model = $this->getOwnerModelClass();
         $name = $model::classNameUnderscore();
         $from = $this->_from;
-        return "{$name}_{$from}";
+        $columnName = "{$name}_{$from}";
+
+        return $this->getRelationModel()?->fetchField($columnName)?->from ?: $columnName;
     }
 
     public function setTo($to)

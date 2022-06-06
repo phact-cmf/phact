@@ -19,6 +19,7 @@ use Modules\Test\Models\Membership;
 use Modules\Test\Models\Note;
 use Modules\Test\Models\NoteThesis;
 use Phact\Orm\Fields\HasManyField;
+use Phact\Tests\sandbox\app\Modules\Test\Models\Country;
 use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractBasicRelationsTest extends DatabaseTest
@@ -29,6 +30,12 @@ abstract class AbstractBasicRelationsTest extends DatabaseTest
         /* @var $field \Phact\Orm\Fields\HasManyField */
         $field = $note->getField('theses');
         $this->assertEquals('note_id', $field->getTo());
+        $this->assertEquals('id', $field->getFrom());
+
+        $country = new Country();
+        /* @var $field \Phact\Orm\Fields\HasManyField */
+        $field = $country->getField('movies');
+        $this->assertEquals('producer_country_id', $field->getTo());
         $this->assertEquals('id', $field->getFrom());
     }
 
