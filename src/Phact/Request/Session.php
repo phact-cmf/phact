@@ -167,7 +167,7 @@ class Session implements ArrayAccess, Countable, SessionInterface
      * The return value will be casted to boolean if non-boolean was returned.
      * @since 5.0.0
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return array_key_exists($offset, $_SESSION);
     }
@@ -181,7 +181,7 @@ class Session implements ArrayAccess, Countable, SessionInterface
      * @return mixed Can return all value types.
      * @since 5.0.0
      */
-    public function offsetGet($offset)
+    public function offsetGet($offset): mixed
     {
         return $this->get($offset);
     }
@@ -198,7 +198,7 @@ class Session implements ArrayAccess, Countable, SessionInterface
      * @return void
      * @since 5.0.0
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         $this->add($offset, $value);
     }
@@ -212,7 +212,7 @@ class Session implements ArrayAccess, Countable, SessionInterface
      * @return void
      * @since 5.0.0
      */
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
         $this->remove($offset);
     }
@@ -226,7 +226,7 @@ class Session implements ArrayAccess, Countable, SessionInterface
      * The return value is cast to an integer.
      * @since 5.1.0
      */
-    public function count()
+    public function count(): int
     {
         return count($_SESSION);
     }

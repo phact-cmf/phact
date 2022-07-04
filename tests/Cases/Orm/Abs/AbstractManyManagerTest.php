@@ -55,6 +55,11 @@ abstract class AbstractManyManagerTest extends DatabaseTest
         $song4->musician = $musicianPL;
         $song4->name = 'Tragic Idol';
         $song4->save();
+
+        $song5 = new Song();
+        $song5->musician = $musicianPL;
+        $song5->name = 'Your Hand in Mine';
+        $song5->save();
     }
 
     public function testClean()
@@ -80,5 +85,24 @@ abstract class AbstractManyManagerTest extends DatabaseTest
         $this->assertCount(2, $data, 'Incorrect count of result');
         $this->assertEquals('Blue on Black', $data[0]->name, 'Incorrect name of first result');
         $this->assertEquals('Wrong Side of Heaven', $data[1]->name, 'Incorrect name of second result');
+    }
+
+    public function testOrderByHasManyModelGet()
+    {
+        $this->fillData();
+        $musicianFFDP = Musician::objects()->order(['songs__name'])->get();
+
+        $data = $musicianFFDP->songs->order(['name'])->all();
+        $this->assertCount(2, $data, 'Incorrect count of result');
+        $this->assertEquals('Blue on Black', $data[0]->name, 'Incorrect name of first result');
+        $this->assertEquals('Wrong Side of Heaven', $data[1]->name, 'Incorrect name of second result');
+    }
+
+    public function testOrderByHasManyModelAll()
+    {
+        $this->fillData();
+        $musicians = Musician::objects()->order(['-songs__name'])->all();
+
+        $this->assertEquals('Paradise Lost', $musicians[0]->name);
     }
 }

@@ -38,19 +38,19 @@ class QueryLayer
 
     protected $_key;
 
-    /**
-     * @var \Phact\Orm\QuerySet
-     */
-    protected $_querySet;
+    protected QuerySet $_querySet;
 
-    protected $_aliases;
+    /**
+     * @var string[]
+     */
+    protected array $_aliases = [];
 
     /** @var Model */
-    protected $_model;
+    protected ?Model $_model = null;
 
-    protected $_isBuiltQuerySet = false;
+    protected bool $_isBuiltQuerySet = false;
 
-    protected $_paramsCounter = 0;
+    protected int $_paramsCounter = 0;
 
     /**
      * Prefix for values in query that required by SQL, but not requested by user
@@ -58,18 +58,18 @@ class QueryLayer
      *
      * @var string
      */
-    protected $_servicePrefix = '_service__';
+    protected string $_servicePrefix = '_service__';
 
-    public function __construct($querySet, $key = null)
+    public function __construct(QuerySet $querySet, $key = null)
     {
         $this->_querySet = $querySet;
         $this->_key = $key;
     }
 
     /**
-     * @return \Phact\Orm\QuerySet
+     * @return QuerySet
      */
-    public function getQuerySet()
+    public function getQuerySet(): QuerySet
     {
         if (!$this->_isBuiltQuerySet) {
             $this->_querySet->build();
@@ -80,9 +80,9 @@ class QueryLayer
     }
 
     /**
-     * @return \Phact\Orm\Query
+     * @return Query
      */
-    public function getQuery()
+    public function getQuery(): Query
     {
         return $this->getModel()->getQuery();
     }
@@ -90,7 +90,7 @@ class QueryLayer
     /**
      * @return Model
      */
-    public function getModel()
+    public function getModel(): Model
     {
         if (!$this->_model) {
             $this->_model = $this->_querySet->getModel();
@@ -98,7 +98,10 @@ class QueryLayer
         return $this->_model;
     }
 
-    public function getMetaData()
+    /**
+     * @return string[]
+     */
+    public function getMetaData(): array
     {
         return $this->getModel()->getMetaData();
     }
@@ -106,12 +109,15 @@ class QueryLayer
     /**
      * @return string
      */
-    public function getTableName()
+    public function getTableName(): string
     {
         return $this->getModel()->getTableName();
     }
 
-    public function getQueryBuilderRaw()
+    /**
+     * @return DBALQueryBuilder
+     */
+    public function getQueryBuilderRaw(): DBALQueryBuilder
     {
         return $this->getQuery()->getQueryBuilder();
     }
@@ -119,23 +125,31 @@ class QueryLayer
     /**
      * @return DBALQueryBuilder
      */
-    public function getQueryBuilder()
+    public function getQueryBuilder(): DBALQueryBuilder
     {
         $qb = $this->getQueryBuilderRaw();
         return $qb->from($this->quote($this->getTableName()));
     }
 
-    public function quoteValue($value)
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function quoteValue($value): mixed
     {
         return $this->getQuery()->getConnection()->quote($value);
     }
 
-    public function quote($value)
+    /**
+     * @param $value
+     * @return string
+     */
+    public function quote($value): string
     {
         return $this->getQuery()->getConnection()->quoteIdentifier($value);
     }
 
-    public function setAliases()
+    public function setAliases(): void
     {
         $this->_aliases = [];
         $relations = $this->getQuerySet()->getRelations();
@@ -151,6 +165,9 @@ class QueryLayer
         }
     }
 
+    /**
+     * @return mixed
+     */
     public function getAliases()
     {
         return $this->_aliases;
@@ -177,18 +194,14 @@ class QueryLayer
         return $tableName;
     }
 
-    /**
-     * @param $relationName
-     * @return Model
-     */
-    public function getRelationModel($relationName)
+    public function getRelationModel(?string $relationName): ?Model
     {
         $relation = $this->getQuerySet()->getRelation($relationName);
         /** @var $model Model */
         return isset($relation['model']) ? $relation['model'] : null;
     }
 
-    public function getRelationTable($relationName)
+    public function getRelationTable(?string $relationName): ?string
     {
         $model = $this->getRelationModel($relationName);
         if ($model) {
@@ -230,7 +243,7 @@ class QueryLayer
     {
         $key = implode('-', [get_class($this->getQuery()->getConnection()->getDatabasePlatform()), $this->_model->className(), $relationName, $attribute, $tableName]);
         if (!isset($this->_columnAliases[$key])) {
-            if ($attribute != '*'){
+            if ($attribute !== '*') {
                 $attribute = $this->relationColumnAttribute($relationName, $attribute);
             }
             $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
@@ -245,9 +258,9 @@ class QueryLayer
         return $this->quote($tableName) . '.' . $attribute;
     }
 
-    public function isSafeAttribute($attribute)
+    public function isSafeAttribute($attribute): bool
     {
-        return $attribute == '*';
+        return $attribute === '*';
     }
 
     /**
@@ -255,7 +268,7 @@ class QueryLayer
      * @return DBALQueryBuilder
      * @throws Exception
      */
-    public function processJoins($queryBuilder)
+    public function processJoins(DBALQueryBuilder $queryBuilder): DBALQueryBuilder
     {
         $relations = $this->getQuerySet()->getRelations();
 
@@ -266,8 +279,6 @@ class QueryLayer
             $currentAlias = $this->getAlias($currentRelationName, $currentTable);
 
             if (isset($relation['joins']) && is_array($relation['joins'])) {
-
-
                 foreach ($relation['joins'] as $join) {
                     if (is_array($join)) {
                         if (isset($join['table']) && isset($join['from']) && isset($join['to'])) {
@@ -319,8 +330,13 @@ class QueryLayer
      * @return DBALQueryBuilder
      * @throws Exception
      */
-    public function buildQuery($queryBuilder, $buildOrder = true, $buildLimitOffset = true, $buildConditions = true, $buildGroup = true)
-    {
+    public function buildQuery(
+        DBALQueryBuilder $queryBuilder,
+        bool $buildOrder = true,
+        bool $buildLimitOffset = true,
+        bool $buildConditions = true,
+        bool $buildGroup = true
+    ): DBALQueryBuilder {
         $qs = $this->getQuerySet();
         $queryBuilder = $this->processJoins($queryBuilder);
         if ($buildConditions) {
@@ -342,7 +358,7 @@ class QueryLayer
         return $queryBuilder;
     }
 
-    public function all($sql = false)
+    public function all(bool $asSql = false): array|string
     {
         $queryBuilder = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
@@ -364,24 +380,25 @@ class QueryLayer
         }
         $this->addBindings($queryBuilder, $bindings);
         $this->buildQuery($queryBuilder);
-        if ($sql) {
+        if ($asSql) {
             return $this->getSQL($queryBuilder);
         }
-        $result = $queryBuilder->execute()->fetchAll();
-        return $result;
+
+        $queryBuilder->executeQuery();
+        return $queryBuilder->fetchAllAssociative();
     }
 
-    public function rawAll($query, $bindings = [])
+    public function rawAll($query, $bindings = []): array
     {
-        return $this->getQueryBuilder()->getConnection()->fetchAll($query, $bindings);
+        return $this->getQueryBuilder()->getConnection()->fetchAllAssociative($query, $bindings);
     }
 
-    public function rawGet($query, $bindings = [])
+    public function rawGet($query, $bindings = []): array
     {
-        return $this->getQueryBuilder()->getConnection()->fetchAssoc($query, $bindings);
+        return $this->getQueryBuilder()->getConnection()->fetchAssociative($query, $bindings);
     }
 
-    public function get($sql = false)
+    public function get(bool $asSql = false): array|string
     {
         $queryBuilder = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
@@ -390,25 +407,25 @@ class QueryLayer
 
         $select = $qs->getSelect();
         list($select, $bindings) = $this->buildSelect($select);
-        $queryBuilder->select($select);
+        $queryBuilder->add('select', $select, true);
         $this->addBindings($queryBuilder, $bindings);
 
-        if ($sql) {
+        if ($asSql) {
             return $this->getSQL($queryBuilder);
         }
 
-        $result = $queryBuilder->execute()->fetch();
-        return $result;
+        $queryBuilder->executeQuery();
+        return $queryBuilder->fetchAssociative();
     }
 
-    public function defaultSelect()
+    public function defaultSelect(): array
     {
         $select = [];
         $select[] = $this->column($this->getTableName(), '*');
         return array_merge($select, $this->withSelect());
     }
 
-    public function withSelect()
+    public function withSelect(): array
     {
         $select = [];
         foreach ($this->getQuerySet()->getWithFkRelations() as $relationName) {
@@ -428,7 +445,7 @@ class QueryLayer
      * @param $select
      * @return array
      */
-    public function buildSelect($select)
+    public function buildSelect($select): array
     {
         $result = [];
         $bindings = [];
@@ -441,7 +458,7 @@ class QueryLayer
                 $value = $query;
                 $bindings = array_merge($bindings, $rawBindings);
             }
-            if ($value == '*') {
+            if ($value === '*') {
                 $value = $this->column($this->getTableName(), '*');
             }
             if (is_string($key)) {
@@ -473,7 +490,7 @@ class QueryLayer
         return null;
     }
 
-    public function update($data = [], $sql = false)
+    public function update(array $data = [], bool $asSql = false): int|string
     {
         $queryBuilder = $this->getQueryBuilder();
         $this->buildQuery($queryBuilder, false, false, true, false);
@@ -495,13 +512,14 @@ class QueryLayer
             }
         }
 
-        if ($sql) {
+        if ($asSql) {
             return $this->getSQL($queryBuilder);
         }
-        return $queryBuilder->execute();
+
+        return $queryBuilder->executeStatement();
     }
 
-    public function delete($sql = false)
+    public function delete($sql = false): int|string
     {
         $queryBuilder = $this->getQueryBuilder();
         $this->buildQuery($queryBuilder, false, false, true, false);
@@ -514,10 +532,10 @@ class QueryLayer
         if ($sql) {
             return $this->getSQL($queryBuilder);
         }
-        return $queryBuilder->execute();
+        return $queryBuilder->executeStatement();
     }
 
-    public function values($columns = [], $distinct = true, $sql = false)
+    public function values(array $columns = [], bool $distinct = true, bool $asSql = false): array|string
     {
         $queryBuilder = $this->getQueryBuilder();
         $qs = $this->getQuerySet();
@@ -530,14 +548,14 @@ class QueryLayer
                 $item = null;
                 if ($attribute instanceof Expression) {
                     list($item, $bindings) = $this->convertExpression($attribute);
-                    $this->addBindings($bindings);
+                    $this->addBindings($queryBuilder, $bindings);
                 } else {
                     $item = $this->relationColumnAlias($attribute);
                     if (!$alias && $attribute !== '*') {
                         $alias = $this->quote($attribute);
                     }
                 }
-                $select[] = $item . ($alias ? ' AS ' . $alias: '');
+                $select[] = $item . ($alias ? ' AS ' . $alias : '');
             }
         }
         if ($withSelect = $this->withSelect()) {
@@ -545,7 +563,7 @@ class QueryLayer
                 $select[] = $column . ' AS ' . $alias;
             }
         }
-        if ($qs->getHasManyRelations() && $distinct) {
+        if ($distinct && $qs->getHasManyRelations()) {
             reset($select);
             $first = key($select);
             $select[$first] = "DISTINCT {$select[$first]}";
@@ -554,13 +572,14 @@ class QueryLayer
             $queryBuilder->select($select);
         }
         $this->buildQuery($queryBuilder);
-        if ($sql) {
+        if ($asSql) {
             return $this->getSQL($queryBuilder);
         }
         $result = [];
-        foreach ($queryBuilder->execute()->fetchAll() as $key => $row) {
+        $queryBuilder->executeQuery();
+        foreach ($queryBuilder->fetchAllAssociative() as $key => $row) {
             foreach ($row as $column => $value) {
-                if (strpos($column, $this->_servicePrefix) === 0) {
+                if (str_starts_with($column, $this->_servicePrefix)) {
                     unset($row[$column]);
                 }
             }
@@ -569,7 +588,7 @@ class QueryLayer
         return $result;
     }
 
-    protected function createModel($modelClass, $dbData): Model
+    protected function createModel(string $modelClass, array $dbData): Model
     {
         /** @var Model $model */
         $model = new $modelClass;
@@ -582,7 +601,7 @@ class QueryLayer
      * @param $queryBuilder DBALQueryBuilder
      * @return DBALQueryBuilder
      */
-    public function wrapQuery($queryBuilder)
+    public function wrapQuery(DBALQueryBuilder $queryBuilder): DBALQueryBuilder
     {
         // Create a temporary table for correct operation with JOIN
         $queryUpdate = $this->getQueryBuilder();
@@ -598,7 +617,7 @@ class QueryLayer
         $subQueryFrom = $this->prepareSubQuery($queryBuilder, $queryUpdate);
 
         $queryWrapper
-            ->from( '(' . $subQueryFrom . ') AS ' . $tempTable)
+            ->from('(' . $subQueryFrom . ') AS ' . $tempTable)
             ->select($this->column($tempTable, $pkAttribute));
 
         $subQueryIn = $this->prepareSubQuery($queryWrapper, $queryUpdate);
@@ -607,7 +626,7 @@ class QueryLayer
         return $queryUpdate;
     }
 
-    public function clearConditions($conditions)
+    public function clearConditions($conditions): mixed
     {
         if (is_array($conditions) && count($conditions) == 1) {
             return $this->clearConditions($conditions[0]);
@@ -616,15 +635,12 @@ class QueryLayer
         }
     }
 
-    /**
-     * @param $queryBuilder DBALQueryBuilder
-     * @param $conditions
-     * @param string $operator
-     * @param bool $clear
-     * @return CompositeExpression
-     */
-    public function processConditions($queryBuilder, $conditions, $operator = 'and', $clear = false)
-    {
+    public function processConditions(
+        DBALQueryBuilder $queryBuilder,
+        $conditions,
+        string $operator = 'and',
+        bool $clear = false
+    ): ?CompositeExpression {
         if ($clear) {
             $conditions = $this->clearConditions($conditions);
         }
@@ -654,21 +670,18 @@ class QueryLayer
         return $this->composeConditions($queryBuilder, $operator, $result);
     }
 
-    /**
-     * @param $queryBuilder DBALQueryBuilder
-     * @param $operator
-     * @param $conditions
-     * @return CompositeExpression
-     */
-    public function composeConditions($queryBuilder, $operator, $conditions)
-    {
+    public function composeConditions(
+        DBALQueryBuilder $queryBuilder,
+        string $operator,
+        $conditions
+    ): ?CompositeExpression {
         if (!$conditions) {
             return null;
         }
         $compositeExpression = $queryBuilder->expr()->andX();
-        if ($operator == 'or') {
+        if ($operator === 'or') {
             $compositeExpression = $queryBuilder->expr()->orX();
-        } elseif ($operator == 'not') {
+        } elseif ($operator === 'not') {
             $compositeExpression = new WrappedCompositeExpression(CompositeExpression::TYPE_AND);
             $compositeExpression->setWrapper("NOT");
         }
@@ -690,7 +703,7 @@ class QueryLayer
             } else {
                 if ($valueExpression) {
                     $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], $value);
-                } elseif ($condition['operator'] == 'IN') {
+                } elseif ($condition['operator'] === 'IN') {
                     if (is_array($value)) {
                         $placeholders = [];
                         foreach ($value as $item) {
@@ -699,7 +712,7 @@ class QueryLayer
                         $value = implode(',', $placeholders);
                     }
                     $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], '(' . $value . ')');
-                } elseif (is_array($value) && count($value) == 2 && $condition['operator'] == 'BETWEEN') {
+                } elseif (is_array($value) && $condition['operator'] === 'BETWEEN' && count($value) === 2) {
                     $placeholder1 = $queryBuilder->createNamedParameter($value[0]);
                     $placeholder2 = $queryBuilder->createNamedParameter($value[1]);
                     $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], "{$placeholder1} AND {$placeholder2}");
@@ -707,14 +720,14 @@ class QueryLayer
                     $placeholder = $queryBuilder->createNamedParameter($value);
                     $comparison = $queryBuilder->expr()->comparison($key, $condition['operator'], $placeholder);
                 }
-                $compositeExpression->add($comparison);
+                $compositeExpression = $compositeExpression->with($comparison);
             }
         }
 
         return $compositeExpression;
     }
 
-    public static function buildWhere($key, $operator = null, $value = null, $joiner = 'AND')
+    public static function buildWhere($key, $operator = null, $value = null, $joiner = 'AND'): array
     {
         return [
             'key' => $key,
@@ -727,9 +740,8 @@ class QueryLayer
     /**
      * @param $queryBuilder DBALQueryBuilder
      * @param $order array
-     * @return array
      */
-    public function processOrder($queryBuilder, $order)
+    public function processOrder(DBALQueryBuilder $queryBuilder, array $order): void
     {
         foreach ($order as $item) {
             if ($item instanceof Expression) {
@@ -750,11 +762,7 @@ class QueryLayer
         }
     }
 
-    /**
-     * @param $queryBuilder DBALQueryBuilder
-     * @param $group array
-     */
-    public function processGroup($queryBuilder, $group)
+    public function processGroup(DBALQueryBuilder $queryBuilder, array $group): void
     {
         foreach ($group as $item) {
             if ($item instanceof Expression) {
@@ -768,11 +776,9 @@ class QueryLayer
     }
 
     /**
-     * @param $queryBuilder DBALQueryBuilder
-     * @param $having Expression|Having
      * @throws Exception
      */
-    public function processHaving($queryBuilder, $having)
+    public function processHaving(DBALQueryBuilder $queryBuilder, Expression|Having|null $having): void
     {
         if ($having instanceof Expression) {
             list($value, $bindings) = $this->convertExpression($having);
@@ -793,12 +799,7 @@ class QueryLayer
         }
     }
 
-    /**
-     * @param $queryBuilder DBALQueryBuilder
-     * @param $limit int|null
-     * @param $offset int|null
-     */
-    public function processLimitOffset($queryBuilder, $limit, $offset)
+    public function processLimitOffset(DBALQueryBuilder $queryBuilder, ?int $limit, ?int $offset): void
     {
         if (isset($limit)) {
             $queryBuilder->setMaxResults($limit);
@@ -848,7 +849,7 @@ class QueryLayer
         return [$value, $bindings];
     }
 
-    public function fetchBindingName()
+    public function fetchBindingName(): string
     {
         $name = 'query_param__' . $this->_paramsCounter;
         $this->_paramsCounter++;
@@ -859,14 +860,14 @@ class QueryLayer
      * @param $queryBuilder DBALQueryBuilder
      * @param array $bindings
      */
-    public function addBindings($queryBuilder, $bindings = [])
+    public function addBindings(DBALQueryBuilder $queryBuilder, array $bindings = []): void
     {
         foreach ($bindings as $name => $value) {
             $queryBuilder->setParameter($name, $value);
         }
     }
 
-    public function getCacheKey($type)
+    public function getCacheKey(string|int $type): string
     {
         return $this->_key . '#' . $type;
     }
@@ -875,7 +876,7 @@ class QueryLayer
      * @param $queryBuilder DBALQueryBuilder
      * @return string
      */
-    public function getSQL($queryBuilder)
+    public function getSQL(DBALQueryBuilder $queryBuilder): string
     {
         return $this->getQuery()->getSQL($queryBuilder);
     }
@@ -885,7 +886,7 @@ class QueryLayer
      * @param $dstQueryBuilder DBALQueryBuilder
      * @return string
      */
-    public function prepareSubQuery($srcQueryBuilder, $dstQueryBuilder)
+    public function prepareSubQuery(DBALQueryBuilder $srcQueryBuilder, DBALQueryBuilder $dstQueryBuilder): string
     {
         return $this->getQuery()->prepareSubQuery($srcQueryBuilder, $dstQueryBuilder);
     }

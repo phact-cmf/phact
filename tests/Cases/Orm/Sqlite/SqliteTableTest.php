@@ -20,17 +20,17 @@ class SqliteTableTest extends AbstractTableTest
 
     protected array $expectedConstraint = [
         'movie' => [
-            'onUpdate' => 'NO ACTION',
+            'onUpdate' => 'CASCADE',
             'onDelete' => null
         ],
 
         'genre' => [
-            'onUpdate' => 'NO ACTION',
+            'onUpdate' => 'CASCADE',
             'onDelete' => 'NO ACTION'
         ],
 
         'film_company' => [
-            'onUpdate' => 'NO ACTION',
+            'onUpdate' => 'CASCADE',
             'onDelete' => 'SET NULL'
         ],
     ];

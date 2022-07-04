@@ -132,7 +132,7 @@ class TableManager
             $fk = $this->getFKConstrains($model);
         }
 
-        $table = new Table($tableName, $columns, $dbalIndexes, $fk);
+        $table = new Table($tableName, $columns, $dbalIndexes, [], $fk);
         $schemaManager = $this->getSchemaManager($model);
         if (!$schemaManager->tablesExist([$tableName])) {
             $schemaManager->createTable($table);
@@ -160,7 +160,7 @@ class TableManager
             if ($field instanceof ManyToManyField && !$field->getThrough()) {
                 $tableName = $field->getThroughTableName();
                 $this->checkTableName($tableName);
-                
+
                 if (in_array($tableName, $handledTables)) {
                     continue;
                 }
@@ -203,7 +203,7 @@ class TableManager
                     $fk[] = new ForeignKeyConstraint([$fromColumnName], $model->getTableName(), [$from], null, $fromOptions);
                 }
 
-                $table = new Table($tableName, $columns, [], $fk);
+                $table = new Table($tableName, $columns, [], [], $fk);
                 if (!$schemaManager->tablesExist([$tableName])) {
                     $schemaManager->createTable($table);
                 } else {

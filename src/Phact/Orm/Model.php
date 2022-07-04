@@ -29,7 +29,7 @@ use Serializable;
  *
  * @package Phact\Orm
  */
-class Model implements Serializable
+class Model
 {
     use SmartProperties, ClassNames;
 
@@ -504,7 +504,7 @@ class Model implements Serializable
             $event->trigger(self::class . '::' . $eventName, [], $this);
             $event->trigger('model.' . $eventName, [], $this);
         }
-        if(method_exists($this, $metaEvent)){
+        if($metaEvent && method_exists($this, $metaEvent)){
             $this->{$metaEvent}();
             if ($event) {
                 $event->trigger(self::class . '::' . $metaEvent, [], $this);
@@ -572,7 +572,7 @@ class Model implements Serializable
         $query = $this->getQuery();
         $pk = $query->insert($this->getTableName(), $prepared);
         $pkAttribute = $this->getPkAttribute();
-        
+
         $field = $this->getFieldsManager()->getField($pkAttribute);
         $this->_attributes[$pkAttribute] = $field->attributePrepareValue($pk);
 
@@ -656,30 +656,14 @@ class Model implements Serializable
 
     }
 
-    /**
-     * String representation of object
-     * @link http://php.net/manual/en/serializable.serialize.php
-     * @return string the string representation of the object or null
-     * @since 5.1.0
-     */
-    public function serialize()
+    public function __serialize(): array
     {
-        $data = $this->getDbPreparedAttributes($this->getAttributes());
-        return serialize($data);
+        return $this->getDbPreparedAttributes($this->getAttributes());
     }
 
-    /**
-     * Constructs the object
-     * @link http://php.net/manual/en/serializable.unserialize.php
-     * @param string $serialized <p>
-     * The string representation of the object.
-     * </p>
-     * @return void
-     * @since 5.1.0
-     */
-    public function unserialize($serialized)
+
+    public function __unserialize(array $data): void
     {
-        $data = unserialize($serialized);
         $this->setDbData($data);
     }
 }

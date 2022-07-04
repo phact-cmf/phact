@@ -568,16 +568,16 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $movie1->producer_country_id = $country->getPk();
         $movie1->save();
 
-        $movie1 = new Movie();
-        $movie1->name = 'Terminator 2: Judgment day';
-        $movie1->producer_country_id = $country->getPk();
-        $movie1->save();
+//        $movie2 = new Movie();
+//        $movie2->name = 'Terminator 2: Judgment day';
+//        $movie2->producer_country_id = $country->getPk();
+//        $movie2->save();
 
 //        Test all()
         $countriesWithMovies = Country::objects()->with(['movies'])->all();
         $movies = $countriesWithMovies[0]->getWithData('movies');
 
-        $this->assertCount(2, $movies);
+        $this->assertCount(1, $movies);
         $this->assertInstanceOf(Movie::class, $movies[0]);
         $this->assertEquals('Star Wars. Episode III: Revenge of the Sith', $movies[0]->name);
 
@@ -594,12 +594,12 @@ abstract class AbstractQuerySetTest extends DatabaseTest
                         'name' => 'Star Wars. Episode III: Revenge of the Sith',
                         'film_company_id' => null
                     ],
-                    [
-                        'id' => 2,
-                        'producer_country_id' => 1,
-                        'name' => 'Terminator 2: Judgment day',
-                        'film_company_id' => null
-                    ]
+//                    [
+//                        'id' => 2,
+//                        'producer_country_id' => 1,
+//                        'name' => 'Terminator 2: Judgment day',
+//                        'film_company_id' => null
+//                    ]
                 ]
             ]
         ], $countriesWithMovies);

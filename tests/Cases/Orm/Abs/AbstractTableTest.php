@@ -83,7 +83,7 @@ abstract class AbstractTableTest extends DatabaseTest
                 'onDelete' => $constraint->getOption('onDelete')
             ];
             $expected = $this->expectedConstraint[$constraint->getForeignTableName()] ?? [];
-            $this->assertEquals($expected, $actual);
+            $this->assertEquals($expected, $actual, 'Incorrect constraint for ' . $constraint->getForeignTableName());
         }
 
         // FK
@@ -98,10 +98,10 @@ abstract class AbstractTableTest extends DatabaseTest
             ]
         );
 
-        $this->assertTrue($tableManager->drop([
+        $tableManager->drop([
             new Genre(),
             new Movie(),
             new FilmCompany(),
-        ]));
+        ]);
     }
 }

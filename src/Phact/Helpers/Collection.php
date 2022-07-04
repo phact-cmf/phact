@@ -19,7 +19,7 @@ use IteratorAggregate;
 use Serializable;
 use Traversable;
 
-class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializable
+class Collection implements IteratorAggregate, ArrayAccess, Countable
 {
     protected $_data = [];
 
@@ -61,29 +61,14 @@ class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializa
         }
     }
 
-    /**
-     * String representation of object
-     * @link http://php.net/manual/en/serializable.serialize.php
-     * @return string the string representation of the object or null
-     * @since 5.1.0
-     */
-    public function serialize()
+    public function __serialize(): array
     {
-        return serialize($this->_data);
+        return $this->_data;
     }
 
-    /**
-     * Constructs the object
-     * @link http://php.net/manual/en/serializable.unserialize.php
-     * @param string $serialized <p>
-     * The string representation of the object.
-     * </p>
-     * @return void
-     * @since 5.1.0
-     */
-    public function unserialize($serialized)
+    public function __unserialize(array $data): void
     {
-        $this->_data = unserialize($serialized);
+        $this->_data = $data;
     }
 
     /**
@@ -98,7 +83,7 @@ class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializa
      * The return value will be casted to boolean if non-boolean was returned.
      * @since 5.0.0
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return $this->has($offset);
     }
@@ -112,7 +97,7 @@ class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializa
      * @return mixed Can return all value types.
      * @since 5.0.0
      */
-    public function offsetGet($offset)
+    public function offsetGet($offset): mixed
     {
         return $this->get($offset);
     }
@@ -129,7 +114,7 @@ class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializa
      * @return void
      * @since 5.0.0
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         $this->add($offset, $value);
     }
@@ -143,7 +128,7 @@ class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializa
      * @return void
      * @since 5.0.0
      */
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
         $this->remove($offset);
     }
@@ -157,7 +142,7 @@ class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializa
      * The return value is cast to an integer.
      * @since 5.1.0
      */
-    public function count()
+    public function count(): int
     {
         return count($this->_data);
     }
@@ -169,7 +154,7 @@ class Collection implements IteratorAggregate, ArrayAccess, Countable, Serializa
      * <b>Traversable</b>
      * @since 5.0.0
      */
-    public function getIterator()
+    public function getIterator(): Traversable
     {
         return new ArrayIterator($this->_data);
     }
