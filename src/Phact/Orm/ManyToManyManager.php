@@ -95,11 +95,12 @@ class ManyToManyManager extends RelationManager implements RelationBatchInterfac
             ]);
         } else {
             $relationName = $this->getRelationName();
-            $qs->appendRelation($relationName, null, [[
-                'table' => $this->throughTable,
-                'from' => $this->toField,
-                'to' => $this->throughToField
-            ]]);
+            $qs->appendRelation($relationName, null, [
+                (new Join())
+                    ->setTable($this->throughTable)
+                    ->setFrom($this->toField)
+                    ->setTo($this->throughToField)
+            ]);
             $qs->filter([
                 $relationName . '__' . $this->throughFromField => $this->getKey()
             ]);
@@ -123,11 +124,12 @@ class ManyToManyManager extends RelationManager implements RelationBatchInterfac
             ]);
         } else {
             $relationName = $this->getRelationName();
-            $qs->appendRelation($relationName, null, [[
-                'table' => $this->throughTable,
-                'from' => $this->toField,
-                'to' => $this->throughToField
-            ]]);
+            $qs->appendRelation($relationName, null, [
+                (new Join())
+                    ->setTable($this->throughTable)
+                    ->setFrom($this->toField)
+                    ->setTo($this->throughToField)
+            ]);
             $qs->filter([
                 $relationName . '__' . $this->throughFromField . '__in' => $outerIds
             ]);

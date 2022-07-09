@@ -13,18 +13,23 @@
 namespace Phact\Orm\Fields;
 
 use Phact\Form\Fields\DropDownField;
+use Phact\Helpers\Configurator;
+use Phact\Orm\FieldManagedInterface;
+use Phact\Orm\ForeignManager;
+use Phact\Orm\Join;
+use Phact\Orm\Manager;
 use Phact\Orm\Model;
 use Phact\Orm\QuerySet;
 
 /**
  * Class ForeignField
- * 
+ *
  * @property $to string Related model field
  * @property $from string Current model field
  *
  * @package Phact\Orm\Fields
  */
-class ForeignField extends RelationField
+class ForeignField extends RelationField implements FieldManagedInterface
 {
     public $rawSet = true;
 
@@ -45,6 +50,8 @@ class ForeignField extends RelationField
      * @var string|null
      */
     public $nameAttribute = null;
+
+    public $managerClass = ForeignManager::class;
 
     public function getFrom()
     {
@@ -120,7 +127,7 @@ class ForeignField extends RelationField
         }
         $this->_attribute = $value->{$this->to};
     }
-    
+
     protected function fetchModel()
     {
         $model = $this->getModel();
@@ -133,20 +140,18 @@ class ForeignField extends RelationField
             return $class::objects()->filter([
                 $this->getTo() => $value
             ])->get();
-        } else {
-            return $value;
         }
+        return $value;
     }
 
     public function getRelationJoins()
     {
         $relationModelClass = $this->getRelationModelClass();
         return [
-            [
-                'table' => $relationModelClass::getTableName(),
-                'from' => $this->getFrom(),
-                'to' => $this->getTo()
-            ]
+            (new Join())
+                ->setTable($relationModelClass::getTableName())
+                ->setFrom($this->getFrom())
+                ->setTo($this->getTo())
         ];
     }
 
@@ -208,5 +213,18 @@ class ForeignField extends RelationField
         }
         $config['choices'] = $choices;
         return parent::setUpFormField($config);
+    }
+
+    public function getManager(): Manager
+    {
+        $relationModel = $this->getRelationModel();
+        $manager = new $this->managerClass($relationModel);
+
+        return Configurator::configure($manager, [
+            'fieldName' => $this->name,
+            'toField' => $this->getTo(),
+            'fromField' => $this->getFrom(),
+            'ownerModel' => $this->getModel()
+        ]);
     }
 }

@@ -14,6 +14,7 @@ namespace Phact\Orm\Fields;
 use Phact\Form\Fields\DropDownField;
 use Phact\Helpers\Configurator;
 use Phact\Orm\FieldManagedInterface;
+use Phact\Orm\Join;
 use Phact\Orm\Manager;
 use Phact\Orm\ManyToManyManager;
 use Phact\Orm\QuerySet;
@@ -231,9 +232,8 @@ class ManyToManyField extends RelationField implements FieldManagedInterface
                     'to' => $this->getThroughFrom()
                 ]
             ];
-        } else {
-            return [];
         }
+        return [];
     }
 
     public function getRelationJoins()
@@ -242,26 +242,23 @@ class ManyToManyField extends RelationField implements FieldManagedInterface
         if ($throughName = $this->getThroughName()) {
             return [
                 $throughName,
-                [
-                    'table' => $relationModelClass::getTableName(),
-                    'from' => $this->getThroughTo(),
-                    'to' => $this->getTo()
-                ]
-            ];
-        } else {
-            return [
-                [
-                    'table' => $this->getThroughTableName(),
-                    'from' => $this->getFrom(),
-                    'to' => $this->getThroughFrom()
-                ],
-                [
-                    'table' => $relationModelClass::getTableName(),
-                    'from' => $this->getThroughTo(),
-                    'to' => $this->getTo()
-                ]
+                (new Join())
+                    ->setTable($relationModelClass::getTableName())
+                    ->setFrom($this->getThroughTo())
+                    ->setTo($this->getTo())
             ];
         }
+
+        return [
+            (new Join())
+                ->setTable($this->getThroughTableName())
+                ->setFrom($this->getFrom())
+                ->setTo($this->getThroughFrom()),
+            (new Join())
+                ->setTable($relationModelClass::getTableName())
+                ->setFrom($this->getThroughTo())
+                ->setTo($this->getTo())
+        ];
     }
 
     public function getIsMany()

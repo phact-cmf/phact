@@ -15,6 +15,10 @@ namespace Phact\Orm;
 
 class With
 {
+    public const MODE_SELECT = 10;
+
+    public const MODE_PREFETCH = 20;
+
     private $relationName;
 
     private $with = [];
@@ -22,6 +26,8 @@ class With
     private $values = [];
 
     private $namedSelection;
+
+    private int $mode = self::MODE_SELECT;
 
     public function __construct(string $relationName)
     {
@@ -100,5 +106,38 @@ class With
     public function getValues(): array
     {
         return $this->values;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMode(): int
+    {
+        return $this->mode;
+    }
+
+    /**
+     * @param int $mode
+     * @return With
+     */
+    public function setMode(int $mode): With
+    {
+        $this->mode = $mode;
+        return $this;
+    }
+
+    public function prefetch(): With
+    {
+        return $this->setMode(self::MODE_PREFETCH);
+    }
+
+    public function isPrefetch(): bool
+    {
+        return $this->mode === self::MODE_PREFETCH;
+    }
+
+    public function isSelect(): bool
+    {
+        return $this->mode === self::MODE_SELECT;
     }
 }

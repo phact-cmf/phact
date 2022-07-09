@@ -14,6 +14,8 @@ namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Musician;
 use Modules\Test\Models\Song;
+use Phact\Orm\Expression;
+use Phact\Orm\Join;
 use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractManyManagerTest extends DatabaseTest
@@ -103,6 +105,37 @@ abstract class AbstractManyManagerTest extends DatabaseTest
         $this->fillData();
         $musicians = Musician::objects()->order(['-songs__name'])->all();
 
+        $this->assertCount(5, $musicians);
         $this->assertEquals('Paradise Lost', $musicians[0]->name);
+    }
+
+    public function testJoinSubquery()
+    {
+        $this->fillData();
+        $subquery = Song::objects()
+            ->order([
+                new Expression('name'),
+            ])
+            ->group(['musician_id'])
+            ->select([
+                new Expression('{musician_id}'),
+                new Expression('MIN({name}) as name'),
+            ]);
+
+        $query = Musician::objects()
+            ->getQuerySet()
+            ->appendRelation('songs_related', new Song(), [
+                (new Join())
+                    ->setAlias('songs')
+                    ->setQuerySet($subquery)
+                    ->setFrom('id')
+                    ->setTo('musician_id')
+            ])
+            ->order(['songs_related__name']);
+
+        $musicians = $query->all();
+
+        $this->assertCount(2, $musicians);
+        $this->assertEquals('Five Finger Death Punch', $musicians[0]->name);
     }
 }

@@ -15,6 +15,7 @@ namespace Phact\Orm\Fields;
 use Phact\Helpers\Configurator;
 use Phact\Orm\HasManyManager;
 use Phact\Orm\FieldManagedInterface;
+use Phact\Orm\Join;
 use Phact\Orm\Manager;
 
 /**
@@ -82,11 +83,10 @@ class HasManyField extends RelationField implements FieldManagedInterface
     {
         $relationModelClass = $this->getRelationModelClass();
         return [
-            [
-                'table' => $relationModelClass::getTableName(),
-                'from' => $this->getFrom(),
-                'to' => $this->getTo()
-            ]
+            (new Join())
+                ->setTable($relationModelClass::getTableName())
+                ->setFrom($this->getFrom())
+                ->setTo($this->getTo())
         ];
     }
 

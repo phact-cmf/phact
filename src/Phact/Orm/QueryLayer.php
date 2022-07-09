@@ -156,9 +156,13 @@ class QueryLayer
         foreach ($relations as $relationName => $relation) {
             if (isset($relation['joins']) && is_array($relation['joins'])) {
                 foreach ($relation['joins'] as $join) {
-                    if (is_array($join) && isset($join['table'])) {
-                        $tableName = $join['table'];
-                        $this->setAlias($relationName, $tableName);
+                    if ($join instanceof Join) {
+                        if ($join->getTable()) {
+                            $this->setAlias($relationName, $join->getTable());
+                        }
+                        if ($join->getAlias()) {
+                            $this->setAlias($relationName, $join->getAlias());
+                        }
                     }
                 }
             }
@@ -178,20 +182,20 @@ class QueryLayer
         $this->_aliases[$relationName . '#' . $tableName] = $tableName . '_' . (count($this->_aliases) + 1);
     }
 
-    public function getAlias($relationName, $tableName)
+    public function getAlias($relationName, $tableNameOrSubAlias)
     {
-        if (isset($this->_aliases[$relationName . '#' . $tableName])) {
-            return $this->_aliases[$relationName . '#' . $tableName];
+        if (isset($this->_aliases[$relationName . '#' . $tableNameOrSubAlias])) {
+            return $this->_aliases[$relationName . '#' . $tableNameOrSubAlias];
         }
         return null;
     }
 
-    public function getTableOrAlias($relationName, $tableName)
+    public function getTableOrAlias($relationName, $tableNameOrSubAlias)
     {
-        if ($alias = $this->getAlias($relationName, $tableName)) {
+        if ($alias = $this->getAlias($relationName, $tableNameOrSubAlias)) {
             return $alias;
         }
-        return $tableName;
+        return $tableNameOrSubAlias;
     }
 
     public function getRelationModel(?string $relationName): ?Model
@@ -199,6 +203,27 @@ class QueryLayer
         $relation = $this->getQuerySet()->getRelation($relationName);
         /** @var $model Model */
         return isset($relation['model']) ? $relation['model'] : null;
+    }
+
+    public function getRelationAlias(string $relationName): ?string
+    {
+        $relation = $this->getQuerySet()->getRelation($relationName);
+        if (isset($relation['joins']) && count($relation['joins']) > 0) {
+            $lastJoin = array_slice($relation['joins'], -1)[0];
+            if (($lastJoin instanceof Join)) {
+                if ($lastJoin->getAlias()) {
+                    return $lastJoin->getAlias();
+                }
+                if ($lastJoin->getTable()) {
+                    return $lastJoin->getTable();
+                }
+            }
+        }
+        $model = $this->getRelationModel($relationName);
+        if ($model) {
+            return $model::getTableName();
+        }
+        return null;
     }
 
     public function getRelationTable(?string $relationName): ?string
@@ -209,8 +234,12 @@ class QueryLayer
         } else {
             /** Raw relation */
             $relation = $this->getQuerySet()->getRelation($relationName);
-            if (isset($relation['joins'][0]['table'])) {
-                return $relation['joins'][0]['table'];
+
+            if (isset($relation['joins'][0])) {
+                $join = $relation['joins'][0];
+                if ($join instanceof Join && $join->getTable()) {
+                    return $join->getTable();
+                }
             }
         }
         return null;
@@ -246,7 +275,7 @@ class QueryLayer
             if ($attribute !== '*') {
                 $attribute = $this->relationColumnAttribute($relationName, $attribute);
             }
-            $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationTable($relationName));
+            $tableName = $this->getTableOrAlias($relationName, $tableName ?: $this->getRelationAlias($relationName));
             $this->_columnAliases[$key] = $this->column($tableName, $attribute);
         }
         return $this->_columnAliases[$key];
@@ -280,34 +309,47 @@ class QueryLayer
 
             if (isset($relation['joins']) && is_array($relation['joins'])) {
                 foreach ($relation['joins'] as $join) {
-                    if (is_array($join)) {
-                        if (isset($join['table']) && isset($join['from']) && isset($join['to'])) {
-                            $attributeFrom = $join['from'];
-                            $attributeTo = $join['to'];
+                    if ($join instanceof Join) {
+                        $attributeFrom = $join->getFrom();
+                        $attributeTo = $join->getTo();
 
-                            $tableName = $join['table'];
+                        $joinTable = $join->getTable();
+                        $joinAlias = $join->getAlias();
 
-                            $alias = $this->getAlias($relationName, $tableName);
-                            $fromColumn = $this->column($currentAlias ?: $currentTable, $attributeFrom);
-                            $toColumn = $this->column($alias ?: $tableName, $attributeTo);
-
-                            $attributes = [
-                                $this->quote($currentAlias ?: $currentTable),
-                                $this->quote($tableName),
-                                $this->quote($alias),
-                                $fromColumn . ' = ' . $toColumn
-                            ];
-                            $type = isset($join['type']) ? $join['type'] : 'left';
-                            $typeMethod = mb_strtolower($type, 'UTF-8') . 'Join';
-
-                            call_user_func_array([$queryBuilder, $typeMethod], $attributes);
-                            // We change the current join
-                            $currentTable = $tableName;
-                            $currentRelationName = $relationName;
-                            $currentAlias = $alias;
-                        } else {
-                            throw new Exception('Invalid join configuration. Please, check your relation fields.');
+                        $alias = $this->getAlias($relationName, $joinTable ?: $joinAlias);
+                        if (!$alias) {
+                            throw new InvalidArgumentException(strtr("Could not retrieve alias for join from: {from}, to: {to}, relationName: {relationName}", [
+                                '{from}' => $join->getFrom(),
+                                '{to}' => $join->getTo(),
+                                '{relationName}' => $relationName
+                            ]));
                         }
+
+                        $fromColumn = $this->column($currentAlias ?: $currentTable, $attributeFrom);
+                        $toColumn = $this->column($alias, $attributeTo);
+
+                        if (($joinQs = $join->getQuerySet())) {
+                            $joinExpression = "({$joinQs->allSql()})";
+                        } else {
+                            $joinExpression = $this->quote($joinTable);
+                        }
+
+                        $attributes = [
+                            $this->quote($currentAlias ?: $currentTable),
+                            $joinExpression,
+                            $this->quote($alias),
+                            $fromColumn . ' = ' . $toColumn
+                        ];
+                        $type = $join->getType();
+
+                        $typeMethod = mb_strtolower($type, 'UTF-8') . 'Join';
+
+                        call_user_func_array([$queryBuilder, $typeMethod], $attributes);
+
+                        // We change the current join
+                        $currentTable = $alias;
+                        $currentRelationName = $relationName;
+                        $currentAlias = $alias;
                     } elseif (is_string($join) && ($joinRelation = $this->getQuerySet()->getRelation($join))) {
                         /* @var $model Model */
                         $model = $joinRelation['model'];
@@ -384,7 +426,6 @@ class QueryLayer
             return $this->getSQL($queryBuilder);
         }
 
-        $queryBuilder->executeQuery();
         return $queryBuilder->fetchAllAssociative();
     }
 
@@ -414,7 +455,6 @@ class QueryLayer
             return $this->getSQL($queryBuilder);
         }
 
-        $queryBuilder->executeQuery();
         return $queryBuilder->fetchAssociative();
     }
 
@@ -483,7 +523,7 @@ class QueryLayer
         if ($sql) {
             return $this->getSQL($queryBuilder);
         }
-        $item = $queryBuilder->execute()->fetch();
+        $item = $queryBuilder->fetchAssociative();
         if (isset($item['aggregation'])) {
             return $item['aggregation'];
         }
@@ -576,7 +616,6 @@ class QueryLayer
             return $this->getSQL($queryBuilder);
         }
         $result = [];
-        $queryBuilder->executeQuery();
         foreach ($queryBuilder->fetchAllAssociative() as $key => $row) {
             foreach ($row as $column => $value) {
                 if (str_starts_with($column, $this->_servicePrefix)) {
@@ -794,7 +833,7 @@ class QueryLayer
             $queryBuilder->add('select', $aggregation->getSql($field) . ' as ' . $name, true);
             $queryBuilder->having($aggregation->getSql($field) . ' ' . $having->getCondition());
             if (!$queryBuilder->getQueryPart('groupBy')) {
-                $queryBuilder->groupBy($this->columnAlias(null, $this->getModel()->getPkAttribute()));
+                $queryBuilder->groupBy($this->columnAlias('__this', $this->getModel()->getPkAttribute()));
             }
         }
     }

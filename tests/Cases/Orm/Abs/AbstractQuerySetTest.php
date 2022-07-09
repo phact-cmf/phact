@@ -25,10 +25,13 @@ use Modules\Test\Models\NoteThesisVote;
 use Phact\Orm\Aggregations\Avg;
 use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Expression;
+use Phact\Orm\Fields\ForeignField;
 use Phact\Orm\Having\Having;
+use Phact\Orm\Join;
 use Phact\Orm\Manager;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
+use Phact\Orm\With;
 use Phact\Tests\sandbox\app\Modules\Test\Models\Country;
 use Phact\Tests\sandbox\app\Modules\Test\Models\Movie;
 use Phact\Tests\Templates\DatabaseTest;
@@ -398,11 +401,10 @@ abstract class AbstractQuerySetTest extends DatabaseTest
 
         $qs = Note::objects()->getQuerySet();
         $qs->appendRelation("property#1", new NotePropertyCharValue(), [
-            [
-                'table' => NotePropertyCharValue::getTableName(),
-                'from' => 'id',
-                'to' => 'note_id'
-            ]
+            (new Join())
+                ->setTable(NotePropertyCharValue::getTableName())
+                ->setFrom('id')
+                ->setTo('note_id')
         ]);
         $this->assertEquals(true, $qs->hasRelation('property#1'));
         $this->assertEquals(false, $qs->hasRelation('property#2'));
@@ -415,11 +417,10 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertEquals(1, count($qs->all()));
 
         $qs->appendRelation("property#2", new NotePropertyIntValue(), [
-            [
-                'table' => NotePropertyIntValue::getTableName(),
-                'from' => 'id',
-                'to' => 'note_id'
-            ]
+            (new Join())
+                ->setTable(NotePropertyIntValue::getTableName())
+                ->setFrom('id')
+                ->setTo('note_id')
         ]);
         $this->assertEquals(true, $qs->hasRelation('property#1'));
         $this->assertEquals(true, $qs->hasRelation('property#2'));
@@ -433,11 +434,10 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertEquals(0, count($qs->all()));
 
         $qs->appendRelation("property#3", new NotePropertyIntValue(), [
-            [
-                'table' => NotePropertyIntValue::getTableName(),
-                'from' => 'id',
-                'to' => 'note_id'
-            ]
+            (new Join())
+                ->setTable(NotePropertyIntValue::getTableName())
+                ->setFrom('id')
+                ->setTo('note_id')
         ]);
         $this->assertEquals(true, $qs->hasRelation('property#1'));
         $this->assertEquals(true, $qs->hasRelation('property#2'));
@@ -555,6 +555,55 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $this->assertEquals('Second book', $books[0]->name);
 
         $this->assertEquals([], Author::objects()->filter(['id' => 100])->with(['books'])->all());
+    }
+
+    public function testWithFkPrefetch()
+    {
+        $q = $this->getQuoteCharacter();
+
+        $note = new Note();
+        $note->name = 'new note';
+        $note->save();
+
+        $secondNote = new Note();
+        $secondNote->name = 'second note';
+        $secondNote->save();
+
+        $thesis = new NoteThesis();
+        $thesis->name = 'new thesis';
+        $thesis->note = $note;
+        $thesis->save();
+
+        $secondThesis = new NoteThesis();
+        $secondThesis->name = 'new thesis';
+        $secondThesis->note = $secondNote;
+        $secondThesis->save();
+
+        $vote = new NoteThesisVote();
+        $vote->rating = 10;
+        $vote->note_thesis = $thesis;
+        $vote->save();
+
+        $qs = NoteThesis::objects()->with([
+            (new With('note'))
+                ->prefetch()
+        ])->order([
+            'id'
+        ]);
+
+        $sql = $qs->getSql();
+
+        $this->assertEquals("SELECT {$q}test_note_thesis{$q}.* FROM {$q}test_note_thesis{$q} ORDER BY {$q}test_note_thesis{$q}.{$q}id{$q} ASC", $sql);
+
+        /** @var NoteThesis[] $all */
+        $all = $qs->all();
+        $this->assertEquals(2, count($all));
+
+        $this->assertEquals($note->getAttributes(), $all[0]->getWithData('note')->getAttributes());
+
+        $foundNote = $all[0]->note;
+
+        $this->assertEquals($note->getAttributes(), $foundNote->getAttributes());
     }
 
     public function testWithOnFetchFields()

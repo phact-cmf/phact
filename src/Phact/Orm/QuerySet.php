@@ -533,13 +533,14 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         return $this->_offset;
     }
 
-    public function appendRelation($name, $model, $joins = [])
+    public function appendRelation($name, $model, $joins = []): QuerySet
     {
         $name = $this->stringRelationPath($name);
         $this->_relations[$name] = [
             'model' => $model,
             'joins' => $joins
         ];
+        return $this;
     }
 
     public function searchRelation($name)
@@ -954,14 +955,15 @@ class QuerySet implements PaginableInterface, QuerySetInterface
     }
 
     /**
-     * @param With[] $with
+     * @param $with With[]
      * @return array
      */
-    public function buildWithFkRelations(Model $model, $with = [], $prefix = '')
+    public function buildWithFkRelations(Model $model, array $with = [], $prefix = '')
     {
         $relations = [];
         foreach ($with as $item) {
             if (
+                !$item->isPrefetch() &&
                 ($field = $model->getField($item->getRelationName())) &&
                 ($field instanceof ForeignField) &&
                 ($relationModel = $field->getRelationModel())
@@ -1029,12 +1031,13 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         foreach ($with as $item) {
             /** @var RelationField $field */
             if ($field = $model->getField($item->getRelationName())) {
-                if ($field instanceof ForeignField) {
-                    // Handle foreign connections
-                    $this->postProcessingWithForeignField($item, $path, $rawFetch, $ownerModels, $field, $makeModels);
+
+                if (($field instanceof ForeignField) && $item->isSelect()) {
+                    // Handle foreign connections with select
+                    $this->postProcessingWithSelect($item, $path, $rawFetch, $ownerModels, $field, $makeModels);
                 } elseif (($field instanceof FieldManagedInterface) && ($manager = $field->getManager()) && ($manager instanceof RelationBatchInterface)) {
-                    // Handle has-many and many-to-many connections
-                    $this->postProcessingWithRelationField($item, $field, $manager, $ownerModels, $makeModels);
+                    // Handle prefetch
+                    $this->postProcessingWithPrefetch($item, $field, $manager, $ownerModels, $makeModels);
                 }
             }
         }
@@ -1050,7 +1053,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
      * @param $path
      * @throws \Phact\Exceptions\InvalidConfigException
      */
-    protected function postProcessingWithForeignField($with, $path, &$rawFetch, &$ownerModels, $field, $makeModels)
+    protected function postProcessingWithSelect($with, $path, &$rawFetch, &$ownerModels, $field, $makeModels)
     {
         $relationModel = $field->getRelationModel();
         $relationModelClass = $field->getRelationModelClass();
@@ -1102,7 +1105,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
      * @param bool $makeModels
      * @throws \Phact\Exceptions\InvalidConfigException
      */
-    protected function postProcessingWithRelationField($with, $field, $manager, &$ownerModels, $makeModels = false)
+    protected function postProcessingWithPrefetch($with, $field, $manager, &$ownerModels, $makeModels = false)
     {
         $relationModel = $field->getRelationModel();
         $relationModelClass = $field->getRelationModelClass();
@@ -1128,7 +1131,10 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         $data = $qs->getQuerySet()->withValues($values, $makeModels);
 
         $innerAttribute = $manager->getInnerAttribute();
-        $innerAttribute = $relationModel->fetchField($innerAttribute)?->from ?: $innerAttribute;
+        $innerField = $relationModel->fetchField($innerAttribute);
+        if ($innerField && property_exists($field, 'from')) {
+            $innerAttribute = $field->from ?: $innerAttribute;
+        }
 
         $outerAttribute = $manager->getOuterAttribute();
 
@@ -1137,7 +1143,7 @@ class QuerySet implements PaginableInterface, QuerySetInterface
             if (!isset($ownerModels[0][$outerAttribute])) {
                 return;
             }
-            if (!isset($data[0][$outerAttribute])) {
+            if (!isset($data[0][$innerAttribute])) {
                 return;
             }
         }
@@ -1161,7 +1167,11 @@ class QuerySet implements PaginableInterface, QuerySetInterface
                     }
                     $dataItem = $cleanItem;
                 }
-                $ownerModels[$i][$withKey][] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                if ($field instanceof ForeignField) {
+                    $ownerModels[$i][$withKey] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                } else {
+                    $ownerModels[$i][$withKey][] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                }
             }
         }
     }
