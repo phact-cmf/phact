@@ -571,12 +571,17 @@ abstract class AbstractQuerySetTest extends DatabaseTest
 
         $thesis = new NoteThesis();
         $thesis->name = 'new thesis';
-        $thesis->note = $note;
+        $thesis->note = $secondNote;
         $thesis->save();
+
+        $thesisOfSecond = new NoteThesis();
+        $thesisOfSecond->name = 'new thesis of second note';
+        $thesisOfSecond->note = $secondNote;
+        $thesisOfSecond->save();
 
         $secondThesis = new NoteThesis();
         $secondThesis->name = 'new thesis';
-        $secondThesis->note = $secondNote;
+        $secondThesis->note = $note;
         $secondThesis->save();
 
         $vote = new NoteThesisVote();
@@ -597,13 +602,14 @@ abstract class AbstractQuerySetTest extends DatabaseTest
 
         /** @var NoteThesis[] $all */
         $all = $qs->all();
-        $this->assertEquals(2, count($all));
+        $this->assertEquals(3, count($all));
 
-        $this->assertEquals($note->getAttributes(), $all[0]->getWithData('note')->getAttributes());
+        $this->assertEquals($secondNote->getAttributes(), $all[0]->getWithData('note')->getAttributes());
+        $this->assertEquals($secondNote->getAttributes(), $all[1]->getWithData('note')->getAttributes());
 
         $foundNote = $all[0]->note;
 
-        $this->assertEquals($note->getAttributes(), $foundNote->getAttributes());
+        $this->assertEquals($secondNote->getAttributes(), $foundNote->getAttributes());
     }
 
     public function testWithOnFetchFields()

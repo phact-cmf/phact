@@ -1151,25 +1151,31 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         // Matching
         $withKey = $with->getKey();
 
-        $map = [];
-        foreach ($ownerModels as $i => &$ownerModel) {
-            $map[$ownerModel[$outerAttribute]] = $i;
-        }
-        foreach ($data as $dataKey => $dataItem) {
-            $i = $map[$dataItem[$innerAttribute]] ?? null;
-            if ($i !== null) {
-                if ($hasAttributes) {
-                    $cleanItem = [];
-                    foreach ($dataItem as $key => $value) {
-                        if (!\in_array($key, $additonalAttributes)) {
-                            $cleanItem[$key] = $value;
-                        }
+        if ($field instanceof ForeignField) {
+            foreach ($ownerModels as &$ownerModel) {
+                foreach ($data as $dataItem) {
+                    if ($ownerModel[$outerAttribute] === $dataItem[$innerAttribute]) {
+                        $ownerModel[$withKey] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
                     }
-                    $dataItem = $cleanItem;
                 }
-                if ($field instanceof ForeignField) {
-                    $ownerModels[$i][$withKey] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
-                } else {
+            }
+        } else {
+            $map = [];
+            foreach ($ownerModels as $i => &$ownerModel) {
+                $map[$ownerModel[$outerAttribute]] = $i;
+            }
+            foreach ($data as $dataKey => $dataItem) {
+                $i = $map[$dataItem[$innerAttribute]] ?? null;
+                if ($i !== null) {
+                    if ($hasAttributes) {
+                        $cleanItem = [];
+                        foreach ($dataItem as $key => $value) {
+                            if (!\in_array($key, $additonalAttributes)) {
+                                $cleanItem[$key] = $value;
+                            }
+                        }
+                        $dataItem = $cleanItem;
+                    }
                     $ownerModels[$i][$withKey][] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
                 }
             }
