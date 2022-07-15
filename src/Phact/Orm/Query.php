@@ -27,7 +27,7 @@ class Query
             $this->_connectionName = $connectionName;
         }
     }
-    
+
     public function setConnectionName($connectionName)
     {
         $this->_connectionName = $connectionName;
@@ -88,6 +88,8 @@ class Query
     {
         $query = $queryBuilder->getSQL();
         $params = $queryBuilder->getParameters();
+
+        uksort($params, fn($a, $b) => (strlen($a) <=> strlen($b)) * -1);
 
         $keys = [];
         $values = $params;

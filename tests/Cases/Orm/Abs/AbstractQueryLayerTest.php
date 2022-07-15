@@ -13,6 +13,7 @@
 namespace Phact\Tests\Cases\Orm\Abs;
 
 use Modules\Test\Models\Note;
+use Phact\Orm\Q;
 use Phact\Orm\Query;
 use Phact\Tests\Templates\DatabaseTest;
 
@@ -84,6 +85,28 @@ abstract class AbstractQueryLayerTest extends DatabaseTest
         $dstQuery = $query->getSQL($dstQueryBuilder);
 
         $this->assertEquals("SELECT name FROM test_note WHERE (name = 'Some another name') AND (id > 0) AND (id IN (SELECT id FROM test_note WHERE (id = 12) AND (name = 'Some name')))", $dstQuery);
-
     }
+
+    public function testFilterManyParamsSubQuery()
+    {
+        $note = new Note(['name' => 'first']);
+        $note->save();
+        $filter = [
+            'id__gte' => 0,
+            Q::buildQ([
+                [Q::buildQ([['id' => 1], ['name' => 'first']], 'and'),],
+                [Q::buildQ([['id' => 2], ['name' => 'second']], 'and'),],
+                [Q::buildQ([['id' => 3], ['name' => 'third']], 'and'),],
+                [Q::buildQ([['id' => 4], ['name' => 'four']], 'and'),],
+                [Q::buildQ([['id' => 5], ['name' => 'five']], 'and'),],
+            ], 'or')
+        ];
+
+        $subQs = Note::objects()->filter($filter)->select(['id']);
+
+        $result = Note::objects()->filter(['id__in' => $subQs,])->all();
+
+        $this->assertCount(1, $result);
+    }
+
 }

@@ -826,11 +826,10 @@ class QueryLayer
         } elseif ($having instanceof Having) {
             $aggregation = $having->getAggregation();
             $field = $aggregation->getField();
-            $name = $this->_servicePrefix . implode('__', ['having']);
             if (!$aggregation->getRaw()) {
                 $field = $this->relationColumnAlias($field);
             }
-            $queryBuilder->add('select', $aggregation->getSql($field) . ' as ' . $name, true);
+
             $queryBuilder->having($aggregation->getSql($field) . ' ' . $having->getCondition());
             if (!$queryBuilder->getQueryPart('groupBy')) {
                 $queryBuilder->groupBy($this->columnAlias('__this', $this->getModel()->getPkAttribute()));

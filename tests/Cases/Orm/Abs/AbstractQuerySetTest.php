@@ -275,7 +275,7 @@ abstract class AbstractQuerySetTest extends DatabaseTest
 
         //$count = Note::objects()->getQuerySet()->select(['*', Count::expression('{theses__id}', 'count_theses')])->having(new Expression('count_theses > 1'))->allSql();
         $sql = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->allSql();
-        $this->assertEquals("SELECT DISTINCT {$q}test_note{$q}.*, COUNT({$q}test_note_thesis_1{$q}.{$q}id{$q}) as _service__having FROM {$q}test_note{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_thesis_1{$q}.{$q}note_id{$q} GROUP BY {$q}test_note{$q}.{$q}id{$q} HAVING COUNT({$q}test_note_thesis_1{$q}.{$q}id{$q}) >= 1", $sql);
+        $this->assertEquals("SELECT DISTINCT {$q}test_note{$q}.* FROM {$q}test_note{$q} LEFT JOIN {$q}test_note_thesis{$q} {$q}test_note_thesis_1{$q} ON {$q}test_note{$q}.{$q}id{$q} = {$q}test_note_thesis_1{$q}.{$q}note_id{$q} GROUP BY {$q}test_note{$q}.{$q}id{$q} HAVING COUNT({$q}test_note_thesis_1{$q}.{$q}id{$q}) >= 1", $sql);
 
         $all = Note::objects()->getQuerySet()->having(new Having(new Count('theses__id'), '>= 1'))->all();
         $this->assertEquals(1, count($all));
