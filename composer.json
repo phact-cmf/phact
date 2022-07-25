@@ -29,6 +29,7 @@
       "Phact\\Log\\": "src/Phact/Log",
       "Phact\\Translate\\": "src/Phact/Translate",
       "Phact\\Di\\": "src/Phact/Di",
+      "Phact\\Extensions\\": "src/Phact/Extensions",
       "Phact\\Tests\\": "tests"
     },
     "files": [
