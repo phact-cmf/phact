@@ -14,8 +14,8 @@ use Imagine\Image\Box;
 use Imagine\Image\BoxInterface;
 use Imagine\Image\ImageInterface;
 use Imagine\Image\ManipulatorInterface;
+use Imagine\Image\Metadata\DefaultMetadataReader;
 use Phact\Exceptions\InvalidConfigException;
-use Phact\Extensions\Imagine\DefaultMetadataReader;
 use Phact\Storage\Files\FileInterface;
 use Phact\Storage\Files\StorageFile;
 
