@@ -308,7 +308,7 @@ class Model
         }
 
         if ($withData) {
-            $this->_withModels = $withData;
+            $this->_withModels = array_merge($this->_withModels, $withData);
         }
     }
 

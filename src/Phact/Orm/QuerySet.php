@@ -1019,8 +1019,48 @@ class QuerySet implements PaginableInterface, QuerySetInterface
 
     protected function postProcessing(&$data, $makeModels = false)
     {
-        $with = $this->getQuerySet()->getWith();
+        $with = $this->createTreeWith($this->getQuerySet()->getWith());
+
         $this->postProcessingWith($data, $data, $this->getModel(), $makeModels, $with);
+    }
+
+    /**
+     * @param array $withList
+     * @return array
+     */
+    protected function createTreeWith(array $withList): array
+    {
+        $trees = [];
+
+        $this->addWithsToTree($trees, $withList);
+
+        return $trees;
+    }
+
+
+    /**
+     * @param With[] $branch
+     * @param With[] $withList
+     * @return void
+     */
+    protected function addWithsToTree(array &$branch, array $withList): void
+    {
+        foreach ($withList as $with) {
+            $already = false;
+            foreach ($branch as $treeWith) {
+                if ($treeWith->getRelationName() === $with->getRelationName()) {
+                    $currentBranch = $treeWith->getWith();
+                    $this->addWithsToTree($currentBranch, $with->getWith());
+                    $treeWith->setWith($currentBranch);
+                    $already = true;
+                    break;
+                }
+            }
+
+            if (!$already) {
+                $branch[] = $with;
+            }
+        }
     }
 
     /**
@@ -1055,6 +1095,8 @@ class QuerySet implements PaginableInterface, QuerySetInterface
      */
     protected function postProcessingWithSelect($with, $path, &$rawFetch, &$ownerModels, $field, $makeModels)
     {
+        $withKey = $with->getKey();
+
         $relationModel = $field->getRelationModel();
         $relationModelClass = $field->getRelationModelClass();
 
@@ -1067,33 +1109,51 @@ class QuerySet implements PaginableInterface, QuerySetInterface
         $data = [];
 
         // Fetch model data from existing fetch
-        foreach ($rawFetch as &$row) {
-            $withModel = [];
-            if (!$fieldsMap) {
-                foreach ($row as $name => $value) {
-                    if (
-                        \substr($name, 0, $len) === $relationName . '__' &&
-                        ($fieldName = str_replace($relationName . '__', '', $name)) &&
-                        (\strpos($fieldName, '__') === false)
-                    ) {
-                        $fieldsMap[$name] = $fieldName;
+        foreach ($rawFetch as $i => &$row) {
+            $ownerModel = $ownerModels[$i];
+            if (is_array($ownerModel) && isset($ownerModel[$withKey])) {
+                $data[$i] = &$ownerModel[$withKey];
+            } elseif (is_object($ownerModel) && $ownerModel->hasWithData($withKey)) {
+                $data[$i] = $ownerModel->getWithData($withKey);
+            } else {
+                $withModel = [];
+//
+                if (!$fieldsMap) {
+                    foreach ($row as $name => $value) {
+                        if (
+                            \substr($name, 0, $len) === $relationName . '__' &&
+                            ($fieldName = str_replace($relationName . '__', '', $name)) &&
+                            (\strpos($fieldName, '__') === false)
+                        ) {
+                            $fieldsMap[$name] = $fieldName;
+                        }
                     }
                 }
+                foreach($fieldsMap as $name => $fieldName) {
+                    $withModel[$fieldName] = $row[$name];
+                    unset($row[$name]);
+                }
+                $data[$i] = $withModel;
             }
-            foreach($fieldsMap as $name => $fieldName) {
-                $withModel[$fieldName] = $row[$name];
-                unset($row[$name]);
-            }
-            $data[] = $withModel;
         }
+
 
         // Process sub-with
         $this->postProcessingWith($rawFetch, $data, $relationModel, $makeModels, $with->getWith(), $path);
 
-        $withKey = $with->getKey();
         foreach ($ownerModels as $i => &$ownerModel) {
             // Fill models
-            $ownerModel[$withKey] = $makeModels ? $this->createModel($data[$i], $relationModelClass) : $data[$i];
+            $dbData = $makeModels ? $this->createModel($data[$i], $relationModelClass) : $data[$i];
+            $this->addWithData($ownerModel, $dbData, $withKey);
+        }
+    }
+
+    protected function addWithData(&$ownerModel, $data, $withKey)
+    {
+        if (is_array($ownerModel) && !isset($ownerModel[$withKey])) {
+            $ownerModel[$withKey] = $data;
+        } elseif (is_object($ownerModel) && !$ownerModel->hasWithData($withKey)) {
+            $ownerModel->setDbData([$withKey => $data]);
         }
     }
 
@@ -1143,9 +1203,9 @@ class QuerySet implements PaginableInterface, QuerySetInterface
             if (!isset($ownerModels[0][$outerAttribute])) {
                 return;
             }
-            if (!isset($data[0][$innerAttribute])) {
-                return;
-            }
+//            if (!isset($data[0][$innerAttribute])) {
+//                return;
+//            }
         }
 
         // Matching
@@ -1155,18 +1215,20 @@ class QuerySet implements PaginableInterface, QuerySetInterface
             foreach ($ownerModels as &$ownerModel) {
                 foreach ($data as $dataItem) {
                     if ($ownerModel[$outerAttribute] === $dataItem[$innerAttribute]) {
-                        $ownerModel[$withKey] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                        $dbData = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                        $this->addWithData($ownerModel, $dbData, $withKey);
                     }
                 }
             }
         } else {
             $map = [];
             foreach ($ownerModels as $i => &$ownerModel) {
-                $map[$ownerModel[$outerAttribute]] = $i;
+                $ownerModel[$withKey] = [];
+                $map[$ownerModel[$outerAttribute]][] = $i;
             }
             foreach ($data as $dataKey => $dataItem) {
-                $i = $map[$dataItem[$innerAttribute]] ?? null;
-                if ($i !== null) {
+                $iList = $map[$dataItem[$innerAttribute]] ?? [];
+                if ($iList) {
                     if ($hasAttributes) {
                         $cleanItem = [];
                         foreach ($dataItem as $key => $value) {
@@ -1176,7 +1238,9 @@ class QuerySet implements PaginableInterface, QuerySetInterface
                         }
                         $dataItem = $cleanItem;
                     }
-                    $ownerModels[$i][$withKey][] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                    foreach ($iList as $i) {
+                        $ownerModels[$i][$withKey][] = $makeModels ? $this->createModel($dataItem, $relationModelClass) : $dataItem;
+                    }
                 }
             }
         }

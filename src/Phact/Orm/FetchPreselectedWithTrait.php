@@ -34,7 +34,8 @@ trait FetchPreselectedWithTrait
 
     public function all()
     {
-        if (($data = $this->getWithData()) && ($data !== null)) {
+        $data = $this->getWithData();
+        if ($data !== null) {
             return $data;
         }
         return parent::all();

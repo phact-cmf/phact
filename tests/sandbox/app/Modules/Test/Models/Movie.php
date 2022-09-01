@@ -4,6 +4,7 @@ namespace Phact\Tests\sandbox\app\Modules\Test\Models;
 
 use Phact\Orm\Fields\CharField;
 use Phact\Orm\Fields\ForeignField;
+use Phact\Orm\Fields\HasManyField;
 use Phact\Orm\Fields\ManyToManyField;
 use Phact\Orm\Model;
 
@@ -33,6 +34,10 @@ class Movie extends Model
                 'class' => ForeignField::class,
                 'modelClass' => Country::class,
                 'null' => true
+            ],
+            'reviews' => [
+                'class' => HasManyField::class,
+                'modelClass' => MovieReview::class
             ]
         ];
     }

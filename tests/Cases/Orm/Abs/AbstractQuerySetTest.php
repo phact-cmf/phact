@@ -25,15 +25,20 @@ use Modules\Test\Models\NoteThesisVote;
 use Phact\Orm\Aggregations\Avg;
 use Phact\Orm\Aggregations\Count;
 use Phact\Orm\Expression;
-use Phact\Orm\Fields\ForeignField;
 use Phact\Orm\Having\Having;
 use Phact\Orm\Join;
 use Phact\Orm\Manager;
 use Phact\Orm\Q;
 use Phact\Orm\QuerySet;
 use Phact\Orm\With;
+use Phact\Tests\sandbox\app\Modules\Test\Models\CallManager;
 use Phact\Tests\sandbox\app\Modules\Test\Models\Country;
+use Phact\Tests\sandbox\app\Modules\Test\Models\FilmCompany;
 use Phact\Tests\sandbox\app\Modules\Test\Models\Movie;
+use Phact\Tests\sandbox\app\Modules\Test\Models\MovieReview;
+use Phact\Tests\sandbox\app\Modules\Test\Models\Purchaser;
+use Phact\Tests\sandbox\app\Modules\Test\Models\TicketOrder;
+use Phact\Tests\sandbox\app\Modules\Test\Models\Ticket;
 use Phact\Tests\Templates\DatabaseTest;
 
 abstract class AbstractQuerySetTest extends DatabaseTest
@@ -53,6 +58,12 @@ abstract class AbstractQuerySetTest extends DatabaseTest
             new NotePropertyIntValue(),
             new Country(),
             new Movie(),
+            new FilmCompany(),
+            new Ticket(),
+            new TicketOrder(),
+            new MovieReview(),
+            new CallManager(),
+            new Purchaser(),
         ];
     }
 
@@ -827,5 +838,197 @@ abstract class AbstractQuerySetTest extends DatabaseTest
         $result = Author::objects()->filter(['id__in' => $subQuery])->all();
 
         $this->assertEmpty($result);
+    }
+
+    public function testWithThroughCommon()
+    {
+        // Fill
+        $country1 = new Country(['name' => 'USSR']);
+        $country1->save();
+
+        $country2 = new Country(['name' => 'USA']);
+        $country2->save();
+
+        $filmCompany1 = new FilmCompany(['name' => 'MosFilm']);
+        $filmCompany1->save();
+
+        $filmCompany2 = new FilmCompany(['name' => 'Columbia Pictures']);
+        $filmCompany2->save();
+
+        $movie1 = new Movie([
+            'name' => '17 moments of Spring',
+            'film_company' => $filmCompany1,
+            'producer_country' => $country1
+        ]);
+        $movie1->save();
+
+        $movie2 = new Movie([
+            'name' => 'Lock, Stock and Two Smoking Barrels',
+            'film_company' => $filmCompany2,
+            'producer_country' => $country2
+        ]);
+        $movie2->save();
+
+        $movie1Review1 = new MovieReview(['movie' => $movie1, 'text' => 'Фильм 1, отзыв 1']);
+        $movie1Review1->save();
+
+        $movie1Review2 = new MovieReview(['movie' => $movie1, 'text' => 'Фильм 1, отзыв 2']);
+        $movie1Review2->save();
+
+        $movie2Review1 = new MovieReview(['movie' => $movie2, 'text' => 'Фильм 2, отзыв 1']);
+        $movie2Review1->save();
+
+        $movie2Review2 = new MovieReview(['movie' => $movie2, 'text' => 'Фильм 2, отзыв 2']);
+        $movie2Review2->save();
+
+        $callManager1 = new CallManager(['name' => 'Алексей']);
+        $callManager1->save();
+
+        $callManager2 = new CallManager(['name' => 'Антон']);
+        $callManager2->save();
+
+        $purchaser1 = new Purchaser(['name' => 'Анастасия']);
+        $purchaser1->save();
+
+        $purchaser2 = new Purchaser(['name' => 'Александра']);
+        $purchaser2->save();
+
+        $order1 = new TicketOrder([
+            'created_at' => date('Y-m-d H:i:s'),
+            'call_manager' => $callManager1,
+            'purchaser' => $purchaser1
+        ]);
+        $order1->save();
+
+        $order2 = new TicketOrder([
+            'created_at' => date('Y-m-d H:i:s'),
+            'call_manager' => $callManager2,
+            'purchaser' => $purchaser2
+        ]);
+        $order2->save();
+
+        $ticket1 = new Ticket([
+            'date' => date('Y-m-d H:i:s'),
+            'movie' => $movie1,
+            'ticket_order' => $order1
+        ]);
+        $ticket1->save();
+
+        $ticket2 = new Ticket([
+            'date' => date('Y-m-d H:i:s'),
+            'movie' => $movie1,
+            'ticket_order' => $order1
+        ]);
+        $ticket2->save();
+
+        $ticket3 = new Ticket([
+            'date' => date('Y-m-d H:i:s'),
+            'movie' => $movie1,
+            'ticket_order' => $order2
+        ]);
+        $ticket3->save();
+
+        $ticket4 = new Ticket([
+            'date' => date('Y-m-d H:i:s'),
+            'movie' => $movie2,
+            'ticket_order' => $order2
+        ]);
+        $ticket4->save();
+
+        // Check
+        $callManagerQs = CallManager::objects()
+            ->filter(['id__in' => [$callManager1->getPk(), $callManager2->getPk()]])
+            ->with([
+                'ticket_orders__purchaser', // fk
+                'ticket_orders__tickets__movie__reviews', // has many
+                'ticket_orders__tickets__movie__producer_country', // fk
+                'ticket_orders__tickets__movie__film_company' // fk
+            ]);
+        $dbCallManagers = $callManagerQs->all();
+
+        $withOrders1 = $dbCallManagers[0]->getWithData('ticket_orders');
+        $withOrders2 = $dbCallManagers[1]->getWithData('ticket_orders');
+
+        $this->assertCount(1, $withOrders1);
+        $this->assertCount(1, $withOrders2);
+
+        $withOrder1 = current($withOrders1);
+        $withOrder2 = current($withOrders2);
+
+        $withPurchaser1 = $withOrder1->getWithData('purchaser');
+        $withPurchaser2 = $withOrder2->getWithData('purchaser');
+
+        $this->assertEquals($purchaser1->getPk(), $withPurchaser1->getPk());
+        $this->assertEquals($purchaser2->getPk(), $withPurchaser2->getPk());
+
+        $withTickets1 = $withOrder1->getWithData('tickets');
+        $withTickets2 = $withOrder2->getWithData('tickets');
+
+        $this->assertCount(2, $withTickets1);
+        $this->assertCount(2, $withTickets2);
+
+        $withMovie1 = $withTickets2[0]->getWithData('movie');
+        $withMovie2 = $withTickets2[1]->getWithData('movie');
+
+        $withFilmCompany1 = $withMovie1->getWithData('film_company');
+        $withCountry1 = $withMovie1->getWithData('producer_country');
+
+        $withFilmCompany2 = $withMovie2->getWithData('film_company');
+        $withCountry2 = $withMovie2->getWithData('producer_country');
+
+
+        $expected = [
+            [
+                'film_company_id' => $filmCompany1->id,
+                'film_company_name' => $filmCompany1->name,
+                'country_id' => $country1->id,
+                'country_name' => $country1->name,
+            ],
+            [
+                'film_company_id' => $filmCompany2->id,
+                'film_company_name' => $filmCompany2->name,
+                'country_id' => $country2->id,
+                'country_name' => $country2->name,
+            ],
+        ];
+
+        $result = [
+            [
+                'film_company_id' => $withFilmCompany1->id,
+                'film_company_name' => $withFilmCompany1->name,
+                'country_id' => $withCountry1->id,
+                'country_name' => $withCountry1->name,
+            ],
+            [
+                'film_company_id' => $withFilmCompany2->id,
+                'film_company_name' => $withFilmCompany2->name,
+                'country_id' => $withCountry2->id,
+                'country_name' => $withCountry2->name,
+            ]
+        ];
+
+        $this->assertEquals($expected, $result);
+    }
+
+    public function testEmptyHasManyWith()
+    {
+        $country = new Country(['name' => 'USSR']);
+        $country->save();
+
+        $filmCompany = new FilmCompany(['name' => 'MosFilm']);
+        $filmCompany->save();
+
+        $movie = new Movie([
+            'name' => '17 moments of Spring',
+            'film_company' => $filmCompany,
+            'producer_country' => $country
+        ]);
+        $movie->save();
+
+        $dbMovies = Movie::objects()->filter(['id' => $movie->getPk()])->with(['reviews'])->all();
+
+        $dbMovie = current($dbMovies);
+        $this->assertEquals([], $dbMovie->getWithData('reviews'));
+        $dbMovie->reviews->all();
     }
 }
